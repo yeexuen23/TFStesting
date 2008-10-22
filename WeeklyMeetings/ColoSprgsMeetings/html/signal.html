@@ -1,0 +1,494 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:23:40 2002">
+<title>CHAPTER 19 The Signal Path and the Signal Data Structures</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="trigDriver.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="acqMgr.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="127470"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 19 	 The Signal Path and the Signal Data Structures</font>
+</h1><hr>
+
+
+<h2>
+  <a name="127471"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-1  Signal Path Overview</font>
+</h2>
+
+
+<p>
+  <a name="127477"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Signal Path contains the primary transforms performed by the JediPlus products on the input signals fed into them. These include: conditioning the analog input signals for acquisition, acquiring digital waveform records that represent the analog signals, performing measurements and math functions on the digital records, and generating graphics displays of the signals. A common view of this "Signal Path" is a series of filters and pipes that transform the input signals into the various data records that represent the signals as they flow down the path. </font>
+</p>
+
+
+<p>
+  <a name="127957"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The central data structure in the Signal Path is cleverly called the Signal Structure. It was devised to be a data oriented representation of an input signal as it proceeds along the Signal Path. It has been expanded to also cover signals that are inserted into the signal path or are created by the signal path, since they can be represented in identical fashion. Generally speaking there is a Signal structure for each analog and digital input channel, and each math function and waveform memory available in a particular JediPlus product.</font>
+</p>
+
+
+<p>
+  <a name="127478"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For Object Oriented fans, these Signals are the primary data objects that are operated on by the Signal Path. They represent the signals as they flow down the path, hence they contain a set of waveform records that depict the signal in each of its incantations along the path. Included with the waveform records is sufficient information on the transforms being performed on the signal, so that the data in the waveform record can be interpreted without accessing external structures. This does not imply that the complete setup for all HW and SW in the Signal Path that affects signals is included in the Signal structure. However, there are Signal data members in the appropriate waveform records that reflect the effect that the transforms have on the data.</font>
+</p>
+
+
+<p>
+  <a name="128331"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This is a high level document since it presents an overview of the signal path, its major component pieces, and the associated Signal structure. Each of the major components and their interactions with the Signal structure are the subjects of their own chapter, later in this book. This chapter is primarily intended to illustrate how these major components are related and fit together to provide the fundamental underlying services in the jediPlus products including: conditioning, acquiring, analyzing and displaying the input signals. </font>
+</p>
+
+
+<h2>
+  <a name="128326"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-2  Signal Path Model</font>
+</h2>
+
+
+<p>
+  <a name="127482"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Logically, the signal processing provided by the Signal Path can be broken down into four functional blocks: Conditioning, Acquiring, Analyzing and Displaying. These are shown as ovals in the data flow diagram below, borrowed from the chapter titled "Architectural Model of the JediPlus Oscilloscope Family". The arrows represent the flow of data in and out of the processing blocks. Two primary flows can be identified. The first is the flow of signals down the Signal Path represented by the arrows generally proceeding from left to right through the processing blocks and data stores above the blocks. The second is the flow of information between the Signal Path and User Interface (UI) represented generally by the arrows entering and leaving the processing blocks from the bottom. </font>
+</p>
+
+<a name="127519"> </a>FIGURE 45.&#32; Data flow diagram depicting the essential model of an oscilloscope<img src="images/signala.gif" height="497" width="624">
+
+<p>
+  <a name="127534"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In this diagram each processing block consists of both hardware and associated software that combine to implement each block's complete transform. The components that transform the actual "signal" flow need to be highly optimized for performance. This portion is mostly implemented in hardware. The portion that interacts with the UI for each block take the form of a software "drivers" that provide an "abstract" interface between the UI and the underlying processing capability. The dividing line between Signal Path and UI is somewhat academic in this area. </font>
+</p>
+
+
+<p>
+  <a name="127576"> </a><font face="Verdana, Arial, Helvetica, sans-serif">At this juncture it is relevant to further dissect each of these blocks. The following four sections each cover one block by examining their makeup with respect to Scope channels. At a later time, each will be revisited and updated, highlighting any differences with respect to the timing analyzer channels. The last section in this chapter, discusses the Signal Structure in moderate detail and explains how its organization is related to the flow of signals down the Signal Path and through the main processing blocks. </font>
+</p>
+
+
+<h2>
+  <a name="127551"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-3  Signal Conditioning Block Overview</font>
+</h2>
+
+
+<p>
+  <a name="127707"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The scope signal conditioning block for scope channels consists of the following HW and SW blocks: the Vertical System HW, the Vertical Driver SW, the Trigger System HW, and the Trigger Driver SW. The Vertical System HW contains the input attenuators, the vertical preamplifiers and several DAC channels used to control DC inputs to the preamp. The Vertical Driver SW provides an interface between this HW and the rest of the JediPlus SW. It abstracts the control of the HW, from the specific programming protocol of the HW components, up to a behavioral view of it's functionality understood by the UI. The Trigger System HW contains the analog trigger comparators, the combinational trigger logic, the system trigger latch, and several DAC channels used control DC inputs to the comparators. The Trigger Driver SW provides an abstracted, behavior oriented, interface between this HW and the rest of the JediPlus SW. </font>
+</p>
+
+
+<p>
+  <a name="127729"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The scope signal conditioning block's primary purpose is twofold. First, the Vertical System serves to condition the input signals, so carefully scaled versions which meet input specifications are presented to the Acquisition System (and Trigger System). Secondly, the Trigger System generates the System Trigger signal used to synchronize the Acquisition System with one, or a combination of input signals. </font>
+</p>
+
+
+<p>
+  <a name="127776"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For more detailed information on these topics see the following chapters titled the "Vertical Driver" and the "Trigger Driver".</font>
+</p>
+
+
+<h2>
+  <a name="127705"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-4   Signal Acquisition (Acq) Block Overview</font>
+</h2>
+
+
+<p>
+  <a name="127722"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The primary purpose of the acquisition block is to create digital waveform data records with vertical and horizontal axes that accurately represent the analog signals fed into the input channels. For scopes, the vertical axis usually represents signal voltage relative to ground, and the horizontal axis represents time relative to the trigger.</font>
+</p>
+
+
+<p>
+  <a name="128926"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The signal acquisition block for the JediPlus scopes consists of the Acq System HW and the Acq Driver SW. The Acq System HW contains the analog to digital converter (ADC), the timebase, the acq processing pipe, and the acq memory. The acq processing pipe basically transforms raw acquired data into waveform data that is the basis for the following analysis and display blocks. The Acq Driver SW provides an abstracted, behavior oriented, interface between this HW and the rest of the JediPlus SW. </font>
+</p>
+
+
+<p>
+  <a name="127810"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For more detailed information on the Acquisition block, see the following chapter titled the "Acq and Plot Drivers." </font>
+</p>
+
+
+<h2>
+  <a name="127596"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-5   Signal Analysis Block Overview</font>
+</h2>
+
+
+<p>
+  <a name="127795"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Most of the time critical processing performed on waveform data to prepare it for display is accomplished in HW in the JediPlus scopes. Although it is academic how this HW is partitioned between the processing blocks in the data flow diagram, the JediPlus HW architects view it as being split between Acq and Display HW Systems. While the signals flow through the Analysis block on the way to the display, most of the transforms related to display update occur either before or after the Analysis block in the JediPlus implementations. The remainder of the functionality in the signal analysis block is provided by the host CPU in the form of the Signal Analysis Library (SAL) SW. Its main purposes are to perform parametric measurements on waveform records and produce new waveform records by performing math functions on existing waveform records.</font>
+</p>
+
+
+<p>
+  <a name="127829"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The need to perform measurements can originate in the local UI, the remote UI, or in special cases other parts of the Signal Path SW. Measurements needed by the local UI are installed in a list and executed periodically, as requested by the Screen Manager in order to keep the results on screen refreshed. These are called "screen" or "scheduled" measurements in this book. Measurements needed by the remote UI are called "remote" or "immediate" measurements, since they appear to execute immediately. In fact, acquisitions and measurements are always synchronized by the Signal Path Manager, described later; the difference lies in the manner they are synchronized and how visible it is to the originator.</font>
+</p>
+
+
+<p>
+  <a name="127836"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Scheduled measurements get executed as part of the regular acq/display cycle. The Screen manager alerts the Signal Path Manager that scheduled measurements are needed. As part of the acq/display cycle, the Signal Path Manager insures the appropriate waveform data record is valid, and complete, and calls the SAL API function runMeasurements() to execute the list of Scheduled Measurements. SAL makes the measurements and insures the results get posted on screen using Screen Manager utilities.</font>
+</p>
+
+
+<p>
+  <a name="127830"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Immediate Measurements appear to get executed when the originator directly calls the SAL API function getImmediateMeas() for making individual measurements immediately. Actually in this case the SAL checks to see if the appropriate waveform data record is valid and complete. If so, it executes the measurement and returns the results. If not, it calls the Signal Path Mgr API function acquireCompleteWaveform(), which acquires the appropriate waveform data record needed by SAL. If required, this function interrupts the current acq/display cycle, runs a special cycle to satisfy SAL's requirements, restores the cycle to is previous condition and returns. SAL then proceeds with executing the measurement and returns the result.</font>
+</p>
+
+
+<p>
+  <a name="127875"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Currently, math functions get executed as part of the acq/display cycle much like scheduled measurements. Since their update rate on screen is important when running, the Signal Path Mgr causes new data to be acquired and calls the SAL interface function runFilters() in a continuous loop. This is analogous to functions being scheduled continuously once turned on, rather than periodically like the screen measurements. In addition, there are several steps inserted around the function generation step in acq/display cycles that coordinate SAL and the Display System HW. These steps provide the handshaking required to synchronize the production of waveform data into a function's signal buffer by SAL and the consumption of data from the buffer by the display system to plot the next function waveform display.</font>
+</p>
+
+
+<p>
+  <a name="127890"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For more detailed information on these topics see the following chapters titled the "Signal Analysis Library" and "Signal Path Manager".</font>
+</p>
+
+
+<h2>
+  <a name="127855"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-6  Signal Display Block Overview</font>
+</h2>
+
+
+<p>
+  <a name="127903"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The signal display block for scope channels consists of the Plot System HW, the Plot Driver SW, the Display System HW, and the Display Driver SW. The Plot System HW contains the Plot Processing Pipe and Display Memory. The Plot Processing Pipe basically converts digitized waveform data into pixel graphic data that is stored in the Display Memory. The Plot Driver SW provides an abstracted, behavior oriented, interface between this HW and the rest of the JediPlus SW. The Display System HW contains the display controller and the display itself. The Display Driver SW basically provides methods that initialize the display system at power up, since its setup is static following initialization. </font>
+</p>
+
+
+<p>
+  <a name="127924"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Plot System consumes waveform records in the Acquisition memory produced by the Acq System or SAL, and generates the graphics records loaded into one of three defined display frames in the Display Memory. The plot pipe maps waveform data for each signal into pixel data scaled to fit the screen exactly and merges this into the display frame currently being plotted. A frame gets displayed after plotting is complete. The Display System typically cycles the three display frames out of Display Memory and onto the actual display at the 60Hz refresh rate. This assumes plotting can keep up with the display refresh rate. At any given time one frame is being displayed, and one frame is being plotted. The extra frame acts as an overflow frame that can be plotted into if the current plot frame completes before the current display frame is finished. A frame might be displayed more than once when plotting lags. </font>
+</p>
+
+
+<h2>
+  <a name="128848"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-7  Signal Path Manager (SigPath Mgr) Overview</font>
+</h2>
+
+
+<p>
+  <a name="128842"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Although it is not explicitly shown on the data flow diagram, there is an important functional block in the JediPlus system that coordinates and synchronizes the four primary blocks shown. It is called the Signal Path Manager SW. It contains the SW state machine that manages the fundamental acq/display cycles in the instruments. These cycle encompasses acquiring (digitizing) the input signals, and processing and displaying the waveform data. </font>
+</p>
+
+
+<p>
+  <a name="128955"> </a><font face="Verdana, Arial, Helvetica, sans-serif">As mentioned earlier, in JediPlus much of the acq/display cycle is implemented in HW to obtain the waveform update rates desired. Indeed, once the acq and display systems are configured, regular acq/display cycles proceed without intervention by the SigPath Mgr. When parametric measurements or math functions are enabled, the SW state machine in SigPath Mgr synchronizes itself with the state machines in the HW to provide the analysis cycles required. These typically run at a subharmonic of the HW acq/display cycles, but they can be forced into lock step when this is advantageous. The SigPath Mgr is also responsible for coordinating the acq/display cycle with all changes that affect the Signal Path. In this role, it provides an abstract, relatively simple, high level interface to the rest of the JediPLus SW for controlling the fundamental acq/display cycles. </font>
+</p>
+
+
+<p>
+  <a name="128970"> </a><font face="Verdana, Arial, Helvetica, sans-serif">As an example, suppose the UI has determined a change to an input attenuator is required. It alerts the SigPath Mgr to stop the acq/display cycle, uses the pertinent Vertical Driver SW functions to make the changes, and then reenables the signal path via the SigPath Mgr. The SigPath Mgr checks to insure the attenuator relay has settled and proceeds to start the cycle again. </font>
+</p>
+
+
+<p>
+  <a name="128983"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In the past, this functionality has been included in the Acquisition block because the control of the acq/display cycle was centered there. In JediPlus, the physical control of the acq/display cycle is distributed between the Acq and Display systems, and these different systems can be independently controlled. Therefore, the Signal Path Mgr has been identified as a unique functional block in JediPlus that serves as the main synchronizing agent between the four Signal Path blocks.</font>
+</p>
+
+
+<p>
+  <a name="128979"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For more detailed information on these topics see the following chapter titled the "Signal Path Manager".</font>
+</p>
+
+
+<h2>
+  <a name="128846"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-8  Signal Structures Overview</font>
+</h2>
+
+
+<p>
+  <a name="128089"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In JediPlus, the Signal Structures comprise the central repository for waveform records that represent the signals as they flow down the Signal Path. They include data that encapsulates the kind of signal in each structure, how they were captured and processed, and how they are represented on the display. Another benefit of the Signal Structures is they allow simple, abstract methods to be used by the host CPU for accessing waveform data. In essence, they help to keep waveform access methods and processing algorithms from changing substantially should the Acquisition System HW change.</font>
+</p>
+
+
+<p>
+  <a name="128136"> </a><font face="Verdana, Arial, Helvetica, sans-serif">As a central repository for signal information, the Signal Structures often contain pointers to subsidiary structures, rather than containing the structures themselves. In many cases the actual structures are located with the producer of the information. Here, the Signal Structures act as the central clearing house for waveform information, so consumers can access it without knowing the details of how or where it was produced. The point is to avoid redundant copies of the same information that must be kept current, while hiding the complexities of data production and storage from consumers that don't "need to know" about the internals of the system. </font>
+</p>
+
+
+<p>
+  <a name="129141"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The definitions for the data structures and methods that make up Signal Structures and their associated waveforms can be found in ../sw/jediPlus/include/signal.h </font>
+</p>
+
+
+<h2>
+  <a name="129036"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-9   Signal Structure Definitions</font>
+</h2>
+
+
+<p>
+  <a name="129079"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each Signal Structure contains a Signal header and pointers to the Waveforms associated with the signal. The header makes the connection between a signal and its associated MSO resource. The types of signals defined thus far in JediPlus products include: the AnalogSignal type for analog scope channels, the LogicSignal type for digital timing channels, and the FunctionSignal type for math functions. The form of the header is a constant for all these types of signals. The number of waveforms associated with each type of signal varies. </font>
+</p>
+
+
+<p>
+  <a name="129129"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The "Signal" type is defined to contain only the signal header information. This information tends to be invariant for a given signal. It identifies which kind of signal each structure is for. It also contains information that applies to all the waveforms attached to a signal. This definition of the Signal type allows a pointer to a Signal to be used for any of the kinds of signals. This allows for a simple API for accessing Signals based on the function getSignalPtr() which returns a pointer to the Signal identified by an enumerated sigId parameter.</font>
+</p>
+
+
+<p>
+  <a name="129112"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> The Signal (header) type contains the following members:</font>
+</p>
+
+<ul>
+  <li><a name="129098"> </a><font face="Verdana, Arial, Helvetica, sans-serif">checkSum - Checksum of signal. This is intended for use in the event that we do checksums when signals are saved and recalled from disc. </font>
+  <li><a name="129099"> </a><font face="Verdana, Arial, Helvetica, sans-serif">sigId - Unique identifier for signal </font>
+  <li><a name="129100"> </a><font face="Verdana, Arial, Helvetica, sans-serif">sigSrc - Source of signal, either ANALOG_SRC, FUNCTION_SRC or LOGIC_SRC. </font>
+  <li><a name="129101"> </a><font face="Verdana, Arial, Helvetica, sans-serif">srcNum - Unique identifier of signal source</font>
+  <li><a name="129102"> </a><font face="Verdana, Arial, Helvetica, sans-serif">name - User name for signal</font>
+  <li><a name="129103"> </a><font face="Verdana, Arial, Helvetica, sans-serif">dateTime - Time when signal was last made valid</font>
+  <li><a name="129104"> </a><font face="Verdana, Arial, Helvetica, sans-serif">fnId - Unique identifier of function that produced the waveforms</font>
+  <li><a name="129105"> </a><font face="Verdana, Arial, Helvetica, sans-serif">xUnits - Unit suffix for the x axis</font>
+  <li><a name="129106"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yUnits - Unit suffix for the y axis</font>
+</ul>
+
+<h2>
+  <a name="129198"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-10  Waveform Descriptions</font>
+</h2>
+
+
+<p>
+  <a name="129167"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Waveforms are the virtual containers for the data representing the signals at various stages in their progression down the Signal Path. The host uP performs analysis on these waveforms, rather than on the signals themselves. As stated, the different kinds of signals have different numbers of waveforms associated with them. The AnalogSignal structure for scopes contains pointers to eight waveforms. The LogicSignal structure for timing analysis contains pointers to four waveforms. The FunctionSignal structure for math functions contains pointers to two waveforms.</font>
+</p>
+
+
+<p>
+  <a name="129244"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The form of all waveforms is identical since they all are of type Waveform, defined in detail in the next section. Basically, the Waveform structure contains the header information for waveforms. This common type allows Waveform pointers to be used for accessing any waveform in any signal. The Waveform structure is made up of four sub-structures containing information on waveform status, waveform source, x-axis data and scaling, and y-axis data and scaling, respectively. Access to data and scaling information is provided via pointers. This supports the fact that waveform data is physically located in Acquisition RAM rather that System RAM, and it can be of variable length and contain a variety of formats. It also allows the same scaling structure to be used for multiple waveforms or even multiple signals (or channels). </font>
+</p>
+
+
+<h3>
+  <a name="129039"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-10.1  Analysis (Ans) Waveforms</font>
+</h3>
+
+
+<p>
+  <a name="129234"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The waveforms that are normally used by the host for analysis are called analysis waveforms. In JediPlus these waveforms are produced especially for consumption by the Signal Analysis Library (SAL). The mainAnsWave and dlydAnsWave records contain data that reflects the signal data on screen in the main and delayed sweep windows, respectively. Currently all the kinds of signals feature this kind of waveform. </font>
+</p>
+
+
+<h3>
+  <a name="129249"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-10.2  Analysis Waveform Data</font>
+</h3>
+
+
+<p>
+  <a name="129043"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The JediPlus products are display oriented. Waveform data for analysis by the host is produced by eavesdropping on the waveform data being generated for and plotted on the screen. This is key to understanding the formats for the analysis waveform records in each signal. </font>
+</p>
+
+
+<p>
+  <a name="129044"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In Muskrat, there are 1000 pixels across screen. In general, there is a packet of data produced that corresponds to each horizontal pixel column across screen. For scope data a record is made up of an array of packets, each containing the vertical information for two channels for a given pixel. For logic data, a record is made up of an array of packets, each containing the vertical information for eight channels (one timing pod) for one pixel. Descriptions of the contents of the packets for the supported waveform types appear below. </font>
+</p>
+
+
+<p>
+  <a name="129045"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Currently four waveform data types are supported for the main and delayed analysis records; two for scope (analog) data and two for logic analyzer (timing) data. The two scope waveform data types are called HiRes and BobMode data. The two logic waveform data types are Compressed and Expanded data.</font>
+</p>
+
+
+<p>
+  <a name="129046"> </a><font face="Verdana, Arial, Helvetica, sans-serif">HiRes Data is used for averaged scope data. Each pixel packet contains two 16 bit samples for channel 1 followed by two 16 bit samples for channel 2. Each sample has 12 bits of resolution left justified in the 16 bit sample, which allows the MSB of a sample to be read if 8 bit data is desired. There are 2000 16 bit samples per channel in a HiRes record.   BobMode Data is used for normal or peak detect data. A BobMode pixel packet consists of two 8 bit Low Frequency Dithered (LFD) samples, an 8 bit Min sample, and an 8 bit Max sample for channel 1, followed by two 8 bit LFD samples, an 8 bit Min sample, and an Max sample for channel 2. There are 2000 8 bit LFD samples, 1000 8 bit Min and 1000 8 bit Max samples per channel in a BobMode record.   Scope data samples on the Y axis is stored as unsigned (positive only) qLevels. QLevels can be transformed into data values with Y units (such as volts) by: Y(units) = qLevel * yInc + yOrg, where yInc is the Y units per qLevel and yOrg is the Y units offset at qLevel value 0. </font>
+</p>
+
+
+<p>
+  <a name="129047"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Logic data on the Y axis for each eight bit pod is packed into a 16 bit pixel packet, with two bits representing the logical state for a single channel (or bit).    In Compressed mode the encoding is: 00 = bit always in low state, 01 = bit always in high state, 10 = bit transitioned exactly once during sample period, 11 = bit transitioned multiple times during sample period. In Expanded mode the encoding is: 00 = bit always in low state, 01 = bit always in high state, 10 = NOT USED, 11 = hole in data (means NO change from previous state). There are 1000 2 bit samples per logic timing channel in a record.</font>
+</p>
+
+
+<p>
+  <a name="129540"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Currently all JediPlus waveform data on the X axis is implicitly defined. This means no X axis data is stored apart from the X scaling factors. In this case, the x-axis data pointer WaveData * will be NULL. Waveform data indexes into the virtual x array may be transformed to data values with x units by the transform: X(units) = dataIndex * xInc + xOrg, where xInc is the delta x units (sec) per data index and xOrg is the x units (sec) of offset at the middle of array bucket 0. </font>
+</p>
+
+
+<p>
+  <a name="129048"> </a><font face="Verdana, Arial, Helvetica, sans-serif">NOTE: Explicit x-axis data will be generated for remote transfer, but there is currently no plan to keep it around following the transfer. In the event that explicit x-axis data for a waveform needs to be stored internally, it can be accommodated simply by loading the pertinent WaveData pointer with the address of the storage buffer. </font>
+</p>
+
+
+<h3>
+  <a name="129049"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-10.3  Real-time (Rt) Waveforms</font>
+</h3>
+
+
+<p>
+  <a name="129276"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The next most common waveforms among the different kinds of signals are Real-time waveforms. These are single-shot waveforms acquired on each trigger by the Acq System. Both analog scope signals and logic timing signals contain pointers to two Real-time Waveforms, called the lastRtWave and the currRtWave. One contains data acquired on the last trigger and the other contains data for the current trigger. During normal operation the actual data for these records ping pong back and forth between two buffers in Acq Memory on each trigger that causes an acquisition to occur. Access to the waveform data in these records by the host CPU is only allowed when the acq/display cycle is stopped, since the host can't typically process these records at a rate that approaches the running acq/display cycle rate. </font>
+</p>
+
+
+<p>
+  <a name="129277"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The header information for these Real-time Waveform records is only updated when the acq/display cycle is stopped by the UI. This can occur due to either the stop key being pushed, or a pending change to the signal path's setup. After the acq/display cycle is stopped, the location and status of the data for each record is determined. Pointers to the Rt data and the associated validity flags are updated in the headers. If a trigger and hence a complete acquisition occurred since the cycle was last enabled, the pertinent setup and scaling information in the lastRtWave header is updated from the currentRtWave header. After the lastRtWave header has been rendered consistent with the lastRtWave data, the currentRtWave header is updated with the pending changes that take effect once the cycle is re-enabled and a trigger occurs. </font>
+</p>
+
+
+<h3>
+  <a name="129289"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-10.4  Equivalent-time (Et) Waveforms</font>
+</h3>
+
+
+<p>
+  <a name="129281"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The analog scope signals contain two Equivalent-time records built over many triggers when x-axis resolution greater than the minimum sample period is required. The mainEtWave and dlydEtWave records contain random repetitive data that reflects the signal data on screen in the main and delayed sweep windows, respectively. These records are referred to as "ensemble" waveforms since they built over multiple triggers by bucketizing points from the current RT record, that lie in the time window of interest. The time span and point resolution in these record is more than sufficient to plot the signals into the appropriate sweep window screen. </font>
+</p>
+
+
+<p>
+  <a name="129051"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Like for Real-time records, the header information for Equivalent-time Waveform records is only updated when the acq/display cycle is stopped by the UI. When these waveforms are not being produced the Waveform * will be NULL. There is some question whether these waveforms will need to be accessed by the host, since the analysis waveforms represent the same information in a compressed format. This NULL pointer scheme allows these records to be developed when they become a priority.</font>
+</p>
+
+
+<h3>
+  <a name="129315"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-10.5  Averaged (Ave) Waveforms</font>
+</h3>
+
+
+<p>
+  <a name="129313"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The analog scope signals contain two Averaged (Ave) Waveform records which are produced by the Acq System, when the "Average" math function is ON. The mainAveWave and dlydAveWave records contain averaged data that reflects the signal data on screen in the main and delayed sweep windows, respectively. These records are again referred to as "ensemble" waveforms since they are built by calculating an average value for the points falling in each "average bucket" using points from the appropriate RT or ET record over multiple triggers. The time span and point resolution in these record is more than sufficient to plot the signals into the appropriate window screen.</font>
+</p>
+
+
+<p>
+  <a name="129304"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Like for Real-time records, the header information for Averaged Waveform records is only updated when the acq/display cycle is stopped by the UI. When these waveforms are not being produced the Waveform * will be NULL. There is some question whether these waveforms will need to be accessed by the host, since the analysis waveforms represent the same information in a compressed format. This NULL pointer scheme allows these records to be developed when they become a priority. </font>
+</p>
+
+
+<h2>
+  <a name="128316"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-11  The Waveform Structure Definition</font>
+</h2>
+
+
+<p>
+  <a name="129330"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Waveform structure is a container for the header information for waveforms. In the current JediPlus products, the data for each waveform is physically located in a memory in the Acquisition System. The actual location is not important since access to the data is provided via a pointer in the associated header. Likewise, the format of the actual data is contained in the header, so the data can be read and interpreted correctly, without a detailed understanding of how it was produced. Indeed, one of the primary purposes of and justifications for the Signal Structure in JediPlus is to provide this abstraction layer for the data. Certainly, the physical location of data will change and most likely the formats for data will change too over the life of the JediPlus platform. The key to accessing and understanding waveform data, hence is the Waveform structure.</font>
+</p>
+
+
+<p>
+  <a name="128439"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Waveform structure used for all waveforms is composed of the following substructures: waveStatus, waveSrc, xAxis, and yAxis.</font>
+</p>
+
+
+<p>
+  <a name="128394"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The waveStatus structure contains status information about the waveform. It contains the following members:</font>
+</p>
+
+<ul>
+  <li><a name="128288"> </a><font face="Verdana, Arial, Helvetica, sans-serif">valid - A boolean that is TRUE when the data accurately represents the data on screen.</font>
+  <li><a name="128289"> </a><font face="Verdana, Arial, Helvetica, sans-serif">newData - A boolean that is TRUE when the data is fresh. This means is has not yet been analyzed by SAL.</font>
+  <li><a name="128668"> </a><font face="Verdana, Arial, Helvetica, sans-serif">waveType - An enum that indicates the basic type of waveform (e.g. REAL_TIME_WAVE, EQ_TIMWAVE, AVERAGE_WAVE, OR ANALYSIS_WAVE etc.) </font>
+  <li><a name="128664"> </a><font face="Verdana, Arial, Helvetica, sans-serif">waveDataType - An enum that indicates the basic type of wave data (e.g. HI_RES, or BOB_MODE, etc.) </font>
+  <li><a name="128291"> </a><font face="Verdana, Arial, Helvetica, sans-serif">complete - A boolean that is TRUE when the data has fully met its completion criteria. For Real-time records, complete = TRUE when valid = TRUE. For ensemble waveforms it is possible for complete = FALSE and valid =TRUE.</font>
+  <li><a name="128293"> </a><font face="Verdana, Arial, Helvetica, sans-serif">numTrigs - Number of triggers used to produce the data on screen. </font>
+
+<p>
+  <a name="128294"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Note: For Real-time records, numTrigs = 1. When numTrigs = 0, the flags valid = FALSE and complete = FALSE.</font>
+</p>
+
+  <li><a name="128295"> </a><font face="Verdana, Arial, Helvetica, sans-serif">numAves - Number of acquisitions used to produce an averaged waveform. For nonaveraged waveforms, numAves = 1.   </font>
+  <li><a name="128296"> </a><font face="Verdana, Arial, Helvetica, sans-serif">desiredAves -Number of acquisitions specified as the completion criteria for an averaged waveform. For nonaveraged waveforms, desiredAves = 1.   </font>
+</ul>
+
+<p>
+  <a name="128400"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The waveSrc structure contains source information about the waveform. Most of the waveform records in the Signal structure are derived by processing other waveforms records in the same Signal. For example the mainEtWave is produced from an ensemble of currRtWaves. This section basically links a given waveform back to the "source" waveform that was processed to generate it. The waveSrc sections contains the following members:</font>
+</p>
+
+<ul>
+  <li><a name="128401"> </a><font face="Verdana, Arial, Helvetica, sans-serif">srcWavePtr - Pointer to the header of the waveform that is the source of this waveform. </font>
+  <li><a name="128402"> </a><font face="Verdana, Arial, Helvetica, sans-serif">firstSrcPoint - The number of the 1st point in the source waveform that was used to produce this waveform.</font>
+  <li><a name="128403"> </a><font face="Verdana, Arial, Helvetica, sans-serif">numSrcPoints - The number of points in the source waveform record used to produce this waveform.</font>
+</ul>
+
+<p>
+  <a name="128485"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The xAxis structure contains a pointer to the waveforms' x axis data, and a pointer to the xScale structure, which contains the information for interpreting the x axis data. They are called the xDataPtr and the xScalePtr, respectively. Presently, the xDataPtr is NULL for JediPlus waveforms, even when they are valid. In this case, a NULL pointer indicates that the x axis data is implicitly, not explicitly defined. This means that the points are assumed to be equidistant and hence the x data value for any point can be determined using the xOrg and xInc parameters in the xScale structure below. The xDataPtr provides a mechanism for accessing explicit x axis data, should it become part of the feature set in the future. For scopes there is a xScale structure for each waveform, since each waveform has unique parameter settings. For logic channels, the xScale pointers will likely point to the same structure for all channels in a pod. </font>
+</p>
+
+
+<p>
+  <a name="128644"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> The xScale structure contains the following members:</font>
+</p>
+
+<ul>
+  <li><a name="128462"> </a><font face="Verdana, Arial, Helvetica, sans-serif">xOrg - Time value of the first point</font>
+  <li><a name="128299"> </a><font face="Verdana, Arial, Helvetica, sans-serif">xInc - Time between points </font>
+  <li><a name="128300"> </a><font face="Verdana, Arial, Helvetica, sans-serif">points - Number of points in the data record </font>
+
+<p>
+  <a name="128301"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Note: When accessing the complete set of data using a pointer in a loop, the loop counter range should be either (0 to points-1) or (1 to points). </font>
+</p>
+
+  <li><a name="128302"> </a><font face="Verdana, Arial, Helvetica, sans-serif">xFormat - A pointer to the structure that describes the organization of the points in the data packets that make up the data section of the waveform. The xFormat will vary as the waveType and waveDataType vary.</font>
+</ul>
+
+<p>
+  <a name="128477"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The yAxis structure contains a pointer to the waveforms' y axis data, and a pointer to the yScale structure which contains the information for interpreting the y axis data. They are called the yDataPtr and the yScalePtr, respectively. Currently, the y axis data is explicitly defined for waveforms in the JediPlus products, so the yDataPtr will not be NULL, when waveforms are valid. The yScale structure contains the following members:</font>
+</p>
+
+<ul>
+  <li><a name="128304"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yOrg - Voltage at the Qlevel specified as the yRef.</font>
+  <li><a name="128305"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yInc - Voltage represented by the increment between Qlevels </font>
+  <li><a name="128306"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yRef - The index for the Qlevel at center screen vertically.</font>
+  <li><a name="128307"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yEncode- A pointer to the structure the describes the encoding of scope Qlevels. It defines the min and max Qlevel values that can occur, and the values associated with holes in the data, etc. The yEncode will vary as the waveType and waveDataType vary.</font>
+</ul>
+
+<h2>
+  <a name="127463"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">19-12  Signal Structure API</font>
+</h2>
+
+
+<p>
+  <a name="128671"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Currently, the API to the Signal Structures is simple. It is based on an array of pointers, called the SignalPtr array. The SignalPtr array contains a pointer to each signal, indexed by the sigId parameter. The functions, shown below, use this array of pointers to provide the host CPU access to the signals and the waveforms associated with the signals.</font>
+</p>
+
+<ul>
+  <li><a name="128680"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Signal* getSignalPtr(enum sigId); /* Returns a pointer to the signal identified by sigId */</font>
+  <li><a name="128685"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Waveform* getAnalysisWavePtr(enum sigId, enum sweepId); /* Returns a pointer to the waveform record to analyze identified by sigId, and sweepId */</font>
+</ul>
+
+<p>
+  <a name="129354"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The getAnalysisWavePtr() function is intended to be used by the Signal Analysis Library. This function uses information in the signal path to determine which waveform SAL needs to analyze for a specified signal and sweep. Normally, this is an analysis waveform SAL needs for making measurements or producing math functions. By returning a pointer to the correct waveform to analyze, this access function abstracts most of the differences between scope, logic, and function signals from SAL, since all waveform records have identical form. </font>
+</p>
+
+
+<p>
+  <a name="128701"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In the event SAL needs access to other kinds of waveforms, other access functions will be implemented in a similar fashion. The fact that all waveforms have the same structure implies that most SAL processing algorithms will need not change to support the other kinds of waveforms. This scheme is intended to likewise support other kinds of signals that may be defined later.</font>
+</p>
+
+
+<p>
+  <a name="129379"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Since the Signal Structure lies directly between the Acquisition System and SAL, and is heavily used by both, it is reasonable to assume that both know a good deal about its structure. We could develop functions that use alternative parameters to select the signal and sweep of interest, if sigId and sweepId prove to be clumsy to use. We could also develop functions that return pointers to structures at deeper levels in the signal structure, if direct access to these levels would be commonly used. At this point, the need for alternative access functions has not surfaced. </font>
+</p>
+
+
+<p>
+  <a name="129375"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For the exact definitions for the structures and methods for accessing the Signal Structure, see the file ..sw/jediPlus/include/signal.h. </font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="trigDriver.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="acqMgr.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

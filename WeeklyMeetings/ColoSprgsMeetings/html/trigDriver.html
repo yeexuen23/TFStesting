@@ -1,0 +1,911 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:23:31 2002">
+<title>CHAPTER 18 Trigger Driver</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="timeDriver.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="signal.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="124832"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 18 	 Trigger Driver</font>
+</h1><hr>
+
+
+<h2>
+  <a name="130295"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">18-1  Overview</font>
+</h2>
+
+
+<p>
+  <a name="141214"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Trigger Driver is the software (SW) module that encapsulates the control of the trigger system for the JediPlus products. Logical Trigger Driver presents an Application Interface (API) that unifies and standardizes control over the logical blocks in the JediPlus trigger system. It accepts the trigger configuration parameters from the various trigger controls in the behavioral layer of the User Interface (UI) and maps it into the control parameters for the logical blocks in the trigger system. The primary purpose of this logical driver is to provide an abstraction layer interface between the UI controls in the behavioral layer of the UI and the product specific code that invokes the physical drivers to program the trigger HW.   This standard API facilitates quick development of the follow on JediPlus products since it isolates the SW changes needed to support different Trigger HW implementations, down in the Physical Trigger Driver. The Physical Trigger driver accepts the trigger control parameters for the logical trigger blocks and maps them into the form needed to program the physical components implementing the logical blocks. </font>
+</p>
+
+<a name="143160"> </a>FIGURE 43.&#32;  Trigger Driver Context Diagram<img src="images/trigDrivera.gif" height="275" width="624">
+
+<p>
+  <a name="144275"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Trigger Driver Context Diagram is a simplified view of the relationships between the Trigger Driver and the rest of the JediPlus SW System. Its shows the Logical Trigger Driver providing part of the hardware abstraction layer (HAL), between the UI and the Product Specific Trigger Driver. It shows the Product Specific Trigger Driver invoking the Physical Trigger Driver and the Physical Trigger Driver programming and monitoring the status of the trigger HW, that generated a system trigger to start each real-time acquisition.</font>
+</p>
+
+
+<h3>
+  <a name="144263"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">18-1.1  The Logical Trigger Driver APIs</font>
+</h3>
+
+
+<p>
+  <a name="144613"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Logical Trigger Driver in the JediPlus SW is composed of a data structure, called the Trigger Settings Template, and the set of functions that initialize, update, manipulate and propagate the information in the structure. The Trigger Template basically holds the state information for the Logical Trigger Driver. A simple view is that trigger settings information from the UI is passed into the driver and saved. This is used to generate additional control information for the various logical blocks in the Trigger System that is also saved. A mix of this UI and logic block information provides the basis for the API with the Physical Trigger Driver. The details of this API with the Physical Trigger Driver are presented in the next Section.</font>
+</p>
+
+
+<p>
+  <a name="144990"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The UI uses the Trigger Mode concept to present the capabilities of the trigger system to the user. Basically the user is forced to first select an appropriate Trigger Mode and then set up the features pertinent to the selected mode. In general, there are separate control mechanisms in the UI behavioral layer for a feature if it appears in multiple modes. This allows us to retain control settings when modes are switched or promote settings between modes when they are switched, based on usability tests. The chosen behavior is encapsulated in the interaction between controls in the UI, hence it is of no real consequence to Logical Trigger Driver. The Logical Trigger Driver is free to perceive each mode as a separate trigger with its own independent set of control parameters.</font>
+</p>
+
+
+<h4>
+  <a name="145143"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Trigger Template Structure </font>
+</h4>
+
+
+<p>
+  <a name="145173"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Like other Setting Templates in JediPlus, the Trigger Settings Template is conceptually made up of multiple sections, containing User Factors and Driver Factors. The TrigTemplate, defined in the file /jediPlus/include/dvrTrig.h, would typically contain distilled UI information called the Trigger User Factors. However, in this case the User Factor section is void so it only contains the trigger change register. The Trigger Driver Factors section, defined in the file jediPlus/hwDvr/include/dvrTrigUtil.h, consists of a change register, followed by a group of driver private parameters. The driver private parameters include some logical trigger state variables and private versions of several trigger calibration factors. The definitions are shown below:</font>
+</p>
+
+
+<p>
+  <a name="145049"> </a><font face="Verdana, Arial, Helvetica, sans-serif">/* Trigger Template definition */</font>
+</p>
+
+
+<p>
+  <a name="145050"> </a><font face="Verdana, Arial, Helvetica, sans-serif">typedef struct</font>
+</p>
+
+
+<p>
+  <a name="144411"> </a><font face="Verdana, Arial, Helvetica, sans-serif">{</font>
+</p>
+
+
+<p>
+  <a name="144414"> </a><font face="Verdana, Arial, Helvetica, sans-serif">    Change change;     /* Bitset indicating changes in trigger */</font>
+</p>
+
+
+<p>
+  <a name="144417"> </a><font face="Verdana, Arial, Helvetica, sans-serif">}</font>
+</p>
+
+
+<p>
+  <a name="144429"> </a><font face="Verdana, Arial, Helvetica, sans-serif">TrigTemplate;</font>
+</p>
+
+
+<p>
+  <a name="145113"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="145204"> </a><font face="Verdana, Arial, Helvetica, sans-serif">/* DvrTrigTemplate is used by the trigger driver for private storage. Note the top must be kept identical to the TrigTemplate in dvrTrig.h */</font>
+</p>
+
+
+<p>
+  <a name="145071"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="146587"> </a><font face="Verdana, Arial, Helvetica, sans-serif">#define TRIG_DVR_FACTORS\</font>
+</p>
+
+
+<p>
+  <a name="146567"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   TrigType trigType;        /* The current type of triggering */\</font>
+</p>
+
+
+<p>
+  <a name="146568"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   ChanId trigRef;           /* The current trig delay reference */\</font>
+</p>
+
+
+<p>
+  <a name="146569"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   int16 trigSkew;            /* Skew for the curr trig type and src */\</font>
+</p>
+
+
+<p>
+  <a name="146570"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   uint16 fineDurOscTune;      /* fine adjustment for duration osc */\</font>
+</p>
+
+
+<p>
+  <a name="146592"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   uint16 coarseDurOscTune;  /* coarse adjustment for duration osc */\</font>
+</p>
+
+
+<p>
+  <a name="146572"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   uint16 fineToOscTune;     /* fine adjustment for timeout osc */\</font>
+</p>
+
+
+<p>
+  <a name="146573"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   uint16 coarseToOscTune;   /* coarse adjustment for timeout osc */\</font>
+</p>
+
+
+<p>
+  <a name="146574"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   float32 tempAtOscTune;    /* temp when the osc was last tuned */\</font>
+</p>
+
+
+<p>
+  <a name="146578"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="146616"> </a><font face="Verdana, Arial, Helvetica, sans-serif">typedef struct</font>
+</p>
+
+
+<p>
+  <a name="146579"> </a><font face="Verdana, Arial, Helvetica, sans-serif">{</font>
+</p>
+
+
+<p>
+  <a name="146580"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   Change change;</font>
+</p>
+
+
+<p>
+  <a name="146581"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   TRIG_DVR_FACTORS;</font>
+</p>
+
+
+<p>
+  <a name="146582"> </a><font face="Verdana, Arial, Helvetica, sans-serif">} DvrTrigTemplate;</font>
+</p>
+
+
+<p>
+  <a name="146586"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="145196"> </a><font face="Verdana, Arial, Helvetica, sans-serif">#define TRIG_MUSK_FACTORS\</font>
+</p>
+
+
+<p>
+  <a name="146706"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   boolean chanInvert[N_ANALOG_CHANS];  /* Are the hw channels inverted */\</font>
+</p>
+
+
+<p>
+  <a name="146707"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   ChanId currEdgeSrc;          /* The current edge trig source spec */\</font>
+</p>
+
+
+<p>
+  <a name="146708"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   Slope currEdgePol;           /* The current edge trig polarity spec */\</font>
+</p>
+
+
+<p>
+  <a name="146709"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   ChanId currTvSrc;            /* The current TV trig source spec */\</font>
+</p>
+
+
+<p>
+  <a name="146710"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   Slope currTvPol;             /* The current TV trig polarity spec */\</font>
+</p>
+
+
+<p>
+  <a name="146711"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   StateData currState;         /* The current state trig event spec */\</font>
+</p>
+
+
+<p>
+  <a name="146712"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   PatternData currPattern;     /* The current pattern trig event spec */\</font>
+</p>
+
+
+<p>
+  <a name="146713"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   PatternData currSeqP1;       /* The current seq qual pattern event spec */\</font>
+</p>
+
+
+<p>
+  <a name="146714"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   PatternData currSeqP2;       /* The current seq trig pattern event spec */\</font>
+</p>
+
+
+<p>
+  <a name="146715"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   EdgeData currSeqE1;          /* The current seq qual edge event spec */\</font>
+</p>
+
+
+<p>
+  <a name="146716"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   EdgeData currSeqE2;          /* The current seq trig edge event spec */\</font>
+</p>
+
+
+<p>
+  <a name="146717"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   SequenceTrigger currTrig;    /* The current seq trig term spec */\</font>
+</p>
+
+
+<p>
+  <a name="146718"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   SequenceFind currFind;       /* The current seq find term spec */\</font>
+</p>
+
+
+<p>
+  <a name="146719"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   SequenceReset currReset;     /* The current seq reset term spec */\</font>
+</p>
+
+
+<p>
+  <a name="146720"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   PatternData currCombP1;      /* The current comb qual pattern event spec */\</font>
+</p>
+
+
+<p>
+  <a name="146721"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   PatternData currCombP2;      /* The current comb trig pattern event spec */\</font>
+</p>
+
+
+<p>
+  <a name="146722"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   EdgeData currCombE1;         /* The current comb qual edge event spec */\</font>
+</p>
+
+
+<p>
+  <a name="146723"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   EdgeData currCombE2;         /* The current comb trig edge event spec */\</font>
+</p>
+
+
+<p>
+  <a name="146724"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   SerialData currSerialI2CState  /* The current serial state trig spec */</font>
+</p>
+
+
+<p>
+  <a name="146725"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="146728"> </a><font face="Verdana, Arial, Helvetica, sans-serif">typedef struct</font>
+</p>
+
+
+<p>
+  <a name="146729"> </a><font face="Verdana, Arial, Helvetica, sans-serif">{</font>
+</p>
+
+
+<p>
+  <a name="146730"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   Change change;</font>
+</p>
+
+
+<p>
+  <a name="146731"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   TRIG_DVR_FACTORS;</font>
+</p>
+
+
+<p>
+  <a name="146732"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   TRIG_MUSK_FACTORS;</font>
+</p>
+
+
+<p>
+  <a name="146733"> </a><font face="Verdana, Arial, Helvetica, sans-serif">} MuskTrigTemplate;</font>
+</p>
+
+
+<p>
+  <a name="146603"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Like the other Setting Templates, only a pointer to the DvrTrigTemplate, called "dvrTrigPtr", is instantiated in the JediPlus software. A pointer to the TrigTemplate called "trigPtr" is also instantiated. This scheme allows the UI to be knowledgeable about the change flags in the Trigger Template, without being cognizant about the DvrTrigTemplate and its Driver Factors or the product specific factors. This supports the notion that the Driver Factors could be different between product family members without impacting the UI.</font>
+</p>
+
+
+<p>
+  <a name="146745"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The product specific trigger driver factors for muskrat are defined in muskTrigUtil.h. A pointer to the MuskTrigTemplate called muskTrigPtr is also defined in muskTrigUtil.h. There are no product specific trigger factors in puma so the PumaTrigTemplate looks just like the DvrTrigTemplate. </font>
+</p>
+
+
+<h4>
+  <a name="145299"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Trigger Driver Initialization Function</font>
+</h4>
+
+
+<p>
+  <a name="145300"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This initialization function is called once at power up to make sure the Logical Trigger Driver is properly initialized.</font>
+</p>
+
+<ul>
+  <li><a name="145301"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean initTriggerDvr(boolean verbose, boolean diagnostics); </font>
+
+<p>
+  <a name="145302"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Initializes the trigger data structures and the trigger HW.</font>
+</p>
+
+</ul>
+
+<h4>
+  <a name="145269"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Trigger Driver Entry Point Functions</font>
+</h4>
+
+
+<p>
+  <a name="145285"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The entry point functions for the Logical Trigger Driver are defined in /jediPlus/include/dvrTrig,h. Notice they are somewhat different than those found in other Logical Drivers because they are Mode oriented. Basically, there is one entry point that handles the control changes for each trigger mode. When UI trigger controls change they do not generate and update distilled User Factors in the Trigger Template. Instead they simply update their piece of the UI triggerSettings structure and mark their "modeConfiguration" dependent control. This causes the effector routine for the "modeConfiguration" dependent to run later, where the call to Logical Trigger Driver entry point routine for that mode is executed. Typically a pointer to the section of the UI triggerSettings structure for that mode is passed in to the entry point routine, which saves a complete copy of the settings for that mode in the Driver Factor section. This means that the entry point function for each mode gets called when any change effecting the mode occurs with all the pertinent information. The entry point routines basically configure the mode completely from scratch. The entry point functions are:</font>
+</p>
+
+<ul>
+  <li><a name="145311"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configEdgeTrig(ChanId src, Slope slope);</font>
+
+<p>
+  <a name="145396"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Edge Trigger Mode interface function.</font>
+</p>
+
+  <li><a name="145402"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configGlitchTrig(GlitchData *info);</font>
+
+<p>
+  <a name="145405"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Glitch Trigger Mode interface function.</font>
+</p>
+
+  <li><a name="145317"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configDurationTrig(GlitchData *timeInfo, DurationData *srcInfo);</font>
+
+<p>
+  <a name="145415"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Pattern Duration Trigger Mode interface function.</font>
+</p>
+
+  <li><a name="145320"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configPatternTrig(StateData *patInfo);</font>
+
+<p>
+  <a name="145421"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Simple Pattern Trigger Mode interface function.</font>
+</p>
+
+  <li><a name="145323"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configSequenceTrig(SequenceData *seqInfo);</font>
+
+<p>
+  <a name="145431"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Sequential Trigger Mode interface function.</font>
+</p>
+
+  <li><a name="145326"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configCombinationTrig(CombinationData * comb);</font>
+
+<p>
+  <a name="145437"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Combinational Trigger Mode interface function.</font>
+</p>
+
+  <li><a name="145443"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configI2CTrig(SerialData *serial);</font>
+
+<p>
+  <a name="147518"> </a><font face="Verdana, Arial, Helvetica, sans-serif">I2C Serial Trigger Mode interface function.</font>
+</p>
+
+  <li><a name="147513"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configSpiTrig(SerialData *serial);</font>
+
+<p>
+  <a name="147522"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SPI Serial Trigger Mode interface function.</font>
+</p>
+
+  <li><a name="147514"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configCanTrig(SerialData *serial);</font>
+
+<p>
+  <a name="147526"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CAN Serial Trigger Mode interface function.</font>
+</p>
+
+  <li><a name="147515"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configUsbTrig(SerialData *serial);</font>
+
+<p>
+  <a name="147516"> </a><font face="Verdana, Arial, Helvetica, sans-serif">USB Serial Trigger Mode interface function.</font>
+</p>
+
+  <li><a name="145333"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configTvTrig(TvData *info);</font>
+
+<p>
+  <a name="145447"> </a><font face="Verdana, Arial, Helvetica, sans-serif">TV Trigger Mode interface function.</font>
+</p>
+
+
+<p>
+  <a name="146757"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</ul>
+
+<p>
+  <a name="146762"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Note that all of the logical layer entry point functions begin with the prefix "config". </font>
+</p>
+
+
+<h4>
+  <a name="146772"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Logical Trigger Driver Utilities</font>
+</h4>
+
+
+<p>
+  <a name="146773"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The utility functions described below allow the rest of JediPlus system to access trigger functionality that is global in nature. These access functions include:</font>
+</p>
+
+<ul>
+  <li><a name="146774"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setTrigHoldoff(float64 holdoff);</font>
+
+<p>
+  <a name="146775"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Sets up the Trigger Holdoff block in the trigger system</font>
+</p>
+
+  <li><a name="146776"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint16 getTrigSysStatus(boolean destructive);</font>
+  <li><a name="146778"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean trigEventsOcurring(uint16 status);</font>
+
+<p>
+  <a name="147532"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns latched h trig result, which is true when valid trigger events are occurring.</font>
+</p>
+
+  <li><a name="146780"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean trigEventsProcessed(uint16 status);</font>
+
+<p>
+  <a name="147538"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns latched s trig results, which are true when the trigger system is armed by the acq system and either a) autotriggering is active or b) trigger events are occurring.</font>
+</p>
+
+  <li><a name="147488"> </a><font face="Verdana, Arial, Helvetica, sans-serif">exern initAutoLevel(void);</font>
+  <li><a name="147544"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean executeAutoLevel(ChanTemplate *chanTemplate,Float64StepLimits *limits);</font>
+
+<p>
+  <a name="147550"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Auto level interface</font>
+</p>
+
+  <li><a name="146783"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean needToResetTrig(void);</font>
+
+<p>
+  <a name="146784"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Reset trigger interface</font>
+</p>
+
+  <li><a name="147491"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean needToCompensateTrig(void);</font>
+  <li><a name="147505"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void compensateTrig(void);</font>
+
+<p>
+  <a name="147506"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Startable Oscillator Tuning Interface.</font>
+</p>
+
+  <li><a name="147507"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean trigSystemArmed(uint16 status);</font>
+
+<p>
+  <a name="146789"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns true when the acq system is in the acquisition loop.</font>
+</p>
+
+  <li><a name="147557"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setAutoTrig(boolean onOrOff);</font>
+  <li><a name="147558"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void performCounterMeas(ChanId chan, float32 gateTime);</font>
+  <li><a name="147559"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern CounterState getCounterFreq(float64 *freq, float64 *resolution);</font>
+
+<p>
+  <a name="146793"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Counter interface, getCounterFreq() returns 0 if counting, 1 if done, 2 if no counts received.</font>
+</p>
+
+</ul>
+
+<p>
+  <a name="146764"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="146800"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">18-1.2  The Logical Trigger Model</font>
+</h3>
+
+
+<p>
+  <a name="146801"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The logical model for the JediPlus Trigger System is shown in the figure below. The inputs to the logical model are logical versions of the trigger sources. These are the outputs of the trigger conditioning and trigger comparator blocks, which lie in the vertical paths for the analog channels, external trigger channels and timing pods. At this point the trigger inputs have already been compared to the trigger thresholds and appear as square waves with transitions at each signal / threshold crossing. </font>
+</p>
+
+<a name="146920"> </a>FIGURE 44.&#32; The Logical Model of the JediPlus Trigger System<img src="images/trigDriver2.gif" height="506" width="624">
+
+<p>
+  <a name="146921"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The functional blocks in the logical trigger model include the simple Edge Trigger, the Pattern Duration Trigger, the State Trigger, the TV Trigger, the Sequence Trigger, the Serial Trigger, the Combination Trigger and the Trigger Type Selector. The first seven blocks are mode specific blocks, where the last block, the Trigger Type Selector, is used by all modes. Two blocks must be configured for each trigger mode, one mode specific and the Trigger Type Selector. A brief description of each block follows.</font>
+</p>
+
+
+<h4>
+  <a name="146922"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Edge Trigger Block</font>
+</h4>
+
+
+<p>
+  <a name="146923"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Edge Trigger block consists of an edge detector that determines the source signal and polarity of the event that causes the trigger. It is used in the basic edge trigger mode. </font>
+</p>
+
+
+<h4>
+  <a name="146924"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Pattern Duration Block</font>
+</h4>
+
+
+<p>
+  <a name="146925"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Pattern Duration Trigger block consists of a pattern detector that determines the logical combination of source signals and their logic levels (H,L,X) that can causes the trigger. Patterns that meet the pattern detector criteria are further qualified by a duration counter block that determines the upper and/or lower limits for the pattern duration that actually causes trigger. </font>
+</p>
+
+
+<p>
+  <a name="146926"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This block is used in Pattern Duration Trigger mode where any combination of the analog channels and digital timing bits can be included in the pattern specification. It is also used in Pulse Width Trigger Mode where a single analog channel or digital bit must be used for the pattern specification. </font>
+</p>
+
+
+<h4>
+  <a name="146927"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">State Trigger Block</font>
+</h4>
+
+
+<p>
+  <a name="146928"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The State Trigger Block consists of a pattern detector that enables the trigger when the logical combination of source signals and their logic levels is met, and an edge detector that causes the trigger when the specified signal transition occurs. </font>
+</p>
+
+
+<p>
+  <a name="146929"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This block is used in the simple Pattern Trigger mode where any combination of the analog channels and digital timing bits can be included in the pattern qualifier specification, except for a signal that is specified as the edge source, (or state clock). </font>
+</p>
+
+
+<h4>
+  <a name="146930"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">TV Trigger Block</font>
+</h4>
+
+
+<h4>
+  <a name="146931"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The TV Trigger Block consists of two specialized trigger blocks that allow triggering on most serial video streams. The TV mode selector determines the video standard, field, line number, etc. that will cause the trigger when detected. The TV Source selector determines which analog channel is fed into the TV mode selector.</font>
+</h4>
+
+
+<p>
+  <a name="146932"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This block is used exclusively in the Advanced TV Trigger mode, but the Source Selector MUX must be disabled when it is not in use. </font>
+</p>
+
+
+<h4>
+  <a name="146933"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Sequential Trigger Block</font>
+</h4>
+
+
+<p>
+  <a name="146934"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Sequential Trigger Block consists of two pattern detectors, two edge detectors, an event counter, and timeout counter and a sequencer block. The pattern and edge detectors are used for specifying trigger terms, which can be logically combined to create events. Occurrences of these events, or a timeout event, are then used to define the find, trigger and reset stages implemented by the sequence block. </font>
+</p>
+
+
+<p>
+  <a name="146935"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This block is used in the advanced Sequence Trigger mode where any combination of the analog channels and digital timing bits can be included in the pattern or edge term specifications. The timeout event is only used in the reset sequence stage, currently.</font>
+</p>
+
+
+<h4>
+  <a name="146936"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Serial Trigger Block</font>
+</h4>
+
+
+<p>
+  <a name="146937"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Serial Trigger Block consists of a serial data source selector, and serial clock source selector and a serial pattern selector. These can be used to specify phenomena in serial data streams to trigger on such as the beginning and end of frames, occurrence of special data or address packets, etc. </font>
+</p>
+
+
+<p>
+  <a name="146938"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This block is used in the advance I2C trigger mode. Any analog channel or digital timing bit can be selected as the clock or data source.   Trigger can be specified to occur on the I2C start condition, stop condition, or on frames containing reads/writes of specific 16 bit serial address/data values.</font>
+</p>
+
+
+<h4>
+  <a name="146939"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Combinational Trigger Block</font>
+</h4>
+
+
+<p>
+  <a name="146940"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Combinational Trigger Block consists of two pattern detectors, and two edge detectors that can be combined logically using boolean algebra to generate triggers. </font>
+</p>
+
+
+<p>
+  <a name="146941"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Currently this block is not used by any of the trigger modes implemented. </font>
+</p>
+
+
+<h4>
+  <a name="146942"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Trigger Type Selector Block</font>
+</h4>
+
+
+<p>
+  <a name="146943"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Trigger Type Selector Block must be set up for each mode described above. It can be thought of as the block that maps the various HW trigger resources into the arrangement needed to implement a given mode. It consists of trigger resource blocks, trigger routing blocks, an event counter and a timer block. The resource blocks allow the various pattern and edge detectors to be combined logically to form the qualification and/or trigger events used by the modes above. The routing blocks accomplish several tasks, They route the inputs and outputs of the resource blocks, the timer, the event counter, the sequencer, etc. for the trigger mode in effect. They also disconnect the blocks not being utilized in a benign manner, so they don't effect triggering Finally, they make the final determination of the trigger event passed on the Acq System HW as the System Trigger. </font>
+</p>
+
+
+<h4>
+  <a name="146944"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Trigger Holdoff Block</font>
+</h4>
+
+
+<p>
+  <a name="146945"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Trigger Holdoff Block controls the cycle time of the trigger system in all trigger modes. It consists of a Holdoff counter that must be counted down to zero before the trigger system is armed. The user can specify a trigger holdoff time that effectively gates off events that would otherwise cause a trigger.</font>
+</p>
+
+
+<h4>
+  <a name="146946"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Trigger Control Block </font>
+</h4>
+
+
+<p>
+  <a name="146947"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Trigger Control Block provides holistic control over the complete Trigger System. It consists of the master trigger control flip flop, that completely enables or disables triggering. It also supports the notions of restarting (resetting) the trigger system and auto-triggering. </font>
+</p>
+
+
+<h3>
+  <a name="146766"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">18-1.3  The Product Specific Trigger Driver APIs</font>
+</h3>
+
+
+<p>
+  <a name="146950"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The product Specific Trigger Driver takes care of any product specific functionality that is necessary and then calls in to the physical layer to set up the hardware. In Muskrat the product specific layer takes care of the hardware inversion in the front end (more about this in the next paragraph) and stores the trigger factors in the muskTrigTemplate. In Puma the product specific layer programs the high speed trigger path (Hamster). </font>
+</p>
+
+
+<p>
+  <a name="146963"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In Muskrat the analog channels sometimes invert when their vertical gain is changed. This causes the polarity of the trigger signals to change on some vertical gain changes. Since the UI controls that detect the vertical channel inversion do not have any knowledge of the trigger mode in effect, they have no way to determine what adjustments need to be made to the trigger edge and pattern detectors being utilized. In this case the Logical Channel Driver, which has determined that a channel inversion has occurred, calls the special Product Specific Trigger entry point function below: </font>
+</p>
+
+<ul>
+  <li><a name="145487"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean setTrigChanPreampInvert(AnalogChanId chan, boolean hwInvert);</font>
+
+<p>
+  <a name="145478"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This function is passed the channel Id for the channel whose polarity has changed and the current state of the hardware invert parameter. Using these, it updates the private chanInvert[] array in the muskrat trigger Template. Then it calls the appropriate entry point function for the current mode, described in the section above, based on the private trigType factor in the template. It passes the copy of the trigSettings for the current mode, saved earlier, so the entry point has all the information required to configure the mode completely.</font>
+</p>
+
+
+<p>
+  <a name="147010"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</ul>
+
+<h4>
+  <a name="147011"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Product Specific Trigger Driver Initialization Functions</font>
+</h4>
+
+<ul>
+  <li><a name="147012"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void initTrigTemplates(void);</font>
+  <li><a name="147013"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean initTrigHw(boolean verbose, boolean diagnostics);</font>
+  <li><a name="147014"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void initTrigDvrFactors(void);</font>
+</ul>
+
+<h4>
+  <a name="147016"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Product Specific Trigger Driver Entry Points</font>
+</h4>
+
+<ul>
+  <li><a name="147017"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progTimeInterpRandomizing(boolean on);</font>
+  <li><a name="147019"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progAutoTrigger(boolean on);</font>
+  <li><a name="147021"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progTrigType(TrigType newType);</font>
+  <li><a name="147023"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progEdgeTrig(ChanId chan, Slope slope);</font>
+  <li><a name="147024"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progGlitchTrig(GlitchData *glitchInfo);</font>
+  <li><a name="147025"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progDurationTrig(PatternData *patternInfo);</font>
+  <li><a name="147026"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progPatternTrig(StateData *stateInfo);</font>
+  <li><a name="147027"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progTvTrig(TvData *tvInfo);</font>
+  <li><a name="147028"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progSerialI2CChans(ChanId clockSource, Slope clockSlope,</font>
+
+<p>
+  <a name="147029"> </a><font face="Verdana, Arial, Helvetica, sans-serif">                                                ChanId dataSource, Slope dataPolarity);</font>
+</p>
+
+  <li><a name="147030"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progSerialI2CTrig(SerialData *serial);</font>
+  <li><a name="147032"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progSequencePattern1(PatternData *patInfo);</font>
+  <li><a name="147033"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progSequencePattern2(PatternData *patInfo, SequenceTrigger trigger,</font>
+
+<p>
+  <a name="147035"> </a><font face="Verdana, Arial, Helvetica, sans-serif">                                                    SequenceReset reset);</font>
+</p>
+
+  <li><a name="147036"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progSequenceEdge1(EdgeData *edgeInfo);</font>
+  <li><a name="147037"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progSequenceEdge2(EdgeData *edgeInfo, SequenceTrigger trigger,</font>
+
+<p>
+  <a name="147039"> </a><font face="Verdana, Arial, Helvetica, sans-serif">                                                 SequenceReset reset);</font>
+</p>
+
+  <li><a name="147040"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progSequenceEventCount(uint16 eventCount, SequenceTrigger mode);</font>
+  <li><a name="147041"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progSequenceTimeout(float64 timeout, SequenceFind find,</font>
+
+<p>
+  <a name="147043"> </a><font face="Verdana, Arial, Helvetica, sans-serif">                                                    SequenceTrigger trigger, SequenceReset reset);</font>
+</p>
+
+  <li><a name="147186"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progSequencer(SequenceFind find, SequenceTrigger trigger,</font>
+
+<p>
+  <a name="147188"> </a><font face="Verdana, Arial, Helvetica, sans-serif">                                        SequenceReset reset);</font>
+</p>
+
+  <li><a name="147048"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progSequenceTrig(SequenceData *sequenceInfo);</font>
+  <li><a name="147050"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progCombinationPattern1(PatternData *patInfo);</font>
+  <li><a name="147051"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progCombinationPattern2(PatternData *patInfo);</font>
+  <li><a name="147052"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progCombinationEdge1(EdgeData *edgeInfo);</font>
+  <li><a name="147053"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progCombinationEdge2(EdgeData *edgeInfo);</font>
+  <li><a name="147054"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progCombinationTrig(CombinationData *combinationInfo);</font>
+  <li><a name="147056"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progToutDuration(float64 *toutTime);</font>
+  <li><a name="147057"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progMinDuration(float64 *minTime);</font>
+  <li><a name="147058"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void progMaxDuration(float64 *maxTime);\</font>
+</ul>
+
+<p>
+  <a name="147070"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="147071"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Note that the Product Specific Trigger Driver functions begin with the prefix "prog". </font>
+</p>
+
+
+<h4>
+  <a name="147059"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Product Specific Trigger Driver Utilities</font>
+</h4>
+
+<ul>
+  <li><a name="147072"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setTvTrigInputMux(TvTrigSrc src);</font>
+  <li><a name="147074"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void enableTvTrigMux(void);</font>
+  <li><a name="147075"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void disableTvTrigMux(void);</font>
+  <li><a name="147077"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setDelayAdjust(uint16 dacSetting);</font>
+  <li><a name="147078"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setOscCoarseTune(uint16 dacSetting);</font>
+  <li><a name="147079"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setOscFineTune(uint16 dacSetting);</font>
+</ul>
+
+<h3>
+  <a name="146442"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">18-1.4  The Physical Trigger Driver APIs</font>
+</h3>
+
+
+<p>
+  <a name="146329"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Physical Trigger Driver converts logical information passed in by the Product Specific Trigger Driver into the physical information needed by the HW components and programs them. The API with the Logical Trigger Driver is shown here. The API to the Trigger HW components in the JediPlus Products are described in the chapters titled CACTUS Trigger Driver (for MUSKRAT and PUMA) HAMSTER Trigger Driver(PUMA only). </font>
+</p>
+
+
+<h4>
+  <a name="146330"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Physical Trigger Driver Initialization Functions</font>
+</h4>
+
+
+<p>
+  <a name="146334"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void initMainTrigHw(boolean hasHighSpeedPath);</font>
+</p>
+
+
+<p>
+  <a name="146336"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean initTrigHw(boolean verbose, boolean diagnostics);</font>
+</p>
+
+
+<h4>
+  <a name="145597"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Physical Trigger Driver Entry Point Functions </font>
+</h4>
+
+
+<p>
+  <a name="146188"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The entry point functions for the Physical Trigger Driver are defined in /jediPlus/hwDvr/include/dvrTrigUtil.h. These functions are called from the Product Specific Trigger Driver which passes logical parameters into the Physical Trigger Driver, where they are converted to HW specific programming factors used to program the actual trigger components. Notice most of these entry point functions are defined in terms of the logical blocks described in the previous section.</font>
+</p>
+
+
+<p>
+  <a name="146199"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Physical Trigger Driver entry point functions include:</font>
+</p>
+
+<ul>
+  <li><a name="147083"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgAutoTrigger(boolean on);</font>
+  <li><a name="147088"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgTrigType(TrigType newType);</font>
+  <li><a name="147090"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgEdgeTrig(ChanId chan, Slope slope);</font>
+  <li><a name="147091"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgGlitchTrig(GlitchData *glitchInfo);</font>
+  <li><a name="147092"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgDurationTrig(PatternData *patternInfo);</font>
+  <li><a name="147093"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgPatternTrig(StateData *stateInfo);</font>
+  <li><a name="147094"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgTvTrig(TvData *tvInfo);</font>
+  <li><a name="147095"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgSerialI2CChans(ChanId clockSource, Slope clockSlope,</font>
+
+<p>
+  <a name="147096"> </a><font face="Verdana, Arial, Helvetica, sans-serif">                                              ChanId dataSource, Slope dataPolarity);</font>
+</p>
+
+  <li><a name="147097"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgSerialI2CTrig(SerialData *serial);</font>
+  <li><a name="147099"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgSequencePattern1(PatternData *patInfo);</font>
+  <li><a name="147100"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgSequencePattern2(PatternData *patInfo, SequenceTrigger trigger,</font>
+
+<p>
+  <a name="147102"> </a><font face="Verdana, Arial, Helvetica, sans-serif">                                                  SequenceReset reset);</font>
+</p>
+
+  <li><a name="147103"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgSequenceEdge1(EdgeData *edgeInfo);</font>
+  <li><a name="147104"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgSequenceEdge2(EdgeData *edgeInfo, SequenceTrigger trigger,</font>
+
+<p>
+  <a name="147106"> </a><font face="Verdana, Arial, Helvetica, sans-serif">                                              SequenceReset reset);</font>
+</p>
+
+  <li><a name="147107"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgSequenceEventCount(uint16 eventCount, SequenceTrigger mode);</font>
+  <li><a name="147108"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgSequenceTimeout(float64 timeout, SequenceFind find,</font>
+
+<p>
+  <a name="147110"> </a><font face="Verdana, Arial, Helvetica, sans-serif">                                                 SequenceTrigger trigger, SequenceReset reset);</font>
+</p>
+
+  <li><a name="147112"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgSequencer(SequenceFind find, SequenceTrigger trigger, SequenceReset reset);</font>
+  <li><a name="147115"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgSequenceTrig(SequenceData *sequenceInfo);</font>
+  <li><a name="147117"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgCombinationPattern1(PatternData *patInfo);</font>
+  <li><a name="147118"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgCombinationPattern2(PatternData *patInfo);</font>
+  <li><a name="147119"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgCombinationEdge1(EdgeData *edgeInfo);</font>
+  <li><a name="147120"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgCombinationEdge2(EdgeData *edgeInfo);</font>
+  <li><a name="147121"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgCombinationTrig(CombinationData *combinationInfo);</font>
+  <li><a name="147123"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgToutDuration(float64 *toutTime);</font>
+  <li><a name="147124"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgMinDuration(float64 *minTime);</font>
+  <li><a name="147125"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgMaxDuration(float64 *maxTime);</font>
+  <li><a name="147127"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void cfgTvTrigSrc(ChanId source, Slope slope);</font>
+</ul>
+
+<p>
+  <a name="147128"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="147161"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Note that the Product Specific Trigger Driver functions begin with the prefix "cfg". </font>
+</p>
+
+
+<p>
+  <a name="147162"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="timeDriver.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="signal.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

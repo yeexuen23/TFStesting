@@ -1,0 +1,500 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:23:16 2002">
+<title>CHAPTER 16 Plot Driver</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="chanDriver.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="timeDriver.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="124832"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 16 	 Plot Driver</font>
+</h1><hr>
+
+
+<h2>
+  <a name="130295"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">16-1  Overview</font>
+</h2>
+
+
+<p>
+  <a name="144219"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Plot Driver is the SW (software) module that encapsulates the control of the waveform plot HW (hardware) in the JediPlus products. The Logical Plot Driver presents an Application Interface (API) that unifies and standardizes control over the logical blocks in the JediPlus plot system. It accepts the plot configuration parameters from the various acquistion and timebase controls in the behavioral layer of the User Interface (UI) and maps them into the control parameters for the logical blocks in the plot system. The primary purpose of this logical driver is to provide an abstraction layer between the reusable UI controls and the product specific physical drivers that program the Plot HW.   This standard API facilitates quick development of follow on JediPlus products since it isolates the SW changes needed to support different Plot HW implementations, down in the Physical Plot Driver. The Physical Plot driver takes the control parameters for the logical plot blocks and processes them into the form needed to program the physical components implementing the logical blocks. </font>
+</p>
+
+<a name="132797"> </a>FIGURE 40.&#32; <img src="images/plotDrivera.gif" height="324" width="624">
+ Plot Driver Context Diagram
+<p>
+  <a name="144260"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Plot Driver Context Diagram is a simplified view of the relationships between the Plot Driver and the rest of the JediPlus SW System. The Plot HW is programmed using Physical Plot Driver functions. These Physical Driver functions are called via the Logical Plot Driver functions.  This diagram shows the Logical Plot Driver providing part of the hardware abstraction layer (HAL), between the UI and the Physical Plot Driver. The Logical Plot Driver functions, are typically called from the effector functions of appropriate acq or plot control mechanisms, in the behavioral layer of the UI, as setting are changed. Occasionally, a Logical Plot Driver function, involved in acq/display cycle control, may be called from the Signal Path Mgr, when the state of the acq/display cycle is changed.   The Plot System HW produces the signal graphics frames that are displayed on the CRT. Waveform data used to create the graphics frames is delivered to the Plot HW by the Acq HW as part of each acq/display cycle, managed by the Signal Path Mgr. </font>
+</p>
+
+
+<p>
+  <a name="144268"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Because special emphasis is placed on superior waveform displays in the JediPlus product family, much of the instruments' fundamental waveform acq/display cycle has been implemented in hardware.  In MUSKRAT the acq/display cycle has basically been optimized for update rate. In PUMA, the emphasis is shifted towards parametric performance consistent with higher bandwidth products. These differences have resulted in significant differences in the HW partitioning between the MUSKRAT and PUMA product lineages.  These plot drivers hence were designed to accomodated multiple HW implementations. They are organized into two layers, Logical Drivers and Physical Drivers, to handle the mapping of logical HW functionality into the physical HW implementations. </font>
+</p>
+
+
+<h3>
+  <a name="144274"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">16-1.1  The Logical Plot Driver APIs</font>
+</h3>
+
+
+<p>
+  <a name="144275"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Logical Plot Driver in the JediPlus SW is composed of a set data structures, called the Plot Settings Templates, and the set of functions that initialize, update, manipulate and propagate the information in these structures. The Plot Templates basically hold the state information for the Logical Plot Driver. A simple view is that distilled waveform acquisition and scaling information from the UI is saved in the Acq Templates, Sweep Templates and Channel Temapltes. This is used by the Logical Plot Drivers to generate the control information for the various logical blocks in the Plot System, which is saved in the Plot Templates .  The Plot Temapltes provide the basis for the API between the Logical and  the Physical Plot Driver. The details of this API with the Physical Driver are presented in the next Section.</font>
+</p>
+
+
+<h4>
+  <a name="144281"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Plot Template Structure </font>
+</h4>
+
+
+<p>
+  <a name="144282"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Unlike other Setting Templates in JediPlus, the Plot Settings Templates don't contain USER_FACTORS.  Basically, the user factors and change flags used by the plot driver already exist in the Acq, Sweep and Channel Templates.  At this point, the Plot Templates are strictly made up of  Generic Driver Facors.</font>
+</p>
+
+
+<p>
+  <a name="144301"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The PlotTemplate structure, defined in the file jediPlus/hwDvr/include/dvrPlotUtil.h, consists of driver private parameters that are common to all JediPlus instruments.  The definitions are shown below:</font>
+</p>
+
+<pre>
+<a name="144515"> </a>typedef struct
+<a name="144517"> </a>{
+<a name="145428"> </a>   uint32 plotDecim;
+<a name="145434"> </a>   int64 timeLeftEdge;
+<a name="144518"> </a>   int32 sampPerBucketWhole;
+<a name="144519"> </a>   int32 sampPerBucketFraction;
+<a name="145440"> </a>   int32 finalSPBWhole;
+<a name="144520"> </a>   int32 initSPBWhole;
+<a name="144521"> </a>   int32 chan1InitSPBFraction;
+<a name="145448"> </a>   int32 chan1TIOffset;
+<a name="144522"> </a>   int64 chan1OffsetSamp;
+<a name="145460"> </a>   int32 chan2InitSPBFraction;
+<a name="145461"> </a>   int32 chan2TIOffset;
+<a name="145462"> </a>   int64 chan2OffsetSamp;
+<a name="145466"> </a>   int32 chan3InitSPBFraction;
+<a name="145467"> </a>   int32 chan3TIOffset;
+<a name="145468"> </a>   int64 chan3OffsetSamp;
+<a name="145472"> </a>   int32 chan4InitSPBFraction;
+<a name="145473"> </a>   int32 chan4TIOffset;
+<a name="145474"> </a>   int64 chan4OffsetSamp; 
+<a name="144532"> </a>   uint16 firstBucket;
+<a name="144535"> </a>   uint16 finalBucket;
+<a name="145454"> </a>   uint16 sampPerBucketScale;
+<a name="144536"> </a>   int16 expansion;
+<a name="144542"> </a>   float chan1PixOffset;
+<a name="144543"> </a>   float chan1Mag;
+<a name="144544"> </a>   float chan2PixOffset;
+<a name="144545"> </a>   float chan2Mag;
+<a name="144546"> </a>   float chan3PixOffset;
+<a name="144547"> </a>   float chan3Mag;
+<a name="144548"> </a>   float chan4PixOffset;
+<a name="144549"> </a>   float chan4Mag;
+<a name="144550"> </a>   float func1PixOffset;
+<a name="144551"> </a>   float func1Mag;
+<a name="144552"> </a>   float func2PixOffset;
+<a name="144553"> </a>   float func2Mag;
+<a name="144554"> </a>   uint32 initRecAddrP0;
+<a name="144555"> </a>   uint32 initRecAddrP1;
+<a name="144556"> </a>   boolean chan1Chan2Separate;
+<a name="145479"> </a>   boolean chan3Chan4Separate;
+<a name="145480"> </a>}
+<a name="144557"> </a>PlotTemplate;
+</pre>
+
+<p>
+  <a name="144325"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The plot templates are part of the API between the Logical Plot Driver and Physical Plot Drivers.   Both the MUSKRAT and PUMA products instanciate eight PlotTemplate structures in jediPlus/hwDvr/generic/dvrPlot.c.  They are called: currMainScopePlot, lastMainScopePlot, currDlydScopePlot, lastDlydScopePlot, currMainLogicPlot, lastMainLogicPlot, currDlydLogicPlot, and lastDlydLogicPlot.  Each one of these templates corresponds to a window where waveforms are plotted.  In general, they contain logical information describing how to produce "fast" plots of the waveforms in the window, from the acquired data.  Fast plots use a subset of the acquired data, called decimated data.  High quality plots do not have plot templates associated with them because the HW innately knows how to plot waveforms using all the acquired data. </font>
+</p>
+
+
+<h4>
+  <a name="144571"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif"> Plot Driver Initializion Functions</font>
+</h4>
+
+
+<p>
+  <a name="144331"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This initialization function is called once at power up to make sure the Logical Plot Driver is properly initialized.</font>
+</p>
+
+<ul>
+  <li><a name="145642"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean initPlotDvr(boolean verbose, boolean diagnostics); </font>
+
+<p>
+  <a name="144333"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Initializes the Plot data structures and the Plot HW.</font>
+</p>
+
+</ul>
+
+<h4>
+  <a name="144336"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Logical Plot Driver Entry Point Functions</font>
+</h4>
+
+
+<p>
+  <a name="144337"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The entry point functions for the Logical Plot Driver are defined in /jediPlus/include/dvrPlot.h.  When controls change that effect the Plot System they typically mark a dependent "meta control", that is responsible for getting the waveforms in the active windows replotted.  This causes the effector routine for the "meta control"  to run later, where the call is made to the Logical Plot Driver entry point routine. There are meta controls that handle x-axis plot changes,  y-axis plot changes, smart slew changes and intensity changes.  The entry point functions are:</font>
+</p>
+
+<ul>
+  <li><a name="144622"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configYPlot(void);</font>
+  <li><a name="144624"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configXPlot(void);</font>
+  <li><a name="144625"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configSmartSlew(void);</font>
+  <li><a name="144626"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setTraceInten(int32 traceInten);</font>
+  <li><a name="145591"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void updateCompleteScroll(void);</font>
+  <li><a name="145593"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void updatePartialScroll(void);</font>
+  <li><a name="145594"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void updatePartialRoll(void);</font>
+  <li><a name="145595"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void updateLastPlot(void);</font>
+  <li><a name="145596"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void refreshLastPlot(void);</font>
+</ul>
+
+<h4>
+  <a name="144341"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Logical Plot Driver Utility Functions</font>
+</h4>
+
+
+<p>
+  <a name="144631"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The utility functions described below allow the rest of JediPlus system to access Plot system  functionality that is global in nature. These access functions include:</font>
+</p>
+
+<ul>
+  <li><a name="145660"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void startPlot(void);</font>
+
+<p>
+  <a name="144638"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Starts the plot cycle.</font>
+</p>
+
+  <li><a name="145581"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void stopPlot(void);</font>
+
+<p>
+  <a name="145582"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Stops the plot cycle.</font>
+</p>
+
+  <li><a name="145883"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean isPlotStopped(void);</font>
+
+<p>
+  <a name="145884"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns whether the plot is stopped </font>
+</p>
+
+  <li><a name="145885"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean isPlotStarted(void);</font>
+
+<p>
+  <a name="145886"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns whether the plot is started (usually checking for the last fast plot) .</font>
+</p>
+
+  <li><a name="144639"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void clearActivePlots(void);</font>
+
+<p>
+  <a name="144632"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Clears the active waveform plots off screen</font>
+</p>
+
+  <li><a name="145600"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void blankCurrPlot(void);</font>
+
+<p>
+  <a name="145767"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Blank plots of current acq data. </font>
+</p>
+
+  <li><a name="145603"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void blankLastPlot(void);</font>
+
+<p>
+  <a name="145773"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Blank plots of last acq data.</font>
+</p>
+
+  <li><a name="145663"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void blankLastHwAvgPlot(void);</font>
+
+<p>
+  <a name="145779"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Blank the plots of last HW average data.</font>
+</p>
+
+  <li><a name="145892"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint16 yToPix(ChanTemplate *ct, GenericXAxis *axis, float64 *value);</font>
+
+<p>
+  <a name="145893"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns the vertical pixel associated with a voltage for the specified axis and channel.</font>
+</p>
+
+  <li><a name="145894"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint16 xToPix(GenericXAxis *axis, float64 *value);</font>
+
+<p>
+  <a name="145895"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns the horizontal pixel associated with a time for the specified axis</font>
+</p>
+
+  <li><a name="145819"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint16 getXScreenPixels(void);</font>
+  <li><a name="145639"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint16 getYMainPixels(void);</font>
+  <li><a name="145640"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint16 getYDlydPixels(void);</font>
+  <li><a name="145874"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean currPlotInvertOn(ChanId chanId);</font>
+
+<p>
+  <a name="145875"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns whether the last plot is inverted for the channel specified.</font>
+</p>
+
+  <li><a name="145876"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean lastPlotInvertOn(ChanId chanId);</font>
+
+<p>
+  <a name="145877"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns whether the last plot is inverted for the channel specified.</font>
+</p>
+
+  <li><a name="145912"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean isMasterPlotStopped(void);</font>
+
+<p>
+  <a name="145913"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns whether the plot cycle is stopped.</font>
+</p>
+
+  <li><a name="145914"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean isMasterSlavePlotStopped(void);</font>
+
+<p>
+  <a name="145915"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns whether the plot cycle is stopped.</font>
+</p>
+
+
+<p>
+  <a name="145641"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</ul>
+
+<h3>
+  <a name="144650"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">16-1.2  The Logical Model of the Plot System</font>
+</h3>
+
+
+<p>
+  <a name="145487"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Generic Logical Plot Driver provides a holistic interface to the Waveform Plot System for dealing with it as one large block. In general, the plot system HW is programmed, while the acq/display cycle is stopped, to produce any of the possible waveform plots needed when the cycle is restarted. </font>
+</p>
+
+
+<p>
+  <a name="145488"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The JediPlus plot systems have the fundamental capability to plot data from the last acquisition until data from the current acquisition is available, during interruptions in the acq/display cycle. This makes the waveform display much more responsive to changes. Additionally, it can plot data into the main or delayed sweep windows for either acquisition.  This results in up to four different waveform plots occuring depending on the state of the acq/display cycle.      </font>
+</p>
+
+
+<p>
+  <a name="145489"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The JediPlus plot systems also feature two modes of plotting, fast and high quality (HQ). Fast plotting decimates the acquired data in the screen window, and maps the reduced number of resultant points into pixels to be displayed. HQ plotting maps all the acquired data into the screen window pixels to be displayed. HQ plotting produces superior waveform detail in cases where plot rate is not an issue.  It is used when the acquisition system is stopped, or the sweep rate is slow so the cycle time is limited by the acquisition time.        </font>
+</p>
+
+
+<p>
+  <a name="145490"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The plot system HW must be programmed to produce the any of these waveform plots and modes, since the final determination of what and how to plot is made by the HW while the acq/display cycles are proceeding. This tends to keep the number of API entry point functions under control. Some granularity in programming is still desirable, however, since only parts of the plot system may need to be reprogrammed when certain settings change, after it has been completely initialized.</font>
+</p>
+
+
+<p>
+  <a name="144347"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The functional blocks in the JediPlus Plot System are shown logically in the figure below. Control blocks include the Acq/Display Cycle Control (Cycle Control), and the Timebase.  Data generated by the Acq System resides in the Acquisition Memory (Acq Mem), and the Record Memory.  Here the Plot System blocks are shown in simplified form as the Plot Waveform Processing Pipeline (Plot Pipe) and The Display Memory (Display Mem), for completion's sake. </font>
+</p>
+
+
+<p>
+  <a name="144351"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="144236"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<a name="130655"> </a>FIGURE 41.&#32; The logical block diagram for the Acq and Plot System HW<img src="images/plotDriver4.gif" height="742" width="622">
+
+<p>
+  <a name="137675"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Plot Pipe produces the waveform graphics that are stored in the Plot Memory and are used to light up the appropriate pixels on the CRT. For active inputs it uses waveforms in the Acq Memory as the source for the data being plotted. For math functions, it uses waveforms produced by the Signal Analysis Library that are logically handled as a special kind of Analysis waveform.</font>
+</p>
+
+
+<p>
+  <a name="137689"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Timebase functional block controls the horizontal (time) axis for all the waveform records described. The logical diagram represents this by showing the timebase generating the clocks that coordinate the sampling and storage of data. The actual functionality is more complex. There are several control parameters that determine the processing performed by the various pipes which effect the time span and resolution of the points in the various waveform records described. In the logical model, this classic oscilloscope timebase block provides the basis for an abstract, relatively simple API from which all the HW specific settings are derived. </font>
+</p>
+
+
+<p>
+  <a name="137690"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Cycle Control / Status block controls and monitors the acq/display cycle. The logical diagram represents this by showing it controlling and monitoring the timebase; again a simplistic view. In reality there are a variety of control and status mechanisms distributed through the Acq and Plot Systems that accomplish this logical task. The key point is that a common interface to these utilities is provided to the Signal Path Manager SW, for controlling the acq/display cycles. The Acq Manager SW, in turn, provides a higher level interface for acq/display cycle selection and synchronization to the rest of the host SW. For a more detailed description of its operation see the chapter titled "Signal Path Manager". </font>
+</p>
+
+
+<p>
+  <a name="141353"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The remainder of this chapter describes the APIs for controlling these Logical Blocks in the Acq, Time and Plot Drivers used by controls in the behavioral layer of the User Interface (UI).      </font>
+</p>
+
+
+<h3>
+  <a name="145496"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">16-1.3  The Logical to Physical Plot Driver APIs</font>
+</h3>
+
+
+<h4>
+  <a name="133565"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Physical Plot System Initialization</font>
+</h4>
+
+<ul>
+  <li><a name="145501"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean initPlotHw(boolean verbose, boolean diagnostics);</font>
+
+<p>
+  <a name="145693"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Initializes the all plot control HW. Called from initPlotSys();</font>
+</p>
+
+  <li><a name="145718"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean initScopePlotHw(boolean verbose, boolean diagnostics);</font>
+
+<p>
+  <a name="145715"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Initializes the scope plot control HW. Called from initPlotHW().</font>
+</p>
+
+  <li><a name="145507"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean initLogicPlotHw(boolean verbose, boolean diagnostics);</font>
+
+<p>
+  <a name="145706"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Initializes the timing analyzer plot control HW. Called from initPlotHW().</font>
+</p>
+
+</ul>
+
+<h4>
+  <a name="141675"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Plot System Limits Reporting</font>
+</h4>
+
+
+<h3>
+  <a name="132429"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">16-1.4  Scope Plot Pipe Driver</font>
+</h3>
+
+<ul>
+  <li><a name="139877"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configScopePlotControl(void);</font>
+  <li><a name="145515"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configScopePlotSeeds(void);</font>
+  <li><a name="145516"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configCurrMainScopePlot(void);</font>
+  <li><a name="145517"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configLastMainScopePlot(void);</font>
+  <li><a name="145518"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configCurrDlydScopePlot(void);</font>
+  <li><a name="145519"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configLastDlydScopePlot(void);</font>
+  <li><a name="145543"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void updateLastScopeXPlots(void);</font>
+  <li><a name="145728"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void updatePartialScopeScoll(void);</font>
+  <li><a name="145545"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void updatePartialScopeRoll(void);</font>
+  <li><a name="145547"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void refreshLastScopePlots(void);</font>
+</ul>
+
+<h3>
+  <a name="145572"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">16-1.5  Logic Plot Pipe Driver</font>
+</h3>
+
+<ul>
+  <li><a name="145573"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configLogicPlotControl(void);</font>
+  <li><a name="145574"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configCurrMainLogicPlot(void);</font>
+  <li><a name="145539"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configLastMainLogicPlot(void);</font>
+  <li><a name="145540"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configCurrDlydLogicPlot(void);</font>
+  <li><a name="145687"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configLastDlydLogicPlot(void);</font>
+  <li><a name="145566"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void updateLastLogicXPlots(void);</font>
+  <li><a name="145569"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void updatePartialLogicScroll(void);</font>
+  <li><a name="145562"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void updatePartialLogicRoll(void);</font>
+</ul>
+
+<h3>
+  <a name="145674"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">16-1.6  Plot Utilities </font>
+</h3>
+
+<ul>
+  <li><a name="145678"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void calcYPlotParams(ChanId chanId,  WaveId waveId, </font>
+
+<p>
+  <a name="145684"> </a><font face="Verdana, Arial, Helvetica, sans-serif">                                           DvrChanTemplate *chanPt PlotTemplate * plotPtr);</font>
+</p>
+
+
+<p>
+  <a name="146000"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Calculates the Y plot settings in the PlotTemplate specified.</font>
+</p>
+
+  <li><a name="145927"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void calcLastMainLine(TimeMode timeMode);</font>
+
+<p>
+  <a name="145685"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> Determines the end line for the main sweep window.</font>
+</p>
+
+  <li><a name="145945"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint16 getRollFirstBucket(void);</font>
+
+<p>
+  <a name="145744"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns the first roll bucket on screen.</font>
+</p>
+
+  <li><a name="145951"> </a><font face="Verdana, Arial, Helvetica, sans-serif">void rdRollFirstBucket(void);</font>
+
+<p>
+  <a name="145747"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Reads/updates the first roll bucket on screen.</font>
+</p>
+
+  <li><a name="145963"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern ReconMode getReconMode(PlotTemplate * plotPtr, DvrAcqTemplate * acqPtr);</font>
+
+<p>
+  <a name="145969"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns reconstruction mode for the plot/acq specified.</font>
+</p>
+
+  <li><a name="145757"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern int32 getPointsPlotted(PlotTemplate * plotPtr);</font>
+  <li><a name="145758"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern int32 getFirstPointPlotted(PlotTemplate * plotPtr);</font>
+  <li><a name="145759"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern int32 getFinalPointPlotted(PlotTemplate * plotPtr);</font>
+  <li><a name="146005"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint32 getAcqPrbsSeed(AcqMemId memId);</font>
+
+<p>
+  <a name="146006"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns the Acq prbs seed register values.</font>
+</p>
+
+  <li><a name="146007"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setPlotPrbsSeed(WaveId waveId, uint32 value);</font>
+
+<p>
+  <a name="146008"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Sets the plot prbs seeds.</font>
+</p>
+
+  <li><a name="146014"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint32 advancePrbsSeed(uint32 seed, int32 deltaBuckets);</font>
+
+<p>
+  <a name="146015"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Uses the HW, to advance a saved seed.</font>
+</p>
+
+</ul>
+
+<p>
+  <a name="144473"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Physical Drivers, deal directly with the actual HW components in a specific product. They consist of the data structures and functions used to program each component. These private drivers are not generally accessible to the outside world. The Physical Drivers are used primarily by the associated Logical Drivers to setup the physical components that implement their logical blocks. Ocassionally the logical model for a functional block is implemented directly in hardware.  In this cases, The Logical and Physical Driver functions are synonomous, since no SW abstraction is necessary. The APIs for these functions appear in the Logical Drivers, since they are identical for all the products and hence can be accessed from the behavioral SW layer.  There will however be unique SW functions coded to interact with unique physical implemenations in HW. The descriptions of the Physical Drivers appear in the chapters that cover the driver for the individual HW components in the MUSKRAT and PUMA products. For example, the Physical Plot Drivers for MUSKRAT use mostly the functions defined in the "COYOTE/WILEY Driver" chapter. The Physical Plot Driver for PUMA uses mostly the functions defined in the "MONGREL Driver" chapter. </font>
+</p>
+
+
+<p>
+  <a name="144467"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="143563"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="chanDriver.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="timeDriver.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

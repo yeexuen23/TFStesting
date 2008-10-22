@@ -1,0 +1,1644 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:23:47 2002">
+<title>CHAPTER 20 Signal Path Manager</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="signal.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="meas.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="135086"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 20 	 Signal Path Manager</font>
+</h1><hr>
+
+
+<h2>
+  <a name="135087"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-1  Overview</font>
+</h2>
+
+
+<p>
+  <a name="128011"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Signal Path Manager is the software (SW) module that controls the signal acquisition/display cycles, the primary operation performed by the Signal Path. It is the synchronizing agent for the Signal Path and its constituent blocks. The shell for the Signal Path process lies in the Signal Path Manager.  It is the lowest priority, or background process in JediPlus. </font>
+</p>
+
+
+<p>
+  <a name="134539"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Signal Path Manager (SP Mgr) manages the acquisition of signal data for: display, analysis by the host CPU, and transfer over the Remote User Interface (UI). Once configured, regular acq/display cycles that are optimized for fast update of the display proceed without SP Mgr intervention. Cycles that produce waveform data for analysis by the host or for remote transfer require SP Mgr action to synchronize them with the Signal Analysis Library (SAL). These cycles result in some compromise in the update rate of the signals on screen. </font>
+</p>
+
+<a name="133904"> </a>FIGURE 46.&#32; <img src="images/acqMgr9.gif" height="358" width="621">
+ Signal Path Manager Context Diagram
+<p>
+  <a name="133905"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Signal Path Manager Context Diagram shows a logical view of the relationships and data flow between the SigPath Mgr and other major JediPlus HW and SW blocks. The SP Mgr, the system of focus, is represented by a circle. Pertenent items in the system's environment are called terminals; they are represented by rectangles. Information flows are represented by arrows. </font>
+</p>
+
+
+<p>
+  <a name="129433"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The primary duties of the SP Mgr SW can be deduced from this diagram. They are to manage the acquisition and display cycles, and to cleanly synchronize the cycles with changes that affect the Signal Path. Cycle management entails providing methods that coordinate the collection, processing and delivery of the data between the central Signal Path blocks for each type of acq/display cycle. Cycle synchronization entails providing methods for starting, stopping, and restarting the acq/display cycle so changes specified by the UIs occur without causing undesirable interruptions to the signal displays. The goal is to deliver signal data quickly and efficiently, and make the relationships obvious between the signal data and any controls changed by the user. Waveforms and measurements displayed should not "flake out" when adjustments affecting them are made. This supports the customers' desire for an instrument that they trust to make their critical measurements.</font>
+</p>
+
+
+<p>
+  <a name="129044"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A secondary goal is for the SP Mgr SW to be HW independent. As the controlling agent for the acq/display cycle, the SP Mgr interfaces with the Acq and Plot HW via the Acq and Plot HW Driver modules. The actual HW components utilized for these blocks vary between family members in the product line. In the Muskrat lineage, the central components of the acq/display system are the COYOTE / WILEY data acquisition and graphics controllers. In the Puma lineage, the central components of the acq/display system are the ZEUM acquisition and memory controller, and the MONGREL graphics interface. While the Jedi Plus Acq and Plot HW Driver modules have been designed to abstract the differences in the HW implementations, attention is also required in the SP Mgr SW to keep control of the acq/display cycle independent of HW differences. </font>
+</p>
+
+
+<p>
+  <a name="138370"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Acquisition System captures raw signal data, and produces the waveform data consumed by the Plot System to generate the signal images displayed. It also produces the waveform data, consumed by the Signal Analysis Library to make measurements and generate function waveforms. The User Interfaces alert the SP Mgr when changes to the acquisition or display systems are needed, so it can synchronize the changes with the cycle. The UIs specify changes in the Acq and Plot settings, put into effect by calling the Acq and Plot HW Drivers. They also specify changes in the acq/display cycle, put into effect by the SP Mgr. The remote interface can request that Waveform data be acquired specifically for transmission to a remote computer. </font>
+</p>
+
+
+<p>
+  <a name="138371"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Signal Data Store contains waveform records that can be accessed by the host CPU. Generally, there is a Signal structure for each input channel, each math function, and each waveform memory supported in a given product. The waveform header information provided by the SP Mgr merits special mention because the timing for updating certain items is critical. These items include acquisition parameters, such as the acquisition mode and scaling factors which must be preserved along with the waveform data, and the waveforms' status info, such as the completeness and validity flags.     </font>
+</p>
+
+
+<p>
+  <a name="129454"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The next section describes the various types of acq/display cycles managed by the SP Mgr in the JediPlus products. The following three sections describe the application interfaces (APIs) between the SP Mgr and the other SW blocks including: the UIs, the Signal Analysis Library, and the Acq and Plot HW Drivers.   The final section describes the organization of the SP Mgr SW itself.</font>
+</p>
+
+
+<h2>
+  <a name="127989"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-2  Acquisition and Display Cycles in Jedi Plus Products</font>
+</h2>
+
+
+<p>
+  <a name="130553"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are multiple acquisition/display cycles in the JediPlus products. They are: Continuous, Single, Deep Stop, Continuous Scroll, Single Scroll, Roll,  Digitize, Complete Digitize and Synchronous cycles. Each type of acq/display cycle is defined in this section, and their identifying characteristics and basic operating modes are discussed briefly. Detailed descriptions of their interactions with the Signal Analysis Library, User Interfaces and HW Drivers are presented later in the sections titled API between the SP Mgr and the Signal Analysis Library, API between the SP Mgr and the UIs, and API between the SP Mgr and the Acqusition and Plot Drivers, respectively.</font>
+</p>
+
+
+<h3>
+  <a name="138399"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-2.1  The Continuous Acq/Display Cycle</font>
+</h3>
+
+
+<p>
+  <a name="137124"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Continuous acq/display cycle goes into effect on moderate to  fast sweep speeds (&lt; 100 ms/div) when the RUN key is pushed. At the begining of the cycle old data is blanked from the display and the waveform acquisition and plot systems are started.  New data automatically is displayed by the HW as triggers occur. Meanwhile, the SP Mgr executes a tight loop monitoring the state of the sigPathDisable flag and checking for changes is the sigPathStatus register.  This register contains status bits that reflect the state of the current acq/display cycle and alert the SP Mgr when waveform function generation or measurement operations are needed. When data is needed for analysis, the continuous cycle always eavesdrops the signal data at the end of a complete sweep since sweeps finish rapidly at these sweep sweeds.  This cycle continues, as its name implies, until disabled by the UI via the sigPathDisable flag.  At this point is exits into the SP Mgr main loop until it is restarted.</font>
+</p>
+
+
+<p>
+  <a name="135103"> </a><font face="Verdana, Arial, Helvetica, sans-serif">See the section on the API between SP Mgr and the UI for details on starting and stopping the cycles when handling changes. See the section on the API between SP Mgr and the SAL for details on performing analysis operations. </font>
+</p>
+
+
+<h3>
+  <a name="135252"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-2.2  The Single Acq/Display Cycle</font>
+</h3>
+
+
+<p>
+  <a name="135253"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A Single acq/display cycle occurs on moderate to fast sweep speeds (&lt; 100 ms/div), when the SINGLE key is pushed. For the SINGLE cycle old data is blanked from the display and one acquisition is performed to capture the new data of interest, regardless of the time it takes. Since the last acquisition need not be preserved, Single utilizes all of the acquisition memory. Pushing the SINGLE key when running causes the current acquisition to abort rather than complete. </font>
+</p>
+
+
+<p>
+  <a name="135254"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When measurement or functions are enabled, they occur under the UI process when the single cycle completes.   This way the functions produced and  measurements made are consistent with the data displayed as the result of the single acq. </font>
+</p>
+
+
+<h3>
+  <a name="134403"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-2.3  The Deep Stop Acq/Display Cycle</font>
+</h3>
+
+
+<p>
+  <a name="130654"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A Deep Stop acq/display cycle occurs on fast sweep speeds, during the transition from RUNNING to STOPPED. When RUNNING, the amount of data acquired is determined by matching the time it takes to acquire the data with the time it takes to plot the data into a display frame. At sweep speeds faster than 20 msec/div this causes acq memory to be under utilized, but it maximizes the amount of data plotted on screen. </font>
+</p>
+
+
+<p>
+  <a name="130679"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When the STOP key is pushed under these conditions, the continuous acq/display cycle halts and a Deep Stop cycle is attempted. A Deep Stop cycle tries to make one extra acquisition, that better utilizes the available acquisition memory, before actually stopping. This maximizes the amount of data that can be used for panning and zooming after the instrument is stopped.</font>
+</p>
+
+
+<p>
+  <a name="135230"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Deep Stop cycle includes a time-out, so that it will abort the attempt to make an extra acquisition if it takes a noticeable amount of time for the extra acquisition to occur. For example, if the trigger rate is low or the sweep rate is slow, it becomes impossible to perform an extra acquisition and still make the response to the STOP key appear immediate. When a Deep Stop cycle is aborted due to the time-out, the last acquisition must be displayed. The fact that the last acquisition must be preserved restricts the amount of the acquisition memory available for the deep stop acquisition.</font>
+</p>
+
+
+<p>
+  <a name="130680"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When measurements or functions are enabled, they occur under the UI process when the  deep stop cycle completes.   This way the functions produced and  measurements made are consistent with the data displayed as the result of the deep stop.</font>
+</p>
+
+
+<h3>
+  <a name="137117"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-2.4  The Continuous Scroll Acq/Display Cycle</font>
+</h3>
+
+
+<p>
+  <a name="137118"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Continuous Scroll acq/display cycle operates when running at slow sweep speeds (&gt; 100ms/div). At slow sweep speeds, waveform data is being plotted while it is being acquired, rather than at the end of each acquisition. While in Scroll mode, two choices are available for generating analysis waveforms. Complete waveform data can be eavesdropped on the plot cycle immediately following the completion of each sweep. Potentially, incomplete waveform data can be eavesdropped on each plot cycle.  Some analysis operations require each method. In particular, the FFT function requires a complete waveform. The Scroll cycle differs from the Continuous cycle in its ability to synchronize with either method of analysis waveform generation.  Scrolled cycles also take extra measures that allow the sweep to complete when the STOP key is pushed, before actually stopping.</font>
+</p>
+
+
+<h3>
+  <a name="137133"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-2.5  The Single Scroll Acq/Display Cycle</font>
+</h3>
+
+
+<p>
+  <a name="137180"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A "Single Scroll" acq/display cycle operates at slow sweep speeds (&gt; 100ms/div) when the SINGLE  button is pushed. Like the single acq cycle it blanks all old data before beginning. Since no disply of old data is required it uses all the available acq memory. Single Scroll cycles use a timer to postpone restarting the single scroll cycle, after a change is made, to allow partial data to be displayed as feedback to the user on the change being made. Like the Continuous Scroll cycle, it has ability to generate either full or partial waveforms for analysis by eavesdropping. Single Scrolled cycles also allow the sweep to complete when the STOP key is pushed, before actually stopping.</font>
+</p>
+
+
+<h3>
+  <a name="137148"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-2.6  The Roll Acq/Display Cycle</font>
+</h3>
+
+
+<p>
+  <a name="137182"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Roll acq/display cycle operates when running in ROLL mode. In ROLL mode, only slow sweep speeds (&gt; 100ms/div) are allowed. Like the Continuous Scroll cycle, it has ability to generate either full or partial waveforms for analysis by eavesdropping. Roll cycles also use a timer to postpone restarting the roll cycle, after a change is made, to allow partial data to be displayed as feedback to the user on the change being made.</font>
+</p>
+
+
+<h3>
+  <a name="137192"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-2.7  The Digitize Acq/Display Cycle</font>
+</h3>
+
+
+<p>
+  <a name="137197"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The "Digitize" acq/display cycle collects real-time waveform data records when requested by the User Interface. The desired record type needs to be specified,  prior to the "Digitize" request. Since real-time records contain points in each time bucket they are complete by definition after one trigger.  These cycles are typically used to produce waveforms for remote transfer, for remote measurements or for internal measuremenent made during calibrations or self-tests. This cycle has a tuned analysis cycle built into it so functions and local measurements are produced if they are enabled.  This cycle provides a simple method for the user to synchronize his application program with the acquisitions made by the instrument, because it stops after a single acquisition..</font>
+</p>
+
+
+<h3>
+  <a name="137194"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-2.8  The Complete Digitize Acq/Display Cycle</font>
+</h3>
+
+
+<p>
+  <a name="137244"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The "Complete Digitize" acq/display cycle collects complete ensemble waveform data records when requested by the User Interface.  Ensemble waveforms contain equivalent-time data or averaged data produced over multiple triggers.  This cycle checks for completion after each waveform is eavesdropped by using the measureComplete() function in the Signal Analysis Lib. The desired record type and the completion criteria needs to be specified,  prior to the "Digitize" request. These cycles are typically used to produce complete waveforms for remote transfer, for remote measurements or for internal measuremenent made during CALs. This cycle provides a simple method for the user to synchronize his application program with the acquisitions made by the instrument, because it stops when the acquisition is complete.</font>
+</p>
+
+
+<h3>
+  <a name="135770"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-2.9  The Synchronous Acq/Display Cycle - NOT IMPLEMENTED</font>
+</h3>
+
+
+<p>
+  <a name="137264"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A "Synchronous" acq/display cycle operates only when a math function and no active channels are displayed. In this case, there is no reason to acquire data any faster than the SAL function can consume it. This cycle basically is a repetitive Digitize cjycle that does not issue the acqDone message.  This kind of cycle also could be used to implement a repetitive single-shot mode should it become a required feature in future product offerings.</font>
+</p>
+
+
+<h2>
+  <a name="137265"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-3  Application Interface (API) between the Signal Path Manager (SP Mgr) and the Signal Analysis Library (SAL)</font>
+</h2>
+
+
+<p>
+  <a name="137360"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The SP Mgr and the Signal Analysis Library (SAL) are both part of the Signal Path. When measurements or math functions are enabled, they engage in a tightly coupled relationship producing and analyzing Signals. Two abstrations have been developed in JediPlus SW to keep this relationship manageable and efficient. </font>
+</p>
+
+
+<p>
+  <a name="137418"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The first abstration is the Signal Structures, the central data objects in the Signal Path. Each Signal contains Analysis Waveform records which encapsulate the data to be analyzed with all the information needed to interpret it.  This keeps the interface for passing data around between the acq system, the plot system, the SP Mgr and the SAL constant and minimal.  The mainAnalysisWave and dlydAnalysisWave records contain the portion of the signals that are displayed in the main and delayed sweep windows on screen.  In effect they are compressed snap shots of the data plotted during the current (or last) acq/display cycle. They are described in more detail in the subsection titled "Analysis Waveform Records" and in the "Signal Path and Signal Structure" document.</font>
+</p>
+
+
+<p>
+  <a name="138630"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The second abstration is the "analysis cycle".  This is the part of the SP Mgr that coordinates the interactions between acq and plot HW systems, and the SAL.  This cycle, encapsulated in the function analyzeSignals() in acqCycles.c, effectively synchronizes how Analysis Waveforms are  produced, consumed, and displayed.  </font>
+</p>
+
+
+<p>
+  <a name="138665"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When new signal data is needed, special data for analysis is generated by "eavesdropping" the signal data being plotted.  This name reflects the fact that the analysis wave data is produced by snooping on the signal data being plotted for display.  During an analysis cycle the SP Mgr performs the following tasks in conjuction with an eavesdrop:</font>
+</p>
+
+<ul>
+  <li><a name="138666"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It determines whether and which type of an eavesdrop is needed.</font>
+  <li><a name="138667"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It starts an eavesdrop.</font>
+  <li><a name="138668"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It waits for the eavesdrop to complete.</font>
+  <li><a name="138669"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It updates the analysis wave header when the eavesdrop completes successfully.</font>
+</ul>
+
+<p>
+  <a name="138659"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Two methods of the "eavesdrop" operation are supported.  One mode, called partial eavesdropping, gathers data on the first plot of data that occurs after it is requested. The other method, called full eavesdropping, gathers data on the plot of data that occurs at the end of a complete sweep across sceen. The full eavesdrop method insures that a complete screen full of information is packaged into the signal waveform records.  The partial eavesdrop method packages up whatever data is in the current plot, which might covers only part of the screen on slow sweep speeds.  </font>
+</p>
+
+
+<p>
+  <a name="137414"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Signal Analysis Library consumes the "analysis wave" records and performs the following tasks:  </font>
+</p>
+
+<ul>
+  <li><a name="137268"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It performs math functions on signals when one or more MATH functions are ON.  This entails  consuming analysis wave data from the source signals and producing the analysis data into the destination signals called function signals.  In this case the SAL runs, when the runFilters() routine is called by the SP Mgr from the analysis cycle.</font>
+  <li><a name="137480"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It makes scheduled parametric measurements on signals for updating the measurement status line on screen.  This happens when one or more QUICK MEAS measurements are ON. This entails  consuming analysis wave data from the source signals and producing the measurement results data. In this case the SAL runs, when the runMeasurements() routine is called by the SP Mgr from the analysis cycle.</font>
+  <li><a name="132564"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It makes immediate parametric measurements on signals as requested by the Remote UI or Local UI when needed by other internal entities, such as the Calibration System. In this case the UI calls the getImmMeas(), which in turn calls the acquire() function.  The acquire() function causes the SP Mgr to performs a digitizeAcq() or completeDigAcq() cycle which include "tuned" versions of the analysis cycle. SAL makes the immediate measurement when the acquire() routine returns successfully.</font>
+</ul>
+
+<p>
+  <a name="137283"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The analysis cycle can occur when the instrument is RUNNING or STOPPED.  When RUNNING, analyzeSignals() is called from one of the regular acq/display cycles, hence it executes under the Signal Path process thread. When the instrument is STOPPED, channel data  is not being acquired, but  it does get replotted when changes occur that effect the data presentation. In this case, analyzeSignals() is called from the updateChangedSigs() which is part of the setting change cycle.  Here the analysis cycle basically executes under the UI thread when analysis of signal data if needed, following setting changes.</font>
+</p>
+
+
+<p>
+  <a name="137372"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Regardless of the OS processes involved, the SP Mgr is responsible for delivering the appropriate signal data to the Signal Analysis Library so it can be processed and the results produced and displayed in a timely fashion. The transfer mechanism for delivering this data does not change because it uses the Signal Structures, and the "analysis cycle". </font>
+</p>
+
+
+<h3>
+  <a name="141393"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-3.1  The Analysis Waveform Records </font>
+</h3>
+
+
+<p>
+  <a name="141394"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Since SP Mgr / SAL interface deals primarily with the production and consumption of Analysis Waveforms, let's begin by inspecting these portions of the Signal Structure. These Analysis Waveforms have the same structure as the other Waveforms in the Signal structure, which is described in detail in the chapter titled "Signal Path and the Signal Structure". The actual definition for the complete Signal structure, including the Analysis Waveforms, is located in "sw/jediPlus/sigPath/signal.h". </font>
+</p>
+
+
+<p>
+  <a name="141395"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are two Analysis Waveforms in each Signal, called the mainAnsWave and the dlydAnsWave. They are produced exclusively for and used directly by SAL for processing math functions and measurements. They provide pointers to "eavesdropped" data, hence they represent the portion of each signal that was being plotted into the main and delayed windows on screen when the eavesdrop occurred. These two records are identical in form, but the contents are specific to their own sweep window. Each is a container for both the waveform data and the associated header information allowing the host CPU to completely interpret, process or analyze the data. </font>
+</p>
+
+
+<p>
+  <a name="141396"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141494"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="141495"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Analyis Waveform Structure</font>
+</h4>
+
+
+<p>
+  <a name="141496"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each Analysis Waveform is composed of a waveform header and the associated waveform data. The structure is:</font>
+</p>
+
+<pre>
+<a name="141397"> </a>typedef struct
+<a name="141398"> </a>{     	 
+<a name="141399"> </a>     WAVE_HEADER;
+<a name="141400"> </a>     Y_AXIS;
+<a name="141401"> </a>     X_AXIS;
+<a name="141402"> </a>}
+<a name="141403"> </a>Waveform;
+</pre>
+
+<p>
+  <a name="141404"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The header block is composed of the following five data members: </font>
+</p>
+
+<ul>
+  <li><a name="141405"> </a><font face="Verdana, Arial, Helvetica, sans-serif">WaveType waveType - Identifies the waveform as a MAIN_ANALYSIS_WAVE,  DLYD_ANALYSIS_WAVE, CURRENT_REAL_TIME_WAVE, etc.</font>
+  <li><a name="141406"> </a><font face="Verdana, Arial, Helvetica, sans-serif">WaveDataType dataType - Identifies the wavefrom data type as SCOPE_NORMAL, SCOPE_LFD, LOGIC_COMPRESSED, LOGIC_EXPANDED, etc.</font>
+  <li><a name="141407"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Change change - A bit-mapped change regisiter containing changes that occured to the signal represented by this waveform since the last time it was analyzed.</font>
+  <li><a name="141408"> </a><font face="Verdana, Arial, Helvetica, sans-serif">WaveStatus status - A bit mapped status register containing flags that indicate the status of the waveform including: displayed, complete, newData and valid flags. These provide an overview  of the viability of the waveform. For example:</font>
+</ul>
+<dl>
+  <dt> <a name="141409"> </a><font face="Verdana, Arial, Helvetica, sans-serif">- valid indicates the data is guaranteed to accurately represent the signal on screen.</font>
+  <dt> <a name="141410"> </a><font face="Verdana, Arial, Helvetica, sans-serif">- newData indicates the data has not yet been analyzed by SAL. </font>
+  <dt> <a name="141411"> </a><font face="Verdana, Arial, Helvetica, sans-serif">- complete indicates the data has fully met its completion criteria. </font>
+  <dt> <a name="141412"> </a><font face="Verdana, Arial, Helvetica, sans-serif">- displayed indicates the waveform is on screen.</font>
+</dl>
+<ul>
+  <li><a name="141413"> </a><font face="Verdana, Arial, Helvetica, sans-serif">AcqStatus * acqStat - A pointer to the status of the acquisition (or eavesdrop) that generated the waveform.  The AcqStatus structure contains members that indicate the number of acquisitions, triggers and averages that took place in generating the waveform.</font>
+</ul>
+
+<p>
+  <a name="141414"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The y-axis block is composed of the following two members:</font>
+</p>
+
+<ul>
+  <li><a name="141415"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Yscale *yScale - A pointer to the structure containing the y-scale parameters: yOrg, yInc, and yRef.</font>
+  <li><a name="141416"> </a><font face="Verdana, Arial, Helvetica, sans-serif">WaveData *yData - A pointer to the y-axis data for the waveform. The eavesdropped data is physically located in a memory in the Acquisition System. The physical location is not important since access to the data is provided via this pointer.</font>
+</ul>
+
+<p>
+  <a name="141417"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The x-axis block is composed of the following two members:</font>
+</p>
+
+<ul>
+  <li><a name="141418"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Xscale *xScale - A pointer to the structure containing the x-scale parameters: xOrg, xInc, and xRef.</font>
+  <li><a name="141419"> </a><font face="Verdana, Arial, Helvetica, sans-serif">WaveData *xData - A pointer to the x-axis data for the waveform. In Muskrat, the x-axis data is implicitly defined. This means no x -axis data is stored apart from the scaling factors since the data can be determined  from the index using x(units)  = dataIndex * xInc + xOrg.  In Muskrat these xData pointers are NULL to indicate the implicit nature of the data. </font>
+</ul>
+
+<h4>
+  <a name="141420"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Related Structures</font>
+</h4>
+
+
+<p>
+  <a name="141497"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The format of the actual x-axis and y-axis data is not directly contained in the waveforms. The formats are implied by the WaveDataType dataType member in the header.  When the exact formats are needed, the following functions can be used to get a pointer to structures descibing the horizontal and vertical formats of a waveform respectively:</font>
+</p>
+
+<ul>
+  <li><a name="141421"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Format *getDataFormatPtr(Waveform *wavePtr) -</font>
+
+<p>
+  <a name="141422"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns a pointer to the x-axis Format structure that describes the data packets representing pixel columns on screen.</font>
+</p>
+
+  <li><a name="141423"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Encode *getAnalogEncodePtr(Waveform *wavePtr) - </font>
+
+<p>
+  <a name="141424"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns a pointer to the y-axis Encode structure that describes the numerical encoding representing pixel rows on screen and the mapping of the ADC quantization levels into these rows.</font>
+</p>
+
+</ul>
+
+<p>
+  <a name="141425"> </a><font face="Verdana, Arial, Helvetica, sans-serif">To summarize, the Analysis Waveform records encapsulate signal data needed for analysis with all the header information needed to interpret it.  They form the foundation of the interface for passing data around between the acq system, the plot system, the SP Mgr and the SAL. The  mainAnalysisWave and dlydAnalysisWave records that represent the portion of the signals that were plotted into the main and delayed sweep windows on screen when an eavesdrop occurred. Waveforms are described in more detail in the "Signal Path and Signal Structure" document.</font>
+</p>
+
+
+<h3>
+  <a name="141426"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-3.2  Programatic API between the Signal Path Mgr / Signal Analysis Library</font>
+</h3>
+
+
+<p>
+  <a name="141487"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This is a description of the programatic part of the interface between the SP Mgr and SAL.  The SP Mgr contains the Analysis Cycle which encapsulates the the transactions of acquiring the necessary signal data and performing the analysis on it</font>
+</p>
+
+
+<h4>
+  <a name="141488"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">SAL functions called by the SP Mgr</font>
+</h4>
+
+
+<p>
+  <a name="141492"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The SAL  functions called by the SP Mgr are entry points that encapsulate the analysis of signals.  Prior to these functions being called the needed Analysis Waveform records must be refreshed.  This is accomplished earlier in the Analysis Cycle by the SP Mgr.  SAL must also be configured by the UI so it knows which measurement or math functions are required. The SAL entry point functions that analyze signals include:</font>
+</p>
+
+<ul>
+  <li><a name="141489"> </a><font face="Verdana, Arial, Helvetica, sans-serif">void runMeasurements(void) </font>
+
+<p>
+  <a name="141498"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Performs all pending scheduled measurements on Analysis Waveforms and updates the "QUICK MEAS" results on screen. </font>
+</p>
+
+  <li><a name="141430"> </a><font face="Verdana, Arial, Helvetica, sans-serif">void runFilters(void)</font>
+
+<p>
+  <a name="141499"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Performs all pending math functions enabled on the source Analysis Waveforms and produces  function data into the function Analysis Waveforms.</font>
+</p>
+
+</ul>
+
+<p>
+  <a name="141510"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The operation and structures used by these API functions are defined in detail in the chapter titled "Signal Analysis Library". The functions used by the behavoioral layer in the UI to configure SAL or configure the SP Mgr to acquire data appropriate for the SAL, are defined in the API sections in the chapters titles  "UI/Analysis Driver API "and "UI/Signal Path Manager API". </font>
+</p>
+
+
+<h4>
+  <a name="141431"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">SP Mgr functions called by the SAL</font>
+</h4>
+
+
+<p>
+  <a name="141500"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following SP Mgr functions called by SAL are basically access functions.  They allow SAL to access the Signal and Analysis Waveforms required for analysis.  </font>
+</p>
+
+<ul>
+  <li><a name="141501"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Signal *getSignalPtr(SigId sigId)</font>
+
+<p>
+  <a name="141433"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns a pointer to the signal specified by the sigId.</font>
+</p>
+
+  <li><a name="141434"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Waveform *getAnalysisWavePtr(SigId sigId, SweepId sweepId)</font>
+
+<p>
+  <a name="141435"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns a pointer to the analysis waveform specified by the sigId and sweepId.</font>
+</p>
+
+  <li><a name="141436"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Waveform *getWavePtr(SigId sigId, WaveType waveType)</font>
+
+<p>
+  <a name="141437"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Returns a pointer to the waveform specified by the sigId and waveType.</font>
+</p>
+
+</ul>
+
+<p>
+  <a name="141438"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following SP Mgr API function called by SAL is a communication function that allows the SP Mgr to keep the change status in the Analysis Waveforms up to date.  </font>
+</p>
+
+<ul>
+  <li><a name="141531"> </a><font face="Verdana, Arial, Helvetica, sans-serif">void waveConsumed(Waveform *wavePtr)</font>
+
+<p>
+  <a name="141439"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Marks the analysis waveform pointed to by wavePtr as consumed in the proper ansMainChanSet and andDlydChanSet.  These sets are used by the SP Mgr to clear the change flags out of the Analysis Waveform headers at the end of an Analysis Cycle. </font>
+</p>
+
+</ul>
+
+<p>
+  <a name="141440"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<ul>
+  <li><a name="141523"> </a><font face="Verdana, Arial, Helvetica, sans-serif">boolean acquire(uint16 timeOut)</font>
+
+<p>
+  <a name="141441"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Utility that stops the current acq/display cycle, and executes a special Digitize acq cycle to refresh the appropriate Analysis Waveform records.  Returns boolean where TRUE indicates  the digitize completed successfully and FALSE indicates a timeOut or abort occurred.</font>
+</p>
+
+</ul>
+
+<h3>
+  <a name="141450"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-3.3  Example Operating Scenarios using the SP Mgr/SAL API</font>
+</h3>
+
+
+<p>
+  <a name="141453"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The next several subsections discuss the interactions that take place in the SP Mgr during the analysis cycle, which support each of the three primary tasks performed by SAL. Since each of these tasks entails significant processing by SAL, the analysis cycles can't keep up with the regular acq/display cycles, which use special HW to acquire and create the displays.  From the SP Mgr perspective, it is useful to think of the "analysis" cycle, that supports Math Functions and Scheduled Measurements, as running on the host in parallel with the regular acq/display cycles running in acq/display HW. They usually run at a subharmonic rate, synchronized to the regular cycles at critical points by the SP Mgr. Immediate measurements, on the other hand, require that the SP Mgr stop the regular cycles, run a custom "analysis" cycle that supports the analysis tasks, and then restart the regular cycles.      </font>
+</p>
+
+
+<h4>
+  <a name="132647"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Synchronization of Math Functions</font>
+</h4>
+
+
+<p>
+  <a name="133174"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In this case, the analysis cycle must produce and display the math function signals. Here, the SP Mgr coordinates the production of source Analysis Waveform data for SAL, initiates the function generation by SAL, and manages the destination "function buffers", that lie between SAL and the Display System. Lets examine an example of a typical "function analysis cycle".    </font>
+</p>
+
+
+<p>
+  <a name="138511"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When Math Functions are selected by the user via the UI, a SAL API function, addFilters(), gets called that configures SAL for calculating the chosen functions. Before returning, it sets the functionEnable flag in the sigPathStaus register to TRUE.  This ultimately causes the function to be generated and displayed in parallel with the regular acq/display cycles. </font>
+</p>
+
+
+<p>
+  <a name="138512"> </a><font face="Verdana, Arial, Helvetica, sans-serif">After the regular acq/display cycle has been started, the SP Mgr polls the sigPathStatus register to see if analysis cycles are needed. When it finds functionEnable TRUE, it calls analyzeSignals() which then executes the extra states that implement the "function analysis cycle". First, analyzeSignals() calls analysisAcqNeeded().  This routine uses the needChanSet to determine whether the AnalysisWave records needed by SAL, are valid and meet the completion criteria in effect. </font>
+</p>
+
+
+<p>
+  <a name="138797"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If an analysis acq is needed, the SP Mgr executes an "eavesdrop cycle", that refreshes the appropriate Analysis Waveforms.  Once the eavesdrop is started, the SP Mgr enters a different idle loop, where it checks only for the eavesdrop to complete and for changes that intterupt the regular cycle. When the eavesdropping cycle is complete, the SP Mgr calls the Signal API function, updateAnalysisHeaders(), to insure the critical acquisition parameters are attached to the appropriate Analysis Waveform data records correctly. In particular, the waveform status register containing the VALID, COMPLETE and NEW DATA flags are updated.</font>
+</p>
+
+
+<p>
+  <a name="132859"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Once the Analysis Waveforms are refreshed, analyzeSignals() enters the DO_FUNCS macro that implements the extra cycle steps that produce and disflag the "function" signals.  Two physical plot buffers exist for each function that can be displayed, however, the SAL is kept oblivious of this fact. From SAL's perspective the buffers simply appear to be the Analysis Waveform data in the signal structure for the function being generated. To accomplish this the SP Mgr polls the Plot System to find a "function buffer" marked "idle". In this context, "idle" means that its contents are not being used to plot the next display frame. Once an idle buffer is located, the SP Mgr updates the pointer to the Analysis Waveform Data in the function's Signal Structure with the address of the available buffer. In effect, the SP Mgr arbitrates the use of these "function buffers" so SAL never needs to worry about where the function data should go; it always uses the same pointer.</font>
+</p>
+
+
+<p>
+  <a name="133179"> </a><font face="Verdana, Arial, Helvetica, sans-serif">At this point, analyzeSignals() calls the SAL API function, runFilters(), to execute the filter that produces the function data into the appropriate Analysis Waveform area. Upon SAL's return, the SP Mgr checks the function's Analysis Waveform status to insure  it has the VALID, DISPLAYED and NEW DATA flags set.  In this case, analyzeSignals() calls plotFunction(), the API function that notifies the Plot HW that the associated function buffer is now "ready". The Plot System handles plotting the function to screen from this point on. Once it starts using the "ready" buffer for plotting, the Plot System also marks the previous buffer as idle, thus freeing it for use on the next "function" cycle.   When the NEW DATA flag is not TRUE when runFilters() returns, analyzeSignals() does not call plotFunction().  Instead it restores the previous Analysis Waveform data pointers and status, so the last function produced and displayed remains viable. </font>
+</p>
+
+
+<p>
+  <a name="132990"> </a><font face="Verdana, Arial, Helvetica, sans-serif">At the end of each analysis cycle, the SP Mgr's final responsibility is to update the status of the pertinent Analysis Waveforms. Since the eavesdropping process basically creates records that are compressed snapshots of the signal being plotted, it is difficult to insure the records will still reflect the data on screen on the next cycle. Unless the regular cycles have been stopped and no scaling changes have occurred, the Analysis records are marked invalid. This insures that a new eavesdrop will occur and provide fresh data on the next cycle.</font>
+</p>
+
+
+<p>
+  <a name="133148"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> Notice that the functionEnable flag never gets set FALSE in the "function cycle". This only occurs when functions are turned off via the UI. This mechanism causes the "function cycles" to run continuously once started, until explicitly stopped; the desired behavior.               </font>
+</p>
+
+
+<h4>
+  <a name="131264"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Synchronization of Scheduled Measurements</font>
+</h4>
+
+
+<p>
+  <a name="132658"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The "Measure cycle" is the protion of the analysis cycle which perform scheduled parametric measurements on signals and cause the results on the measurement status line to be updated. These measure cycles are similar to function cycles, but less complex due to the following differences. First, they only need to be performed a few times a second, so the results on screen are updated at a rate where they cabn be easily read. Secondly, Screen Manager utilities perform the update of the measurement results on the measurement status line. This is essentially independent of the regular acq/display cycles and hence requires no synchronization by the SP Mgr. Hence, coordinating the production of the source Analysis Waveform data for SAL, and initiating the measurements by SAL, are the main responsibilities of the SP Mgr during measure cycles. Lets look at an example of a typical measure cycle. </font>
+</p>
+
+
+<p>
+  <a name="133239"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When measurements are selected by the user via the UI, a SAL API function, ?(), gets called that builds a list of Scheduled Measurements, which later get executed by the SAL. It updates the neededChanSet, which contains both the channels to be displayed and the source channels SAL needs for the measurements.  Finally, it sets up the Screen Mgr to periodically notify SAL when the measurement results need to be updated. </font>
+</p>
+
+
+<p>
+  <a name="138787"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When the Screen Mgr determines that the measurement status line needs updating, it calls a SAL API function, ???(), that causes the measureRequest flag in the sigPathStatus register to be set TRUE. After the regular acq/display cycle has been started, the SP Mgr polls the sigPathStatus register. When it finds measureRequest TRUE, it calls analyzeSignals() which executes the states which implement the "measure cycle". First, analyzeSignals() calls analysisAcqNeeded().  This routine uses the neededChanSet to determine whether the AnalysisWave records needed by SAL, are valid and meet the completion criteria in effect. </font>
+</p>
+
+
+<p>
+  <a name="138790"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If an analysis acq is needed, the SP Mgr executes an "eavesdrop cycle", that refreshes the appropriate Analysis Waveforms.  Once the eavesdrop is started, the SP Mgr enters a different idle loop, where it checks only for the eavesdrop to complete and for changes that intterupt the regular cycle. When the eavesdropping cycle is complete, the SP Mgr calls the Signal API function, updateAnalysisHeaders(), to insure the critical acquisition parameters are attached to the appropriate Analysis Waveform data records correctly. In particular, the waveform status register containing the VALID, COMPLETE and NEW DATA flags are updated.</font>
+</p>
+
+
+<p>
+  <a name="133457"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Once the Analysis Waveforms are refreshed, analyzeSignals() enters the DO_MEAS macro that implements the extra cycle steps that produce and display flag the front panel measurement. The analyzeSignals() routine calls the SAL API function, runMeasurements(). This function performs all the scheduled measurements in the list as a batch, and calls the function updateScreenMeas() in the Screen Manager to get the results posted. Upon return, the SP Mgr sets measureRequest to FALSE, thereby prohibiting further measure cycles from occurring until the next time one is initiated by the Screen Mgr. </font>
+</p>
+
+
+<p>
+  <a name="133263"> </a><font face="Verdana, Arial, Helvetica, sans-serif">As described in the previous subsection, the SP Mgr's final responsibility is to update the validity of the pertinent Analysis Waveforms at the end of each analysis cycle. This insures that a new eavesdrop will occur to provide fresh data on the next cycle, as appropriate.</font>
+</p>
+
+
+<h4>
+  <a name="133275"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif"> Synchronization of Scheduled Measurements with Math Functions</font>
+</h4>
+
+
+<p>
+  <a name="133261"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Before proceeding to Immediate Measurements, lets briefly examine the case where math functions and scheduled measurements are both on at the same time. In this case, a combination of the extra steps used in the function and measure cycles, just described, are executed. Basically,   function cycles run continuously, and they are supplemented with the nonredundant states from the measure cycle when the measureRequest bit is also TRUE. Careful examination of the last two subsections reveal that all the steps in both cycles have been defined to be compatible with all of the others. Synchronization of both math functions and scheduled measurements, therefore, becomes the relatively simple matter of executing all the necessary steps in the proper order without executing any twice on the same pass through the combined cycle. This confirms the notion that these "analysis cycles" basically consist of "extra states", used to coordinate the additional analysis tasks that are not used during the simplest regular cycles.</font>
+</p>
+
+
+<p>
+  <a name="133322"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The notable features of this combined function / measure cycle are highlighted here. When both the measureRequest flag and the functionEnable flags are found to be TRUE, only one eavesdrop operation is performed to refresh the appropriate Analysis Waveform records in the Signal Structures. Next the extra steps that handle functions execute, followed by steps that handle scheduled measurements. This allows measurements to be made on functions. The measureRequest flag is set FALSE and the validity of the Analysis Waveforms is updated at the end of the cycles as usual.</font>
+</p>
+
+
+<h4>
+  <a name="133332"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Synchronization of Internal Immediate Measurements</font>
+</h4>
+
+
+<p>
+  <a name="133439"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Immediate measurements are not performed under the Signal Path process thread. Instead they run under the process thread of the client that is expediting the measurement. Immediate measurements requested by the internal clients such as the calibration system are typically performed under the local process thread. These will be referred to from now on as internal meausurements.</font>
+</p>
+
+
+<p>
+  <a name="138864"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For internal measurements, the client routine calls the SAL API function, getImmMeas(), to expedite a specific parametric measurement. The parameters passed to this function define the measurment requested.  For exact details on this function see the section titled "SAL API Functions".  This function in turn calls the acqusition API function acquire() to insure that any Analysis Waveforms needed for making the immedate measurement are refreshed. This acquire() function, located in ..jediPlus/behavioral/utilAcqGrp.c, encapsulates the control and synchronization of any acq cycles needed for making the immediate measurement.</font>
+</p>
+
+
+<p>
+  <a name="138814"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The acquire() function disables the signal path, and sets the RUN control to the DIGITIZE run mode. Then it calls the doMeas() utility which calls resolveChanges()to pumps pending HW changes through the drivers. Then doMeas() blocks waiting for a digitize acq cycle to complete.  As the changes are resolved, the setAcqCycle() routine in the acq driver executes and sets up the next cycle to be either a digitizeAcq() or completeDigAcq(). Since doMeas() is blocked, one of these digitize acq cycles gets executed by the SP Mgr.  The digitize cycles have "custom analysis cycles" built into them, that start the appropriate acquistion which perform "eavesdrops" until the resulting Analysis Waveforms meet the designated completion criteria.  When these digitize cycles complete successfully, they send the ACQ DONE  message to the acqDone semaphore to wake up the waiting doMeas() function, before they exit with the SP Mgr blocks waiting on the SIGPATH ENABLE semaphore. In order to handle cases where the digitize does not complete successfully, the doMeas() function also detects a TIMEOUT or the ABORT DIGITIZE messages and wakes up gracefully. Upon returning to acquire(), the STOP control is set. This makes sure the local UI is cognizant of the fact that the sigPathProcess is stopped (SP Mgr is  blocked) waiting to be enabled again. The acquire() function then exists returning a boolean indicating whether the digitize was successful.</font>
+</p>
+
+
+<p>
+  <a name="138901"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When acquire() returns that the digitize was successful, getImmMeas() proceeds to produce the specified measurment and return the results to the original client. It calls doImmMeas() to produce the standard measurements available from the front panel, and directly calls the custom internal measurements defined only for internal consumption.  At the end of internal measurments the instument is stopped since the SP Mgr blocks when digitize cycle finish.  This provides default synchronization so the Analysis Waveforms acquired during the digitize, the measurement processing done by SAL, and the data displayed on screen are all consistent.       </font>
+</p>
+
+
+<h4>
+  <a name="138866"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Remote Immediate Measurements </font>
+</h4>
+
+
+<p>
+  <a name="138848"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Immediate measurements are not performed under the Signal Path process thread. Instead they run under the process thread of the client that is expediting the measurement. For example, measurements requested by the remote UI are performed under the remote process thread. These will be referred to from now on as remote meausurements.</font>
+</p>
+
+
+<p>
+  <a name="141479"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For remote measurements, the client routine typically is an action routine associated with a measurement query running under the remote process thread.  These query actions call the measurment driver API function execMeas() to expedite a specific parametric measurement. The parameters passed to this function define the measurment requested.  For exact details on this function see the section titled "SAL API Functions". This function insures the measurment sources signals are turned on and then  calls the acqusition API function syncMeasurements() to insure that any Analysis Waveforms needed for making the immedate measurement are refreshed. When the instrument is running, syncMeasurements(), calls signalsComplete() to check to see if the needed signals are complete and calls waitAcqComplete() when they are not.  When the instrument is stopped, syncMeasurements() calls updateChangedSigs() to insure the needed signals are updated properly and the Analysis Waveforms refreshed.</font>
+</p>
+
+
+<p>
+  <a name="138927"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The waitAcqComplete() function saves the existing run mode, disables the signal path, and sets the RUN control to the DIGITIZE run mode. Then it calls the doMeas() utility which calls resolveChanges()to pumps pending HW changes through the drivers. Then doMeas() blocks waiting for a digitize acq cycle to complete.  As the changes are resolved, the setAcqCycle() routine in the acq driver executes and sets up the next cycle to be either a digitizeAcq() or completeDigAcq(). Since doMeas() is blocked, one of these digitize acq cycles gets executed by the SP Mgr.  The digitize cycles have "custom analysis cycles" built into them, that start the appropriate acquistion and perform "eavesdrops" until the resulting Analysis Waveforms meet the designated completion criteria.  When these digitize cycles complete successfully, they send the ACQ DONE  message to the acqDone semaphore to wake up the waiting doMeas() function, before they exit with the SP Mgr blocks waiting on the SIGPATH ENABLE semaphore. In order to handle cases where the digitize does not complete successfully, the doMeas() function also detects a TIMEOUT or the ABORT DIGITIZE messages and wakes up gracefully. Upon returning to waitAcqcomplete(), the run mode control is restored. This returns the box to the run state it was in when the measurement query was received. The waitAcqComplete() function then exists returning a boolean indicating whether the digitize was successful.</font>
+</p>
+
+
+<p>
+  <a name="138920"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The updateChangedSigs() function starts the plot os signals if they are stopped, and calls the analyzeSignals() fucntions if the funcEnable, measEnable, OR measSync flags are set TRUE in the sigpathStatus register.  This udpateChangedSigs() function is the same function that always gets called at the end of the control change cycle to insure any changed signals get refreshed when the box is stopped.  the analyzeSignals() function is the same fucntion that always gets called to to produce scheduled measurements and math functions when they are enabled on the front panel. Since execMeas() makes sure the channels needed for the remote measurements are turned on these fucntions work fine for insuring any Analysis Waveforms needed are refreshed properly, including those associated with math functions.  The sections on scheduled measurements and math functions above contain detailed information in the analyzeSignals() function.</font>
+</p>
+
+
+<p>
+  <a name="138944"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When syncMeasurements() returns, execMeas() proceeds to produce the specified measurment and return the results to the original measurment query client. It calls doImmMeas() to produce the standard measurements available to the remote UI. For information on the operation of the doImmMeas() and the mechanism for returning the remote measurments' results and status see the section on the SignalAnalysis Library.</font>
+</p>
+
+
+<h2>
+  <a name="131034"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-4  Application Interface (API) between the Signal Path Mgr and the Local / Remote User Interfaces (UIs)</font>
+</h2>
+
+
+<p>
+  <a name="139240"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The primary responsibility of the interface between the SP Mgr and User Interfaces is to synchronize the acq/display cycles with control changes that affect the Signal Path. In cases where control changes effect the settings templates and the associated HW, the signal path must be stopped before the changes are put into effect to avoid corrupting the signal data being acquired and displayed.  These critical settings structures are protected using the signalPathDisabled semaphore. Controls that don't effect the settings templates and the associated HW use less restrictive methods.  For example, controls that only effect measurements or math functions use the anayzingSignals semaphore.  This does not stop the acq/display cycle it simply makes sure the SAL is not executing as the background task before allowing the UI to proceed.</font>
+</p>
+
+
+<p>
+  <a name="139279"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A secondary responsibility of the SP Mgr is to provide digitize acq cycles when requested by UIs.  In general these requests are handled like any other control changes except that they effect the RUN mode control and hence the acq cycle that runs as the background task.</font>
+</p>
+
+
+<p>
+  <a name="142157"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In general the SP Mgr does not know or care whether setting changes originate with the Local or Remote User Interface (UI). The Behavioral SW Layer abstracts the differences, so the SP Mgr basically can treat control changes in indentical fashion regardless of origin. </font>
+</p>
+
+
+<h3>
+  <a name="142158"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-4.1  The Signal Path Status structures</font>
+</h3>
+
+
+<p>
+  <a name="142159"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The signal path status structures consist of three state flags and a bit mapped status register. The state flags indicate the overall state of the signal path. </font>
+</p>
+
+
+<p>
+  <a name="142168"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The SigPath State flag booleans are:</font>
+</p>
+
+<ul>
+  <li><a name="142144"> </a><font face="Verdana, Arial, Helvetica, sans-serif">boolean sigPathEnabled</font>
+
+<p>
+  <a name="142222"> </a><font face="Verdana, Arial, Helvetica, sans-serif">UI version of the signal path's state. TRUE means the UIs know the signal path is enabled.</font>
+</p>
+
+
+<p>
+  <a name="142217"> </a><font face="Verdana, Arial, Helvetica, sans-serif">FALSE means the UIs know the signal path is disabled.</font>
+</p>
+
+  <li><a name="142149"> </a><font face="Verdana, Arial, Helvetica, sans-serif">boolean sigPathDisable</font>
+
+<p>
+  <a name="142152"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The flag set by the UI to allert the signal path that it should relinquish control. </font>
+</p>
+
+  <li><a name="142155"> </a><font face="Verdana, Arial, Helvetica, sans-serif">boolean analyzingSignals</font>
+
+<p>
+  <a name="142164"> </a><font face="Verdana, Arial, Helvetica, sans-serif">State variable that marks that the analyzer has been called.</font>
+</p>
+
+</ul>
+
+<p>
+  <a name="142169"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The 32 bits in the sigPathStatus register are used by the SP Mgr to monitor and control the operations of the signal Path.  Some are set and cleared by the UIs and some are used for passing status information between the SP Mgr and the Acq and Plot HW drivers.  They include:</font>
+</p>
+
+<ul>
+  <li><a name="142170"> </a><font face="Verdana, Arial, Helvetica, sans-serif">anyChange</font>
+
+<p>
+  <a name="142226"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the UI has detected a settings change that will effect the signal path is some way.</font>
+</p>
+
+  <li><a name="142204"> </a><font face="Verdana, Arial, Helvetica, sans-serif">dataChange</font>
+
+<p>
+  <a name="142227"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the UI has detected a settings change that will effect the data on screen.</font>
+</p>
+
+  <li><a name="142173"> </a><font face="Verdana, Arial, Helvetica, sans-serif">resetTrig</font>
+
+<p>
+  <a name="142234"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the UI has detected a settings change that will effect the trigger recognition.</font>
+</p>
+
+  <li><a name="142174"> </a><font face="Verdana, Arial, Helvetica, sans-serif">resetRR</font>
+
+<p>
+  <a name="142175"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the UI has detected a settings change that will effect the RR data on screen.</font>
+</p>
+
+  <li><a name="142244"> </a><font face="Verdana, Arial, Helvetica, sans-serif">resetAve</font>
+
+<p>
+  <a name="142245"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the UI has detected a settings change that will effect the Average data on screen.</font>
+</p>
+
+  <li><a name="142246"> </a><font face="Verdana, Arial, Helvetica, sans-serif">newLast</font>
+
+<p>
+  <a name="142251"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates a new rescaled plot of the last acquisition is available for display.</font>
+</p>
+
+  <li><a name="142207"> </a><font face="Verdana, Arial, Helvetica, sans-serif">deepStopEnable</font>
+
+<p>
+  <a name="142252"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the deep stop acq cycle is enabled (allowed).</font>
+</p>
+
+  <li><a name="142178"> </a><font face="Verdana, Arial, Helvetica, sans-serif">stopGrant</font>
+
+<p>
+  <a name="142253"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates a soft stop command has been issured to the acq HW driver.</font>
+</p>
+
+  <li><a name="142179"> </a><font face="Verdana, Arial, Helvetica, sans-serif">stopRequest</font>
+
+<p>
+  <a name="142256"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates a soft stop command needs to be issured to the acq HW driver.</font>
+</p>
+
+  <li><a name="142180"> </a><font face="Verdana, Arial, Helvetica, sans-serif">newAnsData</font>
+
+<p>
+  <a name="142273"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates a new set of eavesdropped data is available for analysis.</font>
+</p>
+
+  <li><a name="142181"> </a><font face="Verdana, Arial, Helvetica, sans-serif">ansDisable</font>
+
+<p>
+  <a name="142269"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the eavesdrop cycle to produce data for analysis is disabled.</font>
+</p>
+
+  <li><a name="142182"> </a><font face="Verdana, Arial, Helvetica, sans-serif">ansDone</font>
+
+<p>
+  <a name="142277"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates an eavesdrop cycle to produce data for analysis is complete</font>
+</p>
+
+  <li><a name="142284"> </a><font face="Verdana, Arial, Helvetica, sans-serif">funcEnable</font>
+
+<p>
+  <a name="142288"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates one or more math functions are enabled on the local UI.</font>
+</p>
+
+  <li><a name="142184"> </a><font face="Verdana, Arial, Helvetica, sans-serif">funcDone</font>
+
+<p>
+  <a name="142318"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the cycle to generate and display math functions is complete.</font>
+</p>
+
+  <li><a name="142185"> </a><font face="Verdana, Arial, Helvetica, sans-serif">measSync</font>
+
+<p>
+  <a name="142299"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates a remote measurement is pending.</font>
+</p>
+
+  <li><a name="142186"> </a><font face="Verdana, Arial, Helvetica, sans-serif">measEnable</font>
+
+<p>
+  <a name="142300"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates one or more measurements are enabled on the local UI.</font>
+</p>
+
+  <li><a name="142187"> </a><font face="Verdana, Arial, Helvetica, sans-serif">measRequest</font>
+
+<p>
+  <a name="142308"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates one or more measurements on the local UI are pending.</font>
+</p>
+
+  <li><a name="142322"> </a><font face="Verdana, Arial, Helvetica, sans-serif">measDone</font>
+
+<p>
+  <a name="142325"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the cycle to generate and display local measurements is complete.</font>
+</p>
+
+  <li><a name="142210"> </a><font face="Verdana, Arial, Helvetica, sans-serif">lastAvePlotEnable</font>
+
+<p>
+  <a name="142332"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the plot of last average data is enabled.</font>
+</p>
+
+  <li><a name="142330"> </a><font face="Verdana, Arial, Helvetica, sans-serif">lastPlotEnable</font>
+
+<p>
+  <a name="142338"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the plot of last real-time data is enabled.</font>
+</p>
+
+  <li><a name="142191"> </a><font face="Verdana, Arial, Helvetica, sans-serif">plotDisable</font>
+
+<p>
+  <a name="142349"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the plot of all data is disabled.</font>
+</p>
+
+  <li><a name="142355"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqDisable</font>
+
+<p>
+  <a name="142358"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the acq of all data is disabled.</font>
+</p>
+
+  <li><a name="142193"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqDone</font>
+
+<p>
+  <a name="142363"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indicates the cycle to acquire data is complete.</font>
+</p>
+
+</ul>
+
+<p>
+  <a name="142194"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="142137"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-4.2  Programatic API between the Signal Path Mgr and the Local/Remote UIs</font>
+</h3>
+
+
+<p>
+  <a name="142136"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following macros and functions are the basis for the interface between the SP Mgr and the UIs:</font>
+</p>
+
+<ul>
+  <li><a name="142060"> </a><font face="Verdana, Arial, Helvetica, sans-serif">DISABLE_SIGPATH</font>
+
+<p>
+  <a name="142061"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If the SigPath is enabled, this macro calls the doDisableSigPath() function. This function sets the disableSigPath flag in the SigPath Status Register and waits until the Signal Path process grants the signalPathDisabled semaphore. </font>
+</p>
+
+  <li><a name="142062"> </a><font face="Verdana, Arial, Helvetica, sans-serif">ENABLE_SIGPATH</font>
+
+<p>
+  <a name="142085"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If the SigPath is disabled, this macro calls the doEnableSigPath() function. This function issues the enableSignalPath message, the event that SP Mgr (and Signal Path process) is waiting upon when disabled.</font>
+</p>
+
+  <li><a name="142086"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SYNC_ANALYZER </font>
+
+<p>
+  <a name="142102"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If the flag analyzingSignals is TRUE, this macro calls the doRequestAnalysisDone(void) fucntion.  This fucntion </font>
+</p>
+
+  <li><a name="142103"> </a><font face="Verdana, Arial, Helvetica, sans-serif">analysisDone(void)</font>
+  <li><a name="142113"> </a><font face="Verdana, Arial, Helvetica, sans-serif">boolean doSoftStop(void)</font>
+  <li><a name="142123"> </a><font face="Verdana, Arial, Helvetica, sans-serif">boolean doDeepStop(void)</font>
+  <li><a name="142117"> </a><font face="Verdana, Arial, Helvetica, sans-serif">void updateChangedSigs(void)</font>
+  <li><a name="142131"> </a><font face="Verdana, Arial, Helvetica, sans-serif">boolean propogateChanges(void)</font>
+  <li><a name="142133"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+  <li><a name="142118"> </a><font face="Verdana, Arial, Helvetica, sans-serif">setRunMode() - Sets state variable runMode to RUNNING or STOPPED </font>
+  <li><a name="142125"> </a><font face="Verdana, Arial, Helvetica, sans-serif">setAcqCycle() - Sets state variable cycleType to CONTINUOUS, DEEP_STOP, SINGLE, DIGITIZE, SCROLL, or SYNCHRONOUS.</font>
+</ul>
+
+<p>
+  <a name="142126"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="142067"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The API between the SP Mgr and User Interfaces for controlling the acq/display cycle is defined in detail in the section titled "Run Control" in the chapter on the Hardware Abstraction Layer (HAL), since it is exposed to and primarily used by the action routine layer in HAL.</font>
+</p>
+
+
+<p>
+  <a name="139662"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Shown below is a diagram of the primary interactions between the local UI and the Signal Path.  </font>
+</p>
+
+
+<p>
+  <a name="141357"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141358"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141359"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<a name="139783"> </a>FIGURE 47.&#32; Prime interactions between the UI and  Signal Path processes<img src="images/acqMgr14.gif" height="847" width="602">
+
+<h3>
+  <a name="139297"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-4.3  Example use model for the signalPathDisabled Semaphore</font>
+</h3>
+
+
+<p>
+  <a name="139298"> </a><font face="Verdana, Arial, Helvetica, sans-serif">First, lets look at a typical use model for the sigPathDisabled semaphore. When the RUN control is active the UI releases the sigPathDisabled semaphore by sending the enableSigPath message. The sigPathProcess, the lowest priority process, wakes up and executes either the continuousAcq(), contScrollAcq() or rollAcq() function, depending on the timebase mode and sweep speed in effect. Since the basic operations implementing these continuous acq/display cycles are implemented in HW, the SP Mgr has few direct interactions which the Acq and Plot HW after it has been configured and enabled.  These acq/display cycles proceed continuously as triggers occur.  Meanshile, the SP Mgr typically is in a loop checking for the sigPathDisable flag and checking the sigPathStatus register to see if any signal analysis is needed. </font>
+</p>
+
+
+<p>
+  <a name="131084"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When the UI determines that a setting change that will effect the signal path HW has occurred, it executes the DISABLE_SIGPATH macro. When the signal path is enabled, this macro calls the doDisableSigPath() function that sets the disableSigPath flag and waits until the Signal Path process grants the signalPathDisabled semaphore.  If the signal Path is not enabled, the macro allows the UI the continue execution immediately. </font>
+</p>
+
+
+<p>
+  <a name="139507"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When the SP Mgr, detects the sigPathDisable flag it stops the acq/display cycle.  As the cycle stops, the SP Mgr checks the acquisition status and determines if a trigger, hence a valid acquisition, has occurred since the SigPath was last enabled. If at least one valid acq has occurred, the current acq settings are copied over the last acq settings. If no valid acqs have occurred, the current settings are not copied, so the settings for the last valid acq are maintained. This critical operation is encapsulated in the STOP_ACQ cycle step that is universally used in JediPlus to stop every and all acq/display cycles.</font>
+</p>
+
+
+<p>
+  <a name="139510"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When the acquisition is stopped, the signalPathDisabled semaphore is granted and the Signal Path Mgr will begin waiting for the signalPathEnable message. Once the semaphore is granted, the doDisableSigPath() function returns and the active control in the Behavioral layer is allowed to proceed. The control running under a UI process thread is responsible for causing the appropriate updates to occur in the setting timeplate structures described below:</font>
+</p>
+
+
+<p>
+  <a name="131039"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CHANGE SET, a summary word that provides a quick and dirty way to detect a scaling change has occurred. </font>
+</p>
+
+
+<p>
+  <a name="131040"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CHANNEL TEMPLATE, the main structure holding desired vertical settings. There is a section of variables that affect the acquisition and one for variables that affect the display. Contents include Y-axis change flags and precomputed Y scale factors.</font>
+</p>
+
+
+<p>
+  <a name="131042"> </a><font face="Verdana, Arial, Helvetica, sans-serif">ACQ TEMPLATE, the main structure holding horizontal settings. There is a section of variables that affect the acquisition and one for variables that affect the display. Contents include X-axis change flags and precomputed X scale factors.</font>
+</p>
+
+
+<p>
+  <a name="134606"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In general, these structures hold the desired settings for future acquisitions and displays. Oftentimes, a control will be directly responsible for computing and updating desired settings in these structures. In other cases, several controls will interact to determine the proper settings when interdependencies exist between controls.   </font>
+</p>
+
+
+<p>
+  <a name="134611"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Once the necessary changes to the desired settings are completed, the behavioral layer calls the appropriate HW Driver functions that put the desired settings into effect. In general, the drivers   consume the information in the TEMPLATES, compute the necessary HW setting changes and reprogram the HW. When the drivers are finished, the active control in the Behavioral SW layer should use the ENABLE_SIGPATH macro to enable the SigPath. If the signal path is already enabled, this macro does nothing. If the signal path is disabled, this macro calls the doEnableSigPath() function. This function issues the enableSignalPath message, the event that the SP Mgr (and Signal Path process) is waiting upon. When the SP Mgr starts up, it will restart the acq/display cycle if it is in the RUNNING state completing the setting change scenario. </font>
+</p>
+
+
+<p>
+  <a name="134639"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In summary, this mechanism strictly limits the attachment of critical acquisition parameters to the last valid data in acq memory to the instant when the acq/display cycle is stopped prior to each setting change. The acq cycle being stopped eliminates race conditions between the setting changes and trigger detection. Only when a trigger and hence a valid acquisition occurred since the acq/display cycle was last enabled will the critical last acquisition parameters get updated. Information reflecting the change is loaded into the TEMPLATES. This information is used to reprogram the Acq system for the current acquisition and it may be used to rescale the last valid acq data for redisplay until a current acquisition actually occurs.   It will never be copied over the last acq parameters, however, until the current cycle is disabled because another change is pending. Note, in this scheme, that the last acq data is only actually used from the time the acq cycle is disabled due to a pending change, until the first acq cycle following the change gets a trigger and produces valid current acq data. The critical last acq parameters, however, are preserved until the acq system is stopped due to another pending change.      </font>
+</p>
+
+
+<p>
+  <a name="131045"> </a><font face="Verdana, Arial, Helvetica, sans-serif">At a later time, it may be deemed advantageous to provide methods for disabling and enabling the Acq System and Plot System separately rather that treating the Signal Path as a single block. It may also be necessary to provide a mechanism that keeps track of the last and current acquisition parameters, if we decide to allow acquisition setting changes to occur without disabling the signal path.     </font>
+</p>
+
+
+<h2>
+  <a name="129504"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-5   SigPath Mgr Interface to the Acquisition / Plot Hardware (HW) </font>
+</h2>
+
+
+<p>
+  <a name="129505"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The interface between the SP Mgr and the Acq and Plot HW Drivers is composed of the set of HW Driver Functions called by the SP Mgr for monitoring, setting up and sequencing the acq/display cycle. Even though many of these functions are utilized primarily by the SP Mgr running under the Signal Path process, they are placed in the Acquisition Driver and Plot Driver modules to keep them with the other functions that interface with those functional HW blocks. The Hardware Abstraction Layer running under the UI process utilizes many of the functions in Acquisition and Plot HW Drivers when configuring these HW blocks, as well.</font>
+</p>
+
+
+<h3>
+  <a name="130265"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-5.1  SigPath Mgr / HW API Definitions</font>
+</h3>
+
+
+<p>
+  <a name="130232"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Generally speaking, the Acquisition and Plot Drivers are composed of two layers: the Logical HW Driver layer and Physical HW Driver layer. Typically, product independent SW such as the User Interfaces' behavioral layers use Logical HW Driver layer functions. These Logical HW Drivers are abstracted away from the HW implementation allowing them to be used unchanged in multiple products. The API to the Logical HW Drivers can be found the sections on the "Acq Driver " and "Plot Driver" in HAL.</font>
+</p>
+
+
+<p>
+  <a name="130273"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Physical HW Drivers deal directly with the specific HW components in a product.  From a system SW perspective, these private drivers are not generally accessible outside the Drivers themselves. Generally, Logical Drivers use Physical Drivers to setup the physical components implementing their logical blocks. SP Mgr attempts to use the Logical Drivers to remain as HW independent as possible, but in a few cases where timing is critical it might use the Physical Driver functions.The Physical HW Driver APIs are defined in the chapters titled "COYOTE/WILEY Driver", "ZEUM Driver" and MONGREL Driver".</font>
+</p>
+
+
+<h2>
+  <a name="133464"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-6  SigPath Mgr Data Structures</font>
+</h2>
+
+
+<h3>
+  <a name="133468"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-6.1  The Signal Path Status Register</font>
+</h3>
+
+
+<p>
+  <a name="133474"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This register contains a number of flag bits used to synchronize the regular acq/display cycles running in HW with various operations that run on the host CPU. These flag bits include:</font>
+</p>
+
+<ul>
+  <li><a name="133480"> </a><font face="Verdana, Arial, Helvetica, sans-serif">sigPathEnable - When FALSE, it disables the acq/display cycles so pending changes to the Signal Path can occur. When TRUE, it allows the acq/display cycles to proceed.</font>
+  <li><a name="133488"> </a><font face="Verdana, Arial, Helvetica, sans-serif">functionEnable - When TRUE, it enables math function generation and displays and causes the SP Mgr to produce new source Analysis Waveform data for SAL. This flag will be set true when the UI calls SAL to configure it and enable function generation. </font>
+  <li><a name="133481"> </a><font face="Verdana, Arial, Helvetica, sans-serif">measureRequest - When TRUE, requests that the scheduled, front panel measurement results be calculated and refreshed and causes the SP Mgr to produce new source Analysis Waveform data for SAL. This flag will be set true by the Screen Manager via a SAL call when the panel measurements need to be refreshed. </font>
+  <li><a name="138402"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The functionEnable flag in this register is set and cleared by the User Interface as functions are needed.  The measRequest flag is set peroiodically by the System Scheduler, under the direction of the UI and cleared when the requested measurements complete. </font>
+</ul>
+
+<p>
+  <a name="133472"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="133469"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-6.2  The Signal Path Change Register</font>
+</h3>
+
+
+<p>
+  <a name="134872"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This register contains a number of flag bits that are used to determine whether the SigPath HW needs to be refreshed as part of the current acq/display cycle. These flag bits include:</font>
+</p>
+
+<ul>
+  <li><a name="134878"> </a><font face="Verdana, Arial, Helvetica, sans-serif">functionChange - When TRUE, it indicates the configuration for functions has changed. </font>
+  <li><a name="134885"> </a><font face="Verdana, Arial, Helvetica, sans-serif">measureRequest - When TRUE, it indicates the configuration for scheduled, front panel measurement has changed.</font>
+</ul>
+
+<h3>
+  <a name="133466"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-6.3  The salChanSet </font>
+</h3>
+
+
+<p>
+  <a name="128531"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This structure indicates which active channels need to be acquired for analysis by SAL.</font>
+</p>
+
+
+<h2>
+  <a name="134902"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-7   SigPath Manager Organization</font>
+</h2>
+
+
+<p>
+  <a name="128687"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The SP Manager features a layered architecture consisting of the layers shown on the SP Mgr Overview Diagram below. The SP Mgr shell layer, the Outer Loop layer, and the Inner Loop layer are part of the SP Mgr proper. The SP Mgr shell on the top layer is the main loop for the Signal Path process. The Outer Loop layer consists of functions which perform the fundamental Signal Path operations including initialization and the execution of the various types of acq/display cycles. The Inner Loop layer is occupied by functions that each handle one step in acquiring and processing data during each acq/display cycle. The Signal Analysis Library (SAL) Functions and the Acq and Plot HW Driver Functions called from the SP Mgr under the Signal path process thread occupy the bottom layer, even though they are not part of the SP Mgr proper. The HW Driver functions provide the interface to the HW components. The SAL functions produce waveform math functions and measurements from Signal data. </font>
+</p>
+
+<a name="131563"> </a>FIGURE 48.&#32; The SIGNAL PATH MANAGER OVERVIEW DIAGRAM<img src="images/acqMgra.gif" height="396" width="588">
+
+<h3>
+  <a name="128613"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-7.1  The SigPath Mgr Shell</font>
+</h3>
+
+
+<p>
+  <a name="128983"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The SP Mgr shell, the main loop for the Signal Path process, handles messages (semaphores &amp; events) between the Signal Path and the other processes and executes the state sequences that control the fundamental operations performed by the Signal Path. </font>
+</p>
+
+
+<p>
+  <a name="135420"> </a><font face="Verdana, Arial, Helvetica, sans-serif">At power up It calls the sigPathInit() function to put the signal Path Mgr itself and the utilities it depends on into valid initial states. This function creates and initializes the essential signal path data structures and sets  the initial state sequence for the acq/display cycle to the "continuousAcq()" cycle.    ????? It also sets up the interrupt service routine mechanism for the fine trigger interpolator calibration so that it will execute periodically. This entails specifying the interrupt timing and registering the call back function for servicing the interrupt with the System Scheduler.</font>
+</p>
+
+
+<p>
+  <a name="137016"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The sigPathDisable flag is used by theUI to command the sigPath process to proceed to safe  spot,  issue the SIGPATH_DISABLED semaphore and then wait for the SIGPATH_ENABLE message.  This passes execution to the UI.  The sigPathDisable flag should not be set TRUE unless the UI is waiting on the SIGPATH_DISABLED semaphore.</font>
+</p>
+
+
+<p>
+  <a name="137017"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<a name="137015"> </a>FIGURE 49.&#32;  The SIGNAL PATH SHELL STATE DIAGRAM<img src="images/acqMgr18.gif" height="632" width="588">
+
+<h3>
+  <a name="135311"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-7.2  The Outer Loop Layer</font>
+</h3>
+
+
+<p>
+  <a name="128965"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Outer Loop layer is occupied by the functions which perform the fundamental acq/display operations.  There is a unique  "outer loop function" that defines the state sequence that handles each type of acq/display cycle. </font>
+</p>
+
+
+<p>
+  <a name="131848"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The "state sequence" for the current cycle is determined by the setAcqCycle() API function when the UI detects a change in the RUN/STOP/SINGLE contols, the AcqMode control or the TimeMode control.  This function is called under the UI process thread after the acq/display  cycle has been stopped due to pending changes . The "state sequence" selected is executed under the sigPath process thread after the UI finishes the changes and re-enables the signal path. The outer loop function is called indirectly via the pointer acqCyclePtr, in the forever loop of the sigPathProcess(). </font>
+</p>
+
+
+<h4>
+  <a name="135353"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Acq/Display Cycles </font>
+</h4>
+
+
+<p>
+  <a name="137510"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Unique "state sequences" exist for the various acq/display cycle types including:</font>
+</p>
+
+<ul>
+  <li><a name="131849"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Continuous Acq - The continuousAcq() is active when the Acq System is RUNNING at a fast sweep speed.</font>
+  <li><a name="137036"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Single Acq - The singleAcq() is active when the SINGLE key is pushed and the Acq System had been RUNNING at a fast sweep speed.</font>
+  <li><a name="137050"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Deep Stop Acq - The deepStopAcq() is active when the STOP&nbsp;key is pushed and the Acq System had been RUNNING at a fast sweep speed.  It performs an extra acquisition during the transition from RUNNING to STOPPED, to fully utilize acquisition memory.</font>
+  <li><a name="137063"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Continuous Scroll Acq - The contScrollAcq() is active when RUNNING at a slow sweep speeds.  This cycle takes special measures to allow the sweep to complete when the STOP button is pushed.</font>
+  <li><a name="137094"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Single Scroll Acq - The singleScrollAcq() is active when the SINGLE key is pushed and the Acq System had been RUNNING at a slow sweep speed.  This cycle takes special measures to allow the sweep to complete when the STOP button is pushed.</font>
+  <li><a name="137075"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Roll Acq - The rolllAcq() is active when RUNNING in ROLL mode.  This is at slow sweep speeds only, by definition.</font>
+  <li><a name="131852"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Digitize Acq - The digitizeAcq() is active when the UI requests a special data acquision and a real-time record will satisfy the completion criteria. This typically occurs when the Remote UI requests a complete data set for remote transfer or when the Local UI requests a  complete data set for internal measurements such as CAL. </font>
+  <li><a name="137087"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Complete Digitize Acq - The completeDigAcq() is active when the UI requests a special data acquision and an equivalent-time record or averaged record are needed to satisfy the completion criteria. This cycle take special measures to insure the ensemble waveform records are complete .  This typically occurs when the Remote UI requests a complete data set for remote transfer or when the Local UI requests a  complete data set for internal measurements such as CAL. </font>
+  <li><a name="134932"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Synchronous Acq - NOT IMPLEMENTED - Active when a function, but no active channels, is displayed. </font>
+</ul>
+
+<p>
+  <a name="135360"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The functions implementing these acq/display cycle are contained in jediPlus/sigPath/mgr/acqCycles.c.  Behaviorial descriptions of each cycle appear in the earlier section aptly titled "Acquisition and Display Cycles in JediPlus Products". Likewise, interactions between the UI and the Signal Path Processes are described in detail in the section titled "SigPath Mgr Interface with the Local and Remote User Interfaces".  The next diagram shows the organizatin of the of continuousAcq cycle.</font>
+</p>
+
+<a name="136142"> </a>FIGURE 50.&#32;  The CONTINUOUS Acq Cycle <img src="images/acqMgr12.gif" height="550" width="555">
+<a name="136229"> </a>FIGURE 51.&#32;  The START/STOP_CONTINUOUS_ACQ  Cycle <img src="images/acqMgr33.gif" height="481" width="588">
+ Steps
+<h3>
+  <a name="137508"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-7.3   Analysis Cycles</font>
+</h3>
+
+
+<p>
+  <a name="137519"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are two basic analysis cycles in Muskrat. These support  math functions and scheduled measurements.  A FULL analysis cycle does a FULL eavesdrop. This produces an analysis wave on the plot at the end of a complete sweep thus it insures the record covers the full time window.  The full analysis cycle is used on fast sweep speeds or when full records are mandatory. A normal, non-full, analysis cycle does a partial eavesdrop.  This produces an analysis wave on the next plot to occur, which may or may not cover the full time window. The partial analysis cycles is used on slow sweep speeds, where the desired updated rate for measurements and functions exceeds the sweep rate.</font>
+</p>
+
+
+<p>
+  <a name="137535"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Notice these two analysis cycle are built from the same steps, except that one uses ACQ-ANS-WAVE where the other uses a conditional sequence of ACQ_FULL_ANS_WAVE. On random repetative acquisitions, the Muskrat acq/plot HW always produces a plot at the end of the sweep caused by the first trigger. This immediately gets some data displayed, but after only one trigger the analysis waveform eavesdropped contains only a few actual points.  Therefore a second eavedrop is performed. Subsequent plots wait for some specified number of triggers to occur so the secord eavesdrop delivers very usable analysis records. Real-time (non-random repetative) acquisitions are usably dense by definition.  On slow speed speeds the sample period is small complared to the pixel resolution, which insures dense records.  On fast sweep speeds with the REALTIME ONLY feature engaged, a hardware filter fills in the record to plotted by interpolating between the actual data points.</font>
+</p>
+
+<a name="136524"> </a>FIGURE 52.&#32;  The DO_FULL_ANALYSIS_CYCLE cycle step <img src="images/acqMgr22.gif" height="714" width="588">
+<a name="137614"> </a>FIGURE 53.&#32;  The DO_ANALYSIS_CYCLE cycle step <img src="images/acqMgr10.gif" height="735" width="588">
+
+<p>
+  <a name="137669"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Diagrams of the ACQ_FULL_ANS_WAVE and ACQ_ANS_WAVE steps appear below. Notice that they are identical, except  in their use of  START_FULL_ANS_ACQ versus START_ANS_ACQ and WAIT_FOR _FULL_ANS_ACQ versus WAIT_FOR_ANS_ACQ.  The differences in these macros deal with the differences in controlling the eavesdrop hardware in the two eavesdrop modes.     </font>
+</p>
+
+<a name="137734"> </a>FIGURE 54.&#32;  The ACQ_FULL_ANS_WAVE  cycle step <img src="images/acqMgr5.gif" height="412" width="588">
+<a name="137788"> </a>FIGURE 55.&#32;  The ACQ_FULL_ANS_WAVE  cycle step <img src="images/acqMgr19.gif" height="412" width="588">
+
+<h3>
+  <a name="137735"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-7.4  The Inner Loop Layer</font>
+</h3>
+
+
+<p>
+  <a name="131929"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Inner Loop layer is occupied by acquisition state functions. In theory, there is a acquisition state and an associated state function to handle each step in acquiring and processing data in each type of acq/display cycle. In practise, some states are generic and reused, and most of the significant processing occurs in SAL functions called from a state function. In general, the state functions are optimized for efficient operation and close interplay with any special acq hardware. This approach removes most mode related decisions from the "inner acquisition loops" allowing them to deal exclusively with the job at hand and focus on data related decisions. </font>
+</p>
+
+
+<p>
+  <a name="131930"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In general, each sequence contains several generic states, or state functions, including: </font>
+</p>
+
+<ul>
+  <li><a name="131931"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqEnable - Starts acquisition HW, thereby enabling acq cycle. </font>
+  <li><a name="131932"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqDisable - Stops acquisition HW, thereby disabling the acq cycle. It also determines the state of the current acquisition when the cycle first stop. It is critical to preserve the last acquisition parameters if no new data was captured by the current acquisition. Likewise it is critical to update the last acquisition parameters if a valid current acq actually occurred.         </font>
+  <li><a name="131934"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqPollInRun - Monitors the acquisition for pending changes when in Running steady state. </font>
+  <li><a name="131935"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqPollInStop - Monitors the acquisition for pending changes when in Stopped steady state. </font>
+  <li><a name="134938"> </a><font face="Verdana, Arial, Helvetica, sans-serif">plotEnable - Starts plot HW, thereby enabling display cycle. </font>
+  <li><a name="131947"> </a><font face="Verdana, Arial, Helvetica, sans-serif">plotDisable - Stops plot HW, thereby disabling the display cycle.</font>
+  <li><a name="134940"> </a><font face="Verdana, Arial, Helvetica, sans-serif">cycleReset - Resets the acq/display cycle preparing for it to be enabled.</font>
+</ul>
+
+<p>
+  <a name="131948"> </a><font face="Verdana, Arial, Helvetica, sans-serif">While this state machine approach allows the state function implementing a particular step in a cycle to be optimized, it is not without complications. In order for a complete acq/display cycle to be implemented, the outer loop functions for the cycle must call the correct state functions for each state in the proper order. However, either external events or completion of the state function can cause transitions from one state to another. This requires the outer loop to handle exceptions to the normal sequence, if the acq/display cycles get interrupted by an external event. The problem is further compounded by the fact that state functions are often involved in "inner loops" polling the acquisition hardware to determine when a step is complete. </font>
+</p>
+
+
+<p>
+  <a name="131961"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The scheme for organizing the interactions between the inner and outer loop functions when determining the next sequence state is founded on two simple rules. First, any "inner loop" involved in polling the acquisition hardware must also detect external events that require a change in the state sequence and promptly exit the polling loop. Secondly, every state function must return its exit status upon leaving so the outer loop can participate in the determination of the next state, if necessary. </font>
+</p>
+
+
+<p>
+  <a name="131969"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Lets test this scheme by walking through the example of interrupting a normal Running cycle for a setting change. Initially, the acqPollInRun() state function is executing. The sigPathEnable bit in the Acq Status register is being monitored in the "inner loop". When the sigPathEnable bit is detected FALSE, the polling loop is exited and a return is done with the exitStatus set to ACQ_DISABLED. The outer loop notes the exitStatus and calls the acqDisable() function as the next state. The Acq HW is stopped and let's assume a valid trigger and hence a current acquisition actually occurred in this case. The current acq parameters are copied over the last acq parameters and this state function returns with its exitStatus set to ACQ_DISABLED. The outer loop notes the exitStatus, updates the acqCycleStatus to DISABLED and returns to the SP Mgr shell. The SP Mgr shell notes the acqCycleStatus, puts the signalPathDisabled message into the Signal Path exchange and blocks waiting for the Signal Path enable event. The UI awakes, puts the change into effect and issues the signalPathEnable event. The OS awakes the SP Mgr which sets the acqCycleStatus to ENABLED and calls the cycleSequence() function. It calls the outer loop for the normal acq cycle since the acqCyclePtr was not changed. The outer loop calls the resetCycle() state function the normal first state in a sequence. It does any cleanup required prior restarting the acq\display cycle and returns with its exitStatus set to ACQ_RESET.   The outer loop notes the exitStatus and calls the acqEnable() function as the next state. It starts the Acq HW and returns with its exitStatus set to ACQ_ENABLED.   The outer loop notes the exitStatus and calls the acqPollInRun() function as the next state completing the example.</font>
+</p>
+
+
+<p>
+  <a name="132016"> </a><font face="Verdana, Arial, Helvetica, sans-serif">ASIDE: Depending on the implementation used, this "state machine" approach can allow standard acquisition or analysis routines to be easily replaced with "custom" ones if desired. Potentially state functions can modify the next state to be executed prior to returning, thereby causing the "standard" sequence to be changed. Alternatively, accessing state functions via a RAM jump table can allow "custom" state functions to replace the standard ones with minimal impact on the rest of the SP Mgr software.</font>
+</p>
+
+
+<h3>
+  <a name="131730"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">20-7.5  The HW Driver and Signal Analysis Library Function Layer</font>
+</h3>
+
+
+<p>
+  <a name="129001"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The functions on the bottom layer of the SP Mgr structure chart used by the state functions for accomplishing a particular step in the acq \ display cycle merit a brief discussion. Without exception, HW driver functions always are used for interfacing with the HW components. </font>
+</p>
+
+
+<p>
+  <a name="132043"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When measurements are enabled on the front panel, additional acq states and state function are used to coordinate the production of source Signal data for analysis by SAL. These states include:</font>
+</p>
+
+<ul>
+  <li><a name="132434"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqAnsWave - Performs an acq/display cycle with eavesdropping on the appropriate channels, if needed. In cases like when the instrument is stopped, the signal may not need to be refreshed because it already accurately represents the waveforms displayed.</font>
+  <li><a name="132435"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqComplete -Determines if the acquired signal meets the acq completion criteria.</font>
+  <li><a name="132436"> </a><font face="Verdana, Arial, Helvetica, sans-serif">waveHeader - Updates the appropriate Analysis Wave headers. </font>
+</ul>
+
+<p>
+  <a name="132466"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Then the states which generate and update the measurement results are executed. These include: </font>
+</p>
+
+<ul>
+  <li><a name="132447"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> doMeas - calls the runMeasurements() function in SAL and any other the appropriate SAL interface functions.</font>
+</ul>
+
+<p>
+  <a name="132473"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When math functions are enabled on the front panel, the same additional acq states and state functions described above are again used to coordinate the production of source Signal data for analysis by the SAL.</font>
+</p>
+
+
+<p>
+  <a name="132476"> </a><font face="Verdana, Arial, Helvetica, sans-serif">After the appropriate Signals have been updated, the following state are used to coordinate the generation and display of the math functions.</font>
+</p>
+
+<ul>
+  <li><a name="132457"> </a><font face="Verdana, Arial, Helvetica, sans-serif">findFreeBuffer - Locates an available function plot buffer, used by HW to plot a function on the display. </font>
+  <li><a name="132460"> </a><font face="Verdana, Arial, Helvetica, sans-serif">doFunctions - Calls the runFilters() function in SAL and any other the appropriate SAL interface functions which generate produce the function Signal data into the available buffer, and update the Signal headers. </font>
+  <li><a name="132481"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> bufferReady - Alerts the plot HW that a new function plot buffer is ready to used for the next display frame.</font>
+</ul>
+
+<p>
+  <a name="132060"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Interactions between the UI and the Signal Path Processes are described in more detail in the previous section titled "SigPath Mgr Interface with the Signal Analysis Library".</font>
+</p>
+
+
+<p>
+  <a name="140017"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr39.gif" height="228" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="139943"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr41.gif" height="203" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="139977"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="142897"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="142898"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="142899"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr31.gif" height="330" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="140170"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr28a.gif" height="332" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="142900"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="142901"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr10a.gif" height="246" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="142896"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="140087"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr44.gif" height="303" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="140113"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr6.gif" height="194" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="128635"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="140215"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr17.gif" height="332" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="142574"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr31a.gif" height="151" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="142601"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr35.gif" height="154" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="142631"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="142628"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="142655"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="142656"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="142660"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="142661"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr15a.gif" height="264" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="142657"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr19b.gif" height="264" width="624">
+</font>
+</p>
+
+<a name="142663"> </a>FIGURE 56.&#32; <img src="images/acqMgr30.gif" height="175" width="624">
+Structure Chart for the START_ACQ cycle step macro<a name="141931"> </a>FIGURE 57.&#32; <img src="images/acqMgr38a.gif" height="175" width="624">
+Structure Chart for the STOP_ACQ cycle step macro
+<p>
+  <a name="141896"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141992"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="142027"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr42a.gif" height="175" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="140318"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141953"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141988"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr33b.gif" height="175" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="140399"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141951"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr42.gif" height="300" width="624">
+ </font>
+</p>
+
+
+<p>
+  <a name="141949"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="140403"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="140443"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr2.gif" height="258" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="140444"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<a name="140528"> </a>FIGURE 58.&#32; Structure of digitizeAcq() Function.<img src="images/acqMgr11.gif" height="455" width="624">
+
+<p>
+  <a name="140557"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="140584"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr29.gif" height="192" width="624">
+</font>
+</p>
+
+<a name="140692"> </a>FIGURE 59.&#32; <img src="images/acqMgr32.gif" height="489" width="624">
+Structure of completeDigAcq() Function.
+<p>
+  <a name="140713"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr46.gif" height="147" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="140749"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr3.gif" height="159" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="140757"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="140778"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr9a.gif" height="144" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="140804"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr15.gif" height="192" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="140830"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> <img src="images/acqMgr18a.gif" height="192" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="140853"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr22a.gif" height="163" width="624">
+ </font>
+</p>
+
+
+<p>
+  <a name="140854"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="140884"> </a><font face="Verdana, Arial, Helvetica, sans-serif">  <img src="images/acqMgr26.gif" height="192" width="624">
+</font>
+</p>
+
+<a name="140923"> </a>FIGURE 60.&#32;  Structure Chart for DO_FUNC cycle step macro<img src="images/acqMgr28.gif" height="428" width="624">
+<a name="140946"> </a>FIGURE 61.&#32; <img src="images/acqMgr33a.gif" height="154" width="624">
+ Structure Chart for DO_MEAS cycle step macro
+<p>
+  <a name="140964"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr37.gif" height="154" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="140585"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<a name="141050"> </a>FIGURE 62.&#32; <img src="images/acqMgr40.gif" height="365" width="624">
+Structure of execMeas() Function,  the Remote Measurement Entry Point.
+<p>
+  <a name="141087"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr7.gif" height="225" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="141105"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr13.gif" height="129" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="140277"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="140181"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141113"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141135"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr16.gif" height="135" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="141136"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141159"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr19a.gif" height="155" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="141223"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr24.gif" height="275" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="128550"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="128553"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141226"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141227"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141228"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141235"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141255"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr34.gif" height="150" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="141326"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr38.gif" height="297" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="141327"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141328"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="141350"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/acqMgr4.gif" height="155" width="624">
+</font>
+</p>
+
+
+<p>
+  <a name="141229"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="signal.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="meas.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

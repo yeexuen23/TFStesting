@@ -1,0 +1,856 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:23:11 2002">
+<title>CHAPTER 15 Channel Driver</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="acqDriver.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="plotDriver.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="124832"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 15 	 Channel Driver</font>
+</h1><hr>
+
+
+<h2>
+  <a name="130295"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">15-1  Overview</font>
+</h2>
+
+
+<p>
+  <a name="141214"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Channel Driver is the software (SW) module that encapsulates the vertical and trigger conditioning functionality for the input channels in the JediPlus products. It presents an Application Interface (API) that unifies and standardizes control over the vertical axis for waveforms used by the Trigger system, captured by the Acquisition (Acq) system and consumed by the Plot system. A primary goal of this logical driver is to provide an abstract interface between the vertical conditioning controls in the behavioral layer of the UI and the physical drivers for the vertical control HW blocks used to trigger on, acquire and plot the signals.   This standard API  fascillitates quick development of the follow on JedfiPlus products since it isolates the SW changes needed to support different Vertical HW implementations, down in the Physical Channel Drivers. </font>
+</p>
+
+<a name="143160"> </a>FIGURE 37.&#32; <img src="images/chanDrivera.gif" height="325" width="621">
+ Channel Driver Context Diagram
+<p>
+  <a name="144275"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Channel Driver Context Diagram is a simplified view of the relationships between the Channel Driver and the rest of the JediPlus SW System. Its shows the Channel Driver providing part of the hardware abstation layer (HAL), between the UI and the Physical Chan, Acq and Plot drivers. It presents a unified, standard  view of the vertical conditioning and scaling parameters used in configuring Vertical HW System and the vertical sections of  Waveform Acq and Plot HW Systems. </font>
+</p>
+
+
+<h3>
+  <a name="144965"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">15-1.1  The ChannelDriver API</font>
+</h3>
+
+
+<p>
+  <a name="144966"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Channel Driver in the JediPLus SW is composed of a set of data structures that describe conditioning and scalling of the vertical windows for the oscilloscope and logic timing analyzer inputs and the set of functions that initialize, access and manipulate these structures. </font>
+</p>
+
+
+<p>
+  <a name="144647"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The UI presents conditionaing and scaling controls for teh various inputs. The user can scale and position the waveforms vertically for viewing or making measurements by simply adjusting either the remote or local UI controls for the channel of interest. These include Volts/Div, Position, Coupling,Trigger level, etc. Associated control mechanisms in the behavioral layer of the UI distill the settings changes into the vertical scale and conditionsing information stored in the Channel Driver data structures called Channel Settings Templates. </font>
+</p>
+
+
+<p>
+  <a name="144622"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Using this vertical information from the UI in combination with other acquisition information, the Logical Channel Driver is charged with providing the logical information needed by the Physical HW drivers to control the vertical HW that determines the Y-axis for data acquired and displayed. </font>
+</p>
+
+
+<h4>
+  <a name="144632"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Channel Template Structures </font>
+</h4>
+
+
+<p>
+  <a name="144354"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are two  types of channel settings template structures in the JediPlus to handle analog input channels and digital input channels.  </font>
+</p>
+
+
+<p>
+  <a name="145058"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The ChanTemplate structure describing the analog input channels is made up of multiple sections. One section, called the Chan User Factors, contains the scaling and conditioning parameters that describe the front end settings for an analog channel.  Another section, called the Trig User Factors, contains the trigger theshold and conditioning parameters for an analog channel.  These User Factors, defined in the file jediPlus/include/dvrChan.h, are parameters set up by the UI controls that are consumed by the Logical Channel Driver.  The definitions appear below:</font>
+</p>
+
+<pre>
+<a name="145111"> </a>/* MACRO defining the user factors for the scope vertical channels */
+<a name="145117"> </a>#define CHAN_USER_FACTORS\
+<a name="145124"> </a>float64 range;      /* Magnitude (Volts) full screen */\
+<a name="145127"> </a>float64 offset;     /* Magnitdue (Volts) at the offset reference */\
+<a name="145190"> </a>float64 ref;     /* Offset reference loc in % of full screen */\
+<a name="145193"> </a>float64 botEdge;    /* value at bottom of screen   */\
+<a name="145196"> </a>float64 topEdge;    /* value at top of screen   */\
+<a name="145199"> </a>Units yUnits;    /* Unit suffix for y axis */\
+<a name="145202"> </a>float64 probeAtten; /* Attenuation of the probe */\
+<a name="145205"> </a>float64 probeDelay; /* Time delay of the probe */\
+<a name="145208"> </a>Coupling coupling;  /* State of channel coupling (ac-dc-gnd-cal) */\
+<a name="145070"> </a>Impedance impedance;   /* State of channel impedance */\
+<a name="145211"> </a>boolean invert;  /* State of user interface channel invert */\
+<a name="145214"> </a>BwLimit bwLimit    /* State of channel bandwidth limit */
+<a name="145217"> </a>
+<a name="145218"> </a>/* MACRO defining the user factors for the scope sync (trigger) paths */
+<a name="145221"> </a>#define TRIG_USER_FACTORS\
+<a name="145227"> </a>float64 trigLevel;      /* Magnitude (Volts) of trigger level */\
+<a name="145230"> </a>Coupling trigCoupling;  /* State of trigger coupling (ac/dc/ac-lfrej) */\
+<a name="145233"> </a>BwLimit trigHfReject;   /* State of trigger high freq reject (on/off) */\
+<a name="145236"> </a>NRejLimit trigNReject   /* State of trigger noize reject (on/off) */
+<a name="145256"> </a>/* ChanTemplate def, the y axis component of the signal template and com-
+posite channel skew term in the form needed for acq. Note: this struc-
+ture needs to maintained with the ExtTrigTemplate so that some functions 
+can use them interchangeably */
+<a name="145271"> </a>typedef struct
+<a name="145288"> </a>{
+<a name="145289"> </a>   ChanId chan;        /* the channel this template defines */
+<a name="145089"> </a>   uint8 spare;
+<a name="145090"> </a>   Change change;      /* Bitset indicating changes */
+<a name="145091"> </a>   CHAN_USER_FACTORS;  /* user chan factors */
+<a name="145092"> </a>   TRIG_USER_FACTORS;  /* user trigger factors */
+<a name="145094"> </a>}ChanTemplate;
+</pre>
+
+<p>
+  <a name="145304"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Driver Factors, defined in the file  /jediPlus/hwDvr/include/dvrTimeUtil.h, are produced by the Logical Channel Driver for use by the other Logical HW Drivers and lower physical HW drivers.</font>
+</p>
+
+<pre>
+<a name="145108"> </a>/* MACRO defining the driver factors for the scope channel driver  */
+<a name="145324"> </a>#define CHAN_DVR_FACTORS \
+<a name="145325"> </a>  float32 voltsAtRefQ;    /* Volts at the ref Q-level in current acq */\
+<a name="145326"> </a>  float32 voltsPerQ;      /* Magnitude per Q-level in current acq */\
+<a name="145327"> </a>  float32 offsetError;    /* Magnitude per Q-level in current acq */\
+<a name="145328"> </a>  float32 levelError;     /* Magnitude per Q-level in current acq */\
+<a name="145329"> </a>  uint32 qRef;            /* Q-level at offset reference current acq */\
+<a name="145330"> </a>  uint32 qLevels;         /* Number of Q-levels in current acq data */\
+<a name="145331"> </a>  int32 magnifyGain;      /* Plot scaler gain for vert current acq  */\
+<a name="145332"> </a>  boolean hwInvert;       /* Preamp channel invert state current acq */\
+<a name="145333"> </a>  int16 attenIndex;       /* selected attenuator setting            */\
+<a name="145334"> </a>  int16 preampGainIndex;  /* selected preamp gain setting           */\
+<a name="145335"> </a>  int16 offsetRangeIndex; /* selected offset range                  */\
+<a name="145336"> </a>  int64 chanSkew;         /* Curr time skew of chan relative to CH1 */\
+<a name="145337"> </a>  float32 lastVoltsAtRefQ;/* Volts at the ref Q-level in last acq   */\
+<a name="145338"> </a>  float32 lastVoltsPerQ;  /* Magnitude per Q-level in last acq      */\
+<a name="145339"> </a>  uint32 lastQRef;        /* Q-level at offset reference last acq   */\
+<a name="145340"> </a>  uint32 lastQLevels;     /* Number of Q-levels in last acq data    */\
+<a name="145341"> </a>  int32 lastMagnifyGain;  /* Plot scaler gain for vert last acq     */\
+<a name="145342"> </a>  boolean lastHwInvert;   /* Preamp channel invert state last acq   */\
+<a name="145343"> </a>  int64 lastChanSkew;     /* Last time skew of chan relative to CH1 */\
+<a name="145344"> </a>  boolean reconstruct        /* Channel data reconstruct            */
+<a name="145345"> </a>/* ChanTemplate def, the y axis component of the signal template and com-
+posite channel skew term in the form needed for acq. Note: this struc-
+ture needs to maintained with the ExtTrigTemplate so that some functions 
+can use them interchangeably */
+<a name="145354"> </a>typedef struct
+<a name="145355"> </a>{
+<a name="145356"> </a>   ChanId chan;                 /* the channel this template defines */
+<a name="145357"> </a>   uint8 spare;
+<a name="145358"> </a>   Change change;               /* Bitset indicating changes */
+<a name="145359"> </a>    CHAN_USER_FACTORS;          /* user chan factors */
+<a name="145360"> </a>    TRIG_USER_FACTORS;          /* user trigger factors */
+<a name="145361"> </a>    CHAN_DVR_FACTORS;           /* driver chan factors */
+<a name="145362"> </a>}
+<a name="145363"> </a>DvrChanTemplate;
+</pre>
+
+<p>
+  <a name="145435"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The DigitalChanTemplate structure describes the digital input channels making up the timing analyzer input pods for the JediPlus MSO products.  It contains the vertical scaling and conditioning parameters and trigger threshold that describe the front end settings for the digital channels/pods.  These User Factors, defined in the file jediPlus/include/dvrChan.h, are parameters set up by the UI controls that are consumed by the Logical Channel Driver.  The definitions appear below:</font>
+</p>
+
+<pre>
+<a name="145420"> </a>/* DigChanTemplate definition,the y axis component of the logic timing 
+channels */
+<a name="145421"> </a>typedef struct
+<a name="145422"> </a>{
+<a name="145423"> </a>   ChanId chan;                       /* the chan id */
+<a name="145424"> </a>   uint8 spare;
+<a name="145425"> </a>   Change change;                     /* Bitset indicating changes */
+<a name="145426"> </a>   uint32 position[N_DIGITAL_CHANS];  /* Position of chan on screen */
+<a name="145427"> </a>   float64 trigLevel[N_PODS];         /* user logic trigger factors */
+<a name="145428"> </a>   float64 probeDelay[N_PODS];        /* Time delay of the probe */
+<a name="145429"> </a>   LogicFamily logicFamily[N_PODS];
+<a name="145430"> </a>}
+<a name="145431"> </a>DigitalChanTemplate;
+</pre>
+
+<p>
+  <a name="145453"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The DvrDigitalChanTemplate structure contains a DigitalChanTemaplte, and adds a couple of private Channel Driver parameters that are not accessible to the UI. These Driver Factors, defined in the file jediPlus/hwDvr/include/dvrChanUtil.h, are parameters set up by other Logical Drivers when parameters that effect the channel skew change.  The definitions appear below:</font>
+</p>
+
+<pre>
+<a name="145322"> </a>/* DvrDigChanTemplate def, the y axis component of the logic timing chan-
+nels */
+<a name="145308"> </a>typedef struct
+<a name="145309"> </a>{
+<a name="145310"> </a>   ChanId chan;                       /* the channel ID */
+<a name="145311"> </a>   uint8 spare;
+<a name="145312"> </a>   Change change;                     /* Bitset indicating changes */
+<a name="145313"> </a>   uint32 position[N_DIGITAL_CHANS];  /* Position of chan on screen */
+<a name="145314"> </a>   float64 trigLevel[N_PODS];        /* user logic trigger factors */
+<a name="145315"> </a>   float64 probeDelay[N_PODS];       /* Time delay of the probe */
+<a name="145316"> </a>   LogicFamily logicFamily[N_PODS];
+<a name="145317"> </a>   int64 chanSkew[N_PODS];           /* Curr time skew relative to CH1 */
+<a name="145318"> </a>   int64 lastChanSkew[N_PODS];       /* Last time skew relative to CH1 */
+<a name="145319"> </a>}
+<a name="145320"> </a>DvrDigitalChanTemplate;
+</pre>
+
+<p>
+  <a name="145057"> </a><font face="Verdana, Arial, Helvetica, sans-serif">An array or four DvrChanTemplates are instanciated in the JediPlus SW system, named analogChan[].  Notice that a ChanTemplate makes up the top half of each DvrChanTemplate.  An arry of pointers is set up to the ChanTemplate portion of these structures to provide the UI access to the User Factors.  These pointers, called the analogChanPtr[], are likewise passed as parameters to the Chan Driver entry point functions described in the next section.  </font>
+</p>
+
+
+<p>
+  <a name="145380"> </a><font face="Verdana, Arial, Helvetica, sans-serif">One DvrDigitalChanTemplate is instanciated in the JediPlus SW system, named digitalChan. A pointers is set up to the DigitalChanTemplate structure to provide the UI access to the User Factors.  This pointers, named the digitalChanPtr, is likewise passed as parameters to the Chan Driver entry point functions described in the next section.</font>
+</p>
+
+
+<p>
+  <a name="145391"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This scheme permits the UI to be knowledgeable about the User Factors in the ChannelTemplates portion of the structures without being cognizant about the Driver Factors in the bottom of the DvrXXChanTemplates.  This allows the Driver Factors in various products to be different where Hardware differences dictate, without effecting the UI or the API to the Logical Channel Driver.  </font>
+</p>
+
+
+<p>
+  <a name="144700"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Many of the Channel Driver Factors are internal representations of related Channel User Factors. This means the conversions from doubles to the internal formats of choice only occur once when changes occur.   The results are saved and used in multiple places by other HW drivers. </font>
+</p>
+
+
+<h4>
+  <a name="144842"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Change Flag Usage</font>
+</h4>
+
+
+<p>
+  <a name="144843"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When UI control changes cause changes in the fields in the Channel Templates, the appropriate change flags in the Change register for the templates must also be set TRUE.  Usually the UI does this when it changes Channel User Factors via the ??? pointers, but sometimes Logical Driver functions must also set change flags when they change a field.  These flags are used by the  Channel Driver SW to determine which configuration functions must be executed to deal with a given change thereby improving efficiency. The table below shows the relationship between the fields and the change flags for each/all sweep templates.</font>
+</p>
+
+<a name="145561"> </a>FIGURE 38.&#32; ChanTemplate Change Flag Usage
+<p>
+  <a name="145652"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144846"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366">
+<p>
+  <a name="144850"> </a><font face="Verdana, Arial, Helvetica, sans-serif">FIELD CHANGED </font>
+</p>
+
+</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366">
+<p>
+  <a name="144852"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CHANGE FLAGS SET</font>
+</p>
+
+</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144854"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yUnits, bwLimit, coupling, impedance or GLOBAL nextChanSetting[].name[]</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144856"> </a><font face="Verdana, Arial, Helvetica, sans-serif">otherChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144858"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144860"> </a><font face="Verdana, Arial, Helvetica, sans-serif">resetAcq</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144862"> </a><font face="Verdana, Arial, Helvetica, sans-serif">trigLevel, trigHfReject, trigNReject, or trigCoupling</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144864"> </a><font face="Verdana, Arial, Helvetica, sans-serif">trigChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144866"> </a><font face="Verdana, Arial, Helvetica, sans-serif">probeDelay </font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144868"> </a><font face="Verdana, Arial, Helvetica, sans-serif">skewChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144870"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144872"> </a><font face="Verdana, Arial, Helvetica, sans-serif">runModeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144874"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144876"> </a><font face="Verdana, Arial, Helvetica, sans-serif">timeModeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144878"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144880"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqCycleChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144882"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144884"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqModeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144886"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144888"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqSrcChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144890"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144892"> </a><font face="Verdana, Arial, Helvetica, sans-serif">funcChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144894"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144896"> </a><font face="Verdana, Arial, Helvetica, sans-serif">funcAutoScale</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144898"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SEE NOTE 1 BELOW</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144900"> </a><font face="Verdana, Arial, Helvetica, sans-serif">dispChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144902"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144904"> </a><font face="Verdana, Arial, Helvetica, sans-serif">xScaleChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144906"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144908"> </a><font face="Verdana, Arial, Helvetica, sans-serif">xRangeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144910"> </a><font face="Verdana, Arial, Helvetica, sans-serif">probeAtten, or invert </font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144912"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yAcqScaleChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144914"> </a><font face="Verdana, Arial, Helvetica, sans-serif">range, offset, topEdge or botEdge</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144916"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yPlotScaleChange</font>
+</p>
+
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="145639"> </a><font face="Verdana, Arial, Helvetica, sans-serif">NOTE 1 - The dispChange bit should be set TRUE when the trace for a channnel is turned on or off on the front panel.  This occurs when changes are made to the Set onChanSet. </font>
+</p>
+
+<a name="145653"> </a>FIGURE 39.&#32; DigitalChanTemplate Change Flag Usage
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145568"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366">
+<p>
+  <a name="145572"> </a><font face="Verdana, Arial, Helvetica, sans-serif">FIELD CHANGED </font>
+</p>
+
+</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366">
+<p>
+  <a name="145574"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CHANGE FLAGS SET</font>
+</p>
+
+</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145576"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145578"> </a><font face="Verdana, Arial, Helvetica, sans-serif">otherChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145580"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145582"> </a><font face="Verdana, Arial, Helvetica, sans-serif">resetAcq</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145584"> </a><font face="Verdana, Arial, Helvetica, sans-serif">trigLevel[N_PODS]</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145586"> </a><font face="Verdana, Arial, Helvetica, sans-serif">trigChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145588"> </a><font face="Verdana, Arial, Helvetica, sans-serif">probeDelay[N_PODS] </font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145590"> </a><font face="Verdana, Arial, Helvetica, sans-serif">skewChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145592"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145594"> </a><font face="Verdana, Arial, Helvetica, sans-serif">runModeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145596"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145598"> </a><font face="Verdana, Arial, Helvetica, sans-serif">timeModeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145600"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145602"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqCycleChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145604"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145606"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqModeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145608"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145610"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqSrcChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145612"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145614"> </a><font face="Verdana, Arial, Helvetica, sans-serif">funcChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145616"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145618"> </a><font face="Verdana, Arial, Helvetica, sans-serif">funcAutoScale</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145620"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SEE NOTE 1 BELOW</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145622"> </a><font face="Verdana, Arial, Helvetica, sans-serif">dispChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145624"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145626"> </a><font face="Verdana, Arial, Helvetica, sans-serif">xScaleChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145628"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145630"> </a><font face="Verdana, Arial, Helvetica, sans-serif">xRangeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145632"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145634"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yAcqScaleChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145636"> </a><font face="Verdana, Arial, Helvetica, sans-serif">position[N_DIGITAL_CHANS]</font>
+</p>
+
+
+<p>
+  <a name="145642"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SEE NOTE 2 BELOW</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145638"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yPlotScaleChange</font>
+</p>
+
+</font></td>
+  </tr>
+</table>
+
+
+
+
+<p>
+  <a name="145644"> </a><font face="Verdana, Arial, Helvetica, sans-serif">NOTE 1 - The dispChange bit should be set TRUE when the trace for a bit or the traces for a pod are turned on or off on the front panel.  This occurs when changes are made to the Set onChanSet.  </font>
+</p>
+
+
+<p>
+  <a name="144932"> </a><font face="Verdana, Arial, Helvetica, sans-serif">NOTE 2 - The yPlotScaleChange bit should also be set TRUE when the trace size control is changed on the front panel. </font>
+</p>
+
+
+<h4>
+  <a name="145564"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Channel Driver Initialization Functions</font>
+</h4>
+
+<pre>
+<a name="145464"> </a>extern boolean initChanDvr(boolean verbose, boolean diagnostics);
+<a name="145466"> </a>extern boolean initCapability(boolean verbose, boolean diagnostics);
+<a name="145477"> </a>extern void setCapability(boolean verbose, boolean diagnostics,
+<a name="145483"> </a>                          uint16 *idA, uint16 *idB);
+<a name="145468"> </a>
+<a name="145473"> </a>extern boolean initAdcMonitor(boolean verbose, boolean diagnostics);
+<a name="145494"> </a>extern void initChanHw(void);
+<a name="145495"> </a>extern void initBdHwAddresses(void *addresses);                   
+</pre>
+
+<h4>
+  <a name="144801"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Logical Channel Driver Entry Point Functions </font>
+</h4>
+
+
+<p>
+  <a name="145534"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These functions are called from the effector routines of Channel controls in the behavioral layer of the UI,to put a change that occurred into "effect". </font>
+</p>
+
+<ul>
+  <li><a name="144356"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setChanYScale(ChanTemplate *const chanTemplate, boolean xyMode);</font>
+  <li><a name="145499"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setChanBwLimit(ChanTemplate *const chanTemplate);</font>
+  <li><a name="145500"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setChanCoup(ChanTemplate *const chanTemplate);</font>
+  <li><a name="145501"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setChanImped(ChanTemplate *const chanTemplate);</font>
+  <li><a name="145503"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setChanTrigNReject(ChanTemplate *const chanTemplate);</font>
+  <li><a name="145504"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setChanTrigHfReject(ChanTemplate *const chanTemplate);</font>
+  <li><a name="145505"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setChanTrigCoup(ChanTemplate *const chanTemplate);</font>
+  <li><a name="145506"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean setChanTrigScale(ChanTemplate *const chanTemplate);</font>
+  <li><a name="145508"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setChanInvert(ChanTemplate *const chanTemplate);</font>
+  <li><a name="145509"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void chgChanProbeScale(ChanTemplate *const chanTemplate, float64 ratio);</font>
+  <li><a name="145511"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern ProbeDesc *getProbeDesc(ChanId chan);</font>
+  <li><a name="145512"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean checkChanInput(ChanId chan, boolean diag);</font>
+  <li><a name="145514"> </a><font face="Verdana, Arial, Helvetica, sans-serif">typedef void (*ChanMonitorCallback) (int16 *, ChanId);</font>
+  <li><a name="145515"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void registerChannelTempChg(ChanMonitorCallback callback,</font>
+
+<p>
+  <a name="145516"> </a><font face="Verdana, Arial, Helvetica, sans-serif">                                   ChanId channel);</font>
+</p>
+
+  <li><a name="145517"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void registerChannelProbeChg(ChanMonitorCallback callback,</font>
+
+<p>
+  <a name="145518"> </a><font face="Verdana, Arial, Helvetica, sans-serif">                                    ChanId channel);</font>
+</p>
+
+  <li><a name="145524"> </a><font face="Verdana, Arial, Helvetica, sans-serif">     extern const float64 *getChanBwLimitFreq(AnalogChanId chan, BwLimit bwLimit);</font>
+  <li><a name="145527"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern const float64 *getChanBwLimitRise(AnalogChanId chan, BwLimit bwLimit);</font>
+  <li><a name="145529"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void signalChanProbeChg(int16 *rawReading, ChanId chan);</font>
+</ul>
+
+<h4>
+  <a name="144805"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Physical Channel Driver Entry Point Functions </font>
+</h4>
+
+
+<p>
+  <a name="144818"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Functions in the Physical Drivers that deal with the timebase functionality are located in the physical driver for the individual HW components in the MUSKRAT and PUMA products. Refer to the  "SCORPION Driver" chapter for MUSKRAT and the "RATTLER Driver" chapter for PUMA. </font>
+</p>
+
+
+<p>
+  <a name="143563"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="acqDriver.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="plotDriver.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

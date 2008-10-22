@@ -1,0 +1,876 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:20:04 2002">
+<title>CHAPTER 4 Process Model for JediPlus</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="arch.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="memory.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="996747"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 4 	 Process Model for JediPlus</font>
+</h1><hr>
+
+
+<h2>
+  <a name="999228"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-1  Overview</font>
+</h2>
+
+
+<p>
+  <a name="999234"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The JediPlus design employs a very similar process model to that used in Jedi.There are four main differences between the systems:</font>
+</p>
+
+<ul>
+  <li><a name="999739"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Explicit synchronization between UI processes (Remote and Local) is done via a semaphore instead of using no-preempt mode.</font>
+  <li><a name="999757"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Screen process process runs at a higher priority than the UI processes.</font>
+  <li><a name="999749"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The roles of the Measurement process and Acquisition Manager process are combined as the SignalPath process.</font>
+  <li><a name="999750"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The UI processes and the SignalPath are synchronized with signals and messages instead of spawning and killing the SignalPath process.</font>
+</ul>
+
+<p>
+  <a name="999233"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The rationale for these changes is explained in the discussion of the individual processes. The following figure depicts the various threads of execution in JediPlus and the communication between them. Shared global data and other forms of data exchange are not shown to help reduce clutter in the drawing (JEC). The larger bubbles depict processes (tasks) and the smaller bubbles represent routines run under interrupt (ISR's). The processes are numbered to denote priority, low numbers are higher priority.</font>
+</p>
+
+
+<p>
+  <a name="1013225"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<a name="1013603"> </a>FIGURE 8.&#32; The complete process model for the JediPlus frame.<img src="images/processModela.gif" height="874" width="624">
+
+<h2>
+  <a name="1013604"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-2  Processes</font>
+</h2>
+
+
+<h3>
+  <a name="1001031"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-2.1  Screen Process</font>
+</h3>
+
+
+<p>
+  <a name="999731"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Screen process is part of the Screen Manager package and is described in more detail in a subsequent <strong><u><a href="screenmgr.html#996747">chapter</a></u></strong>. The Screen process handles the animation of certain displayed items such as the blinking of changed settings on the configuration line.  Other examples include the sliding action of new measurements and removing error and advisory messages.</font>
+</p>
+
+
+<p>
+  <a name="1012482"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Screen process also draws items for which the update has been deferred by a UI thread. This is a design feature that saves host processing time by eliminating the formatting and writing of strings that the user won't be able to read anyway. Normally, screen items are directly updated under the UI thread that affect them. The screen clients, such as the Local process or the SignalPath process, call into the Screen Manager directly and update its internal data structure representing the screen. Many updates are immediately rendered this way. But displays of knob-able parameters could change at a 2ms rate. This is too fast to read for the user, so these may be deferred and updated by the Screen process instead. This limits the update rate of the item's display to 100ms.</font>
+</p>
+
+
+<p>
+  <a name="1010175"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Screen process is given a 100ms time tick by the System Scheduler via an os signal. This tick is used to clock a scheduler internal to the Screen process that is used to time blinks and other actions. The Screen process is run at a higher priority than any other process because this guarantees more consistent and timely text screen updates. </font>
+</p>
+
+
+<p>
+  <a name="1012639"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Synchronization between the Screen process and the Screen Manager client threads is done by disabling interrupts while the shared critical sections are accessed. These critical sections include the Screen Manager data structures and the host hardware interface ports used to write to the display.</font>
+</p>
+
+
+<p>
+  <a name="1012609"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The disable interrupts technique was chosen after considering the impact of using an os provided semaphore. As a general principle, it is desireable not to lock a resource any longer than absolutely necessary. An extreme approach, for example, might be to lock the screen resources as long as the Local process is parsing a userRequest. But this might cause blinking items to toggle erratically. It also increases the probability of a deadlock with the SignalPath process and therefore adds complexity to the signalPathDisable sequence. Additionally, it is important that interrupts are not disabled for more than ~1ms or else there is a chance to miss knob events. So these factors suggest a finer granularity to the resource locking.</font>
+</p>
+
+
+<p>
+  <a name="1012645"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A typical user input entails many accesses to critical sections for the Screen Manager data structures and the low level screen hardware resources. A typical semaphore get/put pair costs about 120<font  face="Verdana, Arial, Helvetica, sans-serif">&#181;</font>s. Then for some transactions, 1ms or more could be burned up in resource locking alone. This is a large portion of a transaction budget of 16ms.</font>
+</p>
+
+
+<p>
+  <a name="1012646"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Another problem with semaphores is that they can not be used to block ISRs because ISRs can not block. This would force the trigTimer action to be processed under the Local process. The trigTimer runs at a fairly high rate, every 20ms. So adding 200<font  face="Verdana, Arial, Helvetica, sans-serif">&#181;</font>s to its execution consumes 1% of the total processing bandwidth of the host system.</font>
+</p>
+
+
+<p>
+  <a name="1012622"> </a><font face="Verdana, Arial, Helvetica, sans-serif">One of the eventss scheduled in the internal scheduler in the Screen process is the measurementRequest event. This periodic event is implemented as a flag that is set to initiate the update of scalar waveform measurements. It is generated by the Screen process because the update rate is a behavioral characteristic of "how" the result is displayed. If measurements were to be performed at a high rate (such as every acquisition) then the SignalPath would be configured to do this directly without using this update request.</font>
+</p>
+
+
+<p>
+  <a name="1014579"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010843"> </a>TABLE 2.  Os signals and messages processed by the Screen process</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010853"> </a>Name</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010855"> </a>Type</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010857"> </a>Description</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010859"> </a>Source</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010861"> </a>Rep Rate</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010863"> </a>eventTick</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010865"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010867"> </a>periodic event that clocks the Screen process event scheduler.</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010869"> </a>updateScreen</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010871"> </a>100ms</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010916"> </a>screenSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010918"> </a>interrupt disable</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010920"> </a>interrupts are disabled to provide a lightweight semaphore within the Screen Manager services</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010922"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010924"> </a>-</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h3>
+  <a name="999721"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-2.2  Spooler Process</font>
+</h3>
+
+
+<p>
+  <a name="999253"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Spooler process queues and outputs data to slower peripheral devices to enable the UI to be available sooner to the user. It is used for hardcopy printing and possibly some file operations.</font>
+</p>
+
+
+<p>
+  <a name="1013012"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Spooler process is run at a lower priority than UI processes so that the processing of userRequests always takes precedence over outputing information to the spool device. This has the consequence that while a knob is turned, the spooling is suspended. This is the approach taken in Jedi and is the best approach if the spool device has a large input buffer to avoid jerky UI response. For devices that have relatively small input buffers it might favorable to allow the spooler to output data as soon as the spool device is ready for more data. The existing Jedi design does have a 1024 byte FIFO that lies between the spool process and the IO driver ISR. In that design, userRequests only take precedence over the spooler producing into the FIFO, not the ISR consuming from it. The communications between the UI threads, Spooler, and device drivers are designed to accommodate the spooler running at either a higher or lower priority. In fact, we might want to change the Spooler's priority depending on the selected spool device.</font>
+</p>
+
+
+<p>
+  <a name="1000327"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The parsers initiate or cancel a spool job by issuing an os signal to the Spool process. The parsers then block on the spoolAckSem semaphore in reply. The acknowledge signifies that the Spooler has obtained all the information needed from the system and that the scope can continue normal operation. The Spooler process then interacts with the selected device driver to output the data.</font>
+</p>
+
+
+<p>
+  <a name="1000334"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The device drivers are the same as used for the remote parser and file system. In the case of printing, the transfer is unidirectional so only the dataOut os signal is needed for communication between the ISR and the driver running in the Spooler process. At the end of the spool operation, the spoolDone localEvent is sent to the Local process so the user interface state and menus can be updated to indicate the spool operation completed. </font>
+</p>
+
+
+<p>
+  <a name="1012658"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Because floppy operations are quite slow, the Spooler process may also be used to buffer the writing of large files. This is under investigation. To support file system operations, a locking semaphore is needed to provide a resource lock at the disk access method level. This is the purpose of the diskLockSem.</font>
+</p>
+
+
+<p>
+  <a name="1014583"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010706"> </a>TABLE 3.  Os signals and messages processed by Spooler</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010714"> </a>Name</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010716"> </a>Type</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010718"> </a>Description</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010720"> </a>Source</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010756"> </a>Rep Rate</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010722"> </a>floppyRdy</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010724"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010784"> </a>requested action completed by floppy</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010728"> </a>FloppyISR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010758"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010730"> </a>dataOut</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010732"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010734"> </a>space is available in the out bound buffer</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010736"> </a>CentISR, Rs232ISR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010760"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012660"> </a>newData</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012662"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012664"> </a>data is available in the in bound buffer</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012666"> </a>CentISR, Rs232ISR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012668"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010738"> </a>startSpool</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010740"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010742"> </a>command to begin spooling</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010744"> </a>Local, Remote</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010762"> </a>one shot</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010746"> </a>stopSpool</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010748"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010750"> </a>abort the current spool job</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010752"> </a>Local, Remote</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010764"> </a>one shot</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012687"> </a>diskLockSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012689"> </a>locking semaphore</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012691"> </a>lock to guard access to disk access methods</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012693"> </a>Spooler, Local</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012695"> </a>on demand</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h3>
+  <a name="999254"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-2.3  Local Process</font>
+</h3>
+
+
+<p>
+  <a name="999259"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Local process is the main UI process in JediPlus. Its primary task is to parse key and knob requests (userMsgs). It is the highest priority UI task because front panel operation is the dominant use of the instrument and responding to knob messages is the most critical realtime task. </font>
+</p>
+
+
+<p>
+  <a name="1010215"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All UI tasks share the action routines that interact with the SignalPath. To guarantee sequential access to the action routines, a semaphore (actionSem) is used. This is different than Jedi which enforced mutual exclusion by using "no preempt" process status. A reason for this change is the limitation of the no preempt method. The limitation is that when a process blocks, it yields any critical section. So, for example, if an action routine blocks to disable the SignalPath, then a different UI thread may start. This is potentially a problem, and it becomes more likely if we add additional UI processes for internet connections. The disadvantage to using the semaphore is that there is some additional overhead to parse a knob request. This should be tolerable and does not need to be incurred when multiple knob requests are queued in the localMsgQueue, so adding this design element is prudent.</font>
+</p>
+
+
+<p>
+  <a name="1000966"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In addition to key and knob requests, the Local process also handles some other miscellaneous system actions. All user generated requests are sent to Local as userMsgs via  the localMsgQueue. A primary reason for this is that requests such as a probe change or a disk change should be processed in the order that they are generated by the user. Other system actions have the same synchronization needs as key requests. For example, an autoTrigLevel action needs to be processed much like a trigger level action. But in this case, the action is not initiated by the user so it should not be processed until all requests directly generated by the user are parsed. So these system actions are not queued in the local exchange but instead they are sent as os signals. Os signals are not time ordered and if multiple occurrances of a signal are sent, the additional occurrances are lost. These caveats are fine for the system actions, in fact it is the preferred behavior.</font>
+</p>
+
+
+<p>
+  <a name="1014584"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010229"> </a>TABLE 4.  Os signals and messages processed by Local</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010235"> </a>Name</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010237"> </a>Type</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010239"> </a>Description</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010414"> </a>Source</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1010363"> </a>Rep Rate</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010241"> </a>doAutoLev</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010243"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010245"> </a>dispatch to auto level action</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010416"> </a>trigTimer</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010365"> </a>200 ms</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010247"> </a>setArm</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010249"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010251"> </a>dispatch to the set arm event action</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010418"> </a>trigEvent</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010367"> </a>one shot</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010253"> </a>setTrig</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010255"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010257"> </a>dispatch to the set trig event action</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010420"> </a>trigEvent</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010369"> </a>one shot</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010259"> </a>doInterpCal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010261"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010263"> </a>dispatch to the cal interpolator action</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010422"> </a>checkSelfcal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010371"> </a>adaptive, 40ms... 600s</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010265"> </a>compensate Chan&lt;N&gt;</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010267"> </a>os signals</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010269"> </a>dispatch to the corresponding channel compensation action</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010424"> </a>checkSelfcal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010645"> </a>adaptive, 40ms... 600s</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010271"> </a>floppyRdy</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010273"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010275"> </a>requested action completed by floppy</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010426"> </a>FloppyISR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010375"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010277"> </a>spoolDone</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010279"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010281"> </a>spooling operation is done</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010428"> </a>Spooler</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010377"> </a>one shot</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010283"> </a>actionSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010285"> </a>locking semaphore</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010287"> </a>semaphore guarding action routines (controls) and configuration data</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010430"> </a>actionSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010379"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010289"> </a>spoolAckSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010291"> </a>semaphore</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010293"> </a>acknowledge of spool command, signifies that the data is spooled and normal SignalPath operation can continue</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010432"> </a>spoolAckSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010381"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010295"> </a>signalPathDisabled</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010297"> </a>message</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010299"> </a>message indicating that the SignalPath is in the idle state</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010434"> </a>signalPathSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010383"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010301"> </a>acqDoneSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010303"> </a>message</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010305"> </a>message indicating that an acquisition (digitize operation) is complete</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010436"> </a>acqDoneSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010385"> </a>-</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010307"> </a>screenSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010309"> </a>interrupt disable</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010311"> </a>interrupts are disabled to provide a lightweight semaphore within the Screen Manager services</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010438"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010387"> </a>-</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010313"> </a>&lt;key&gt;userMsg</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010315"> </a>message</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010317"> </a>message describing a key press, 16ms rate max</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010440"> </a>localMsgQueue</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010389"> </a>16ms</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010319"> </a>&lt;knob&gt;userMsg</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010321"> </a>message</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010323"> </a>message describing a knob change, 2ms rate max</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010442"> </a>localMsgQueue</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010391"> </a>2ms</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010325"> </a>&lt;probeChg&gt; usrMsg</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010327"> </a>message</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010329"> </a>message describing a probe change event</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010444"> </a>localMsgQueue</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010393"> </a>250ms</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010331"> </a>&lt;acqDone&gt; userMsg</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010333"> </a>message</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010335"> </a>message indicating that a single acquisition is complete</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010446"> </a>localMsgQueue</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1010395"> </a>one shot</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012724"> </a>diskLockSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012726"> </a>locking semaphore</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012728"> </a>lock to guard access to disk access methods</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012730"> </a>Spooler, Local</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012732"> </a>on demand</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h3>
+  <a name="999260"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-2.4  Remote Process</font>
+</h3>
+
+
+<p>
+  <a name="999261"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Remote process is the second UI process that needs to be implemented for the JediPlus products. It executes the HPSL parser and attached IO drivers. It requests the actionSem and releases it each time a command buffer is parsed. If a different IO stream is to be attached to the parser, then the current parser process must be killed and a new one started. The parser "happening reporter" sends messages to the ScreenMgr to display errors and advisories.</font>
+</p>
+
+
+<p>
+  <a name="1002346"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The standard HPSL parser must be modified to support the resource locking. Some study of the current LDS design may be helpful for designing this change.</font>
+</p>
+
+
+<p>
+  <a name="1013011"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Remote process does not provide file system capability, according to product requirements. However, this feature can be added easily since the file system already supports two processes.</font>
+</p>
+
+
+<p>
+  <a name="1014585"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012760"> </a>TABLE 5.  Os signals and messages processed by Remote</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1012770"> </a>Name</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1012772"> </a>Type</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1012774"> </a>Description</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1012776"> </a>Source</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1012778"> </a>Rep Rate</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012850"> </a>actionSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012852"> </a>locking semaphore</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012854"> </a>resource lock guarding action routines (controls) and configuration data</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012856"> </a>actionSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012858"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012860"> </a>spoolAckSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012862"> </a>semaphore</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012864"> </a>acknowledge of spool command, signifies that the data is spooled and normal SignalPath operation can continue</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012866"> </a>spoolAckSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012868"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012870"> </a>signalPathDisabled</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012872"> </a>semaphore</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012874"> </a>indication that the SignalPath is in the idle state</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012876"> </a>signalPathSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012878"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012880"> </a>acqDoneSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012882"> </a>semaphore</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012884"> </a>indication that an acquisition (digitize operation) is complete</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012886"> </a>acqDoneSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012888"> </a>-</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012890"> </a>screenSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012892"> </a>interrupt disable</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012894"> </a>interrupts are disabled to provide a lightweight semaphore to lock the Screen Manager services</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012896"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012898"> </a>-</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012953"> </a>dataOut</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012955"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012957"> </a>space is available in the out bound buffer</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012959"> </a>CentISR, Rs232ISR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012961"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012963"> </a>newData</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012965"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012967"> </a>data is available in the in bound buffer</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012969"> </a>CentISR, Rs232ISR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012971"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012973"> </a>getBlockDone</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012975"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012977"> </a>block of data is available in the in bound buff</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012979"> </a>CentISR, Rs232ISR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012981"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012983"> </a>callBack</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012985"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012987"> </a>space is available in the out bound buffer</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012989"> </a>CentISR, Rs232ISR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1012991"> </a>on demand</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h3>
+  <a name="999725"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-2.5  SignalPath Process</font>
+</h3>
+
+
+<p>
+  <a name="1013194"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The SignalPath process manages acquisition and display of inputSignals. Details about its design are available in the <strong><u><a href="signal.html#127470">Signal Path chapter</a></u></strong>. It is the lowest priority process. In effect, the SignalPath is a background process; it may be preempted at any time by the UserInterface to allow userRequests to be serviced.</font>
+</p>
+
+
+<p>
+  <a name="1013196"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The SignalPath has two states: Running and idle. For the SignalPath to leave its idle state, it must receive the signalPathEnable signal. Out of the idle state, the SignalPath may access any of the shared resources in the critical section it shares with the UI threads. The UserInterface may immediately respond to a userRequest independent of SignalPath operation. If the request entails modifying items in the critical section, the SignalPath must be disabled first. This is done by setting a flag, signalPathEnable, to FALSE and blocking on an acknowledge message, signalPathDisabled, which is sent to the message exchange signalPathSem. The SignalPath must poll the signalPathEnable flag while it is running. When the flag is FALSE, the SignalPath must:</font>
+</p>
+
+<ol type="1">
+  <li value="1"><a name="1001014"> </a><font face="Verdana, Arial, Helvetica, sans-serif">finish what it is currently doing</font>
+  <li value="2"><a name="1001015"> </a><font face="Verdana, Arial, Helvetica, sans-serif">complete the display of any changed signals that haven't been displayed yet</font>
+  <li value="3"><a name="1001016"> </a><font face="Verdana, Arial, Helvetica, sans-serif">go to idle state</font>
+  <li value="4"><a name="1001018"> </a><font face="Verdana, Arial, Helvetica, sans-serif">send the signalPathDisabled message to signalPathSem to indicate that it is disabled</font>
+  <li value="5"><a name="1001019"> </a><font face="Verdana, Arial, Helvetica, sans-serif">block until signalPathEnable is signaled</font>
+</ol>
+
+<p>
+  <a name="999264"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Two other special communications are made by the SignalPath. If a single acquisition is performed, upon completion the SignalPath sends a message to localMsgQueue that causes the Local process to invoke the singleDone control. If a digitize acquisition is invoked directly or to prepare to make a measurement, the SignalPath issues a message to acqDoneSem to signal completion.</font>
+</p>
+
+
+<p>
+  <a name="1014586"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013022"> </a>TABLE 6.  Os signals and messages processed by SignalPath</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1013032"> </a>Name</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1013034"> </a>Type</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1013036"> </a>Description</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1013038"> </a>Source</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1013040"> </a>Rep Rate</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013042"> </a>signalPathEnable</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013044"> </a>os signal</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013046"> </a>releases SignalPath from idle</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013048"> </a>Local, Remote</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013050"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013052"> </a>signalPathDisable</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013054"> </a>data flag</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013056"> </a>flag used to abort current SignalPath operation, requests that the process goes to idle state</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013058"> </a>Local, Remote</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013060"> </a>on demand</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013109"> </a>screenSem</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013111"> </a>interrupt disable</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013113"> </a>interrupts are disabled to provide a lightweight semaphore to lock the Screen Manager services</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013115"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013117"> </a>-</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013072"> </a>deepTimeout</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013074"> </a>data flag</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013076"> </a>flag used to abort a deepStop acquisition</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013078"> </a>deep <br>Timeout </font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013080"> </a>one shot</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013142"> </a>measurement Request</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013144"> </a>data flag</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013146"> </a>flag signals that scalar measurements should be executed</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013148"> </a>Screen</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1013150"> </a>500ms</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h2>
+  <a name="1001030"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-3  Interrupt Service Routines (ISRs)</font>
+</h2>
+
+
+<h3>
+  <a name="1001026"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-3.1  SuperIO ISR</font>
+</h3>
+
+
+<p>
+  <a name="1001029"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The SuperIO ISR determines the interrupt condition from the superIO chip and then vectors to the appropriate subroutine. All of the subroutine ISRs are similar in that they do very little. They service the hardware input or output event and release any awaiting process (Local, Remote, or Spooler process). In all cases, the IO hardware is also addressed directly by drivers running under a UI thread, the ISR just serves to unblock a pending operation. This interrupt is the highest priority interrupt in the jediPlus frame.</font>
+</p>
+
+
+<h4>
+  <a name="999265"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Floppy Driver ISR</font>
+</h4>
+
+
+<p>
+  <a name="999266"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Further investigation is required to determine if an ISR is needed at all for the Floppy driver. If the spooler is used for saving images or traces to disk, then the ISR based approach is preferable since it allows spare clocks to be used for measurements, ScreenMgr tasks or formatting image or trace data.</font>
+</p>
+
+
+<h4>
+  <a name="999267"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Rs232 Driver ISR</font>
+</h4>
+
+
+<p>
+  <a name="999268"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The RS232 driver ISR issues os signals to the attached UI process when that process is blocked on receipt of newData in the input buffer or free space in the output buffer.</font>
+</p>
+
+
+<h4>
+  <a name="999269"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Centronics Driver ISR</font>
+</h4>
+
+
+<p>
+  <a name="1002337"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Centronics driver ISR issues os signals to the attached UI process when that process is blocked waiting for free space in the output buffer.</font>
+</p>
+
+
+<h3>
+  <a name="999275"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-3.2  Module ISR</font>
+</h3>
+
+
+<p>
+  <a name="1002344"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Module ISR determines the interrupt condition from the external expansion port and then vectors to the appropriate subroutine. At present, only the HPIB module is planned. It can be implemented as it was in Moab. The module interrupt is the second highest priority interrupt in the jediPlus frame.</font>
+</p>
+
+
+<h4>
+  <a name="999276"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">HPIB Driver ISR</font>
+</h4>
+
+
+<p>
+  <a name="1002345"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The HPIB driver ISR is somewhat more complicated than the other device IO ISRs because it supports block transfers and overlapped IO. The design is unchanged from the LDS design used in Moab. </font>
+</p>
+
+
+<h3>
+  <a name="999277"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-3.3  Timer ISR</font>
+</h3>
+
+
+<p>
+  <a name="1002347"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Timer ISR provides a basic rate of 2 ms for triggering the execution of periodic or one-shot events. This rate is used to tick the System Scheduler that determines whether to call any of the following subroutines. The System Scheduler is designed so that on a given timer interrupt, only one of the subroutines is executed. The following sumarizes the subroutines that may be installed in the scheduler. Some routines are installed only for some instrument modes, an example is the chkTrigLev routine that is installed only when trigger auto level mode is in effect. Refer to the <strong><u><a href="schedule.html#996747">Timer Interrupt chapter</a></u></strong> more more information.</font>
+</p>
+
+
+<h4>
+  <a name="999278"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">keyScan</font>
+</h4>
+
+
+<p>
+  <a name="999279"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Key Scan subroutine is scheduled to run every 16 ms. It translates keyboard actions into &lt;key&gt;usrMsgs that are placed in localMsgQueue.</font>
+</p>
+
+
+<h4>
+  <a name="1013205"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">dualKeyScan</font>
+</h4>
+
+
+<p>
+  <a name="1013206"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The dualKeyScan subroutine runs every 100 ms. It is a special form of the keyScan that senses two keys held down. It translates keyboard actions into &lt;key&gt;usrMsgs that are placed in localMsgQueue.</font>
+</p>
+
+
+<h4>
+  <a name="999280"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">knobScan</font>
+</h4>
+
+
+<p>
+  <a name="1002351"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Knob Scan subroutine is scheduled to run every 2 ms. It translates knob actions into &lt;knob&gt;userMsgs that are placed in localMsgQueue.</font>
+</p>
+
+
+<h4>
+  <a name="1013211"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">intenKnobScan</font>
+</h4>
+
+
+<p>
+  <a name="1013212"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The intenKnobScan is a special knob scan subroutine that measures the position of the intensity knob. It is called every 100 ms. It translates knob actions into &lt;knob&gt;userMsgs that are placed in localMsgQueue.</font>
+</p>
+
+
+<h4>
+  <a name="999282"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">probeScan</font>
+</h4>
+
+
+<p>
+  <a name="999283"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The probeSense subroutine measures the probe ids at all instrument analog inputs. If an id change is detected, a message is placed in localMsgQueue. It is scheduled to run every 100 ms.</font>
+</p>
+
+
+<h4>
+  <a name="999288"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">checkSelfcal</font>
+</h4>
+
+
+<p>
+  <a name="999289"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The checkSelf-cal subroutine runs every 100 ms. It determines whether to invoke the interpCal subroutine or to signal the Local process to execute a compensateChan action. The decision whether to execute the cal is based on measured temperature change and time.</font>
+</p>
+
+
+<h4>
+  <a name="999290"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">trigStatus</font>
+</h4>
+
+
+<p>
+  <a name="999291"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The trigStatus subroutine polls the acquisition hardware to determine the trigger state. It uses this information to update the auto-trigger and waiting for trigger screen indications.</font>
+</p>
+
+
+<h4>
+  <a name="1013165"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">chkTrigLev</font>
+</h4>
+
+
+<p>
+  <a name="1013166"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The chkTrigLev subroutine signals to the Local process when to execute the auto trigger action.</font>
+</p>
+
+
+<h4>
+  <a name="1013175"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">trigEvent</font>
+</h4>
+
+
+<p>
+  <a name="1013176"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The trigEvent subroutine monitors the occurance of an arm or trigger event that is needed to set the corresponding status bits in the HPSL status structure.</font>
+</p>
+
+
+<h4>
+  <a name="1013167"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">diskTimer</font>
+</h4>
+
+
+<p>
+  <a name="1013168"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The diskTimer subroutine is a one-shot subroutine that shuts down the floppy disk motor when it is executed.</font>
+</p>
+
+
+<h4>
+  <a name="1013169"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">progInten</font>
+</h4>
+
+
+<p>
+  <a name="1013171"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The progInten subroutine is a one-shot subroutine that programs the intensity tables when the display frame is in the correct state.</font>
+</p>
+
+
+<h4>
+  <a name="1014398"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">deepTimeout</font>
+</h4>
+
+
+<p>
+  <a name="1013172"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The deepTimeout subroutine is a one-shot routine that terminates a deep stop action if a trigger has not been received. It sets a flag for the SignalPath.</font>
+</p>
+
+
+<h4>
+  <a name="999292"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">acqStatus</font>
+</h4>
+
+
+<p>
+  <a name="999293"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The acqStatus subroutine sets a flag for the SignalPath that requests that the updateAcqStatus routine is invoked at the next opportunity. This technique is used so the status report is synchronized with the SignalPath.</font>
+</p>
+
+
+<h4>
+  <a name="999294"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">anounceTime</font>
+</h4>
+
+
+<p>
+  <a name="999295"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The OS tick subroutine is called every 100 ms.</font>
+</p>
+
+
+<h4>
+  <a name="1007325"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">updateScreen</font>
+</h4>
+
+
+<p>
+  <a name="1014400"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The updateScreen subroutine signals the Screen process every 100 ms so that it can update its internal schedule.</font>
+</p>
+
+
+<h2>
+  <a name="1014399"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-4  Example Use Scenarios</font>
+</h2>
+
+
+<p>
+  <a name="1013162"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The timing depicted in the following scenario(s) is based on raw psos calls and does not include any overhead for the os wrapper code. As a result the times shown may be 1-2<font  face="Verdana, Arial, Helvetica, sans-serif">&#181;</font>s faster than will be achieved in the target system. Refer to the chapters on the <strong><u><a href="os_wrapr.html#47">os wrappers</a></u></strong> and <strong><u><a href="psosTimingRef.html#1003638">psos timing</a></u></strong> for more information.</font>
+</p>
+
+
+<h3>
+  <a name="1003627"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-4.1  Single knob change event</font>
+</h3>
+
+
+<p>
+  <a name="1003628"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following use scenario depicts the communications that occur when the instrument is running and a knob is turned.</font>
+</p>
+
+<a name="1005453"> </a>FIGURE 9.&#32; Single knob change event use scenario<img src="images/processModel2.gif" height="776" width="612">
+
+<h4>
+  <a name="1003629"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Scenario description</font>
+</h4>
+
+
+<p>
+  <a name="1006129"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The description has not been written yet, but Mark is going to capture it during the meeting on Friday;)</font>
+</p>
+
+
+<h2>
+  <a name="1014405"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">4-5  Scenario Worksheet</font>
+</h2>
+
+
+<p>
+  <a name="1014406"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following blank graph may be used to diagram additional scenarios.</font>
+</p>
+
+<a name="1014407"> </a>FIGURE 10.&#32; Scenario worksheet<img src="images/processModel3.gif" height="802" width="624">
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="arch.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="memory.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

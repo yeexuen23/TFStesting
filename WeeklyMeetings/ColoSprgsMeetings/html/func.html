@@ -1,0 +1,428 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:26:47 2002">
+<title>CHAPTER 22 definitions of math functions</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="meas.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="curs.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="996747"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 22 	 definitions of math functions</font>
+</h1><hr>
+
+
+<h2>
+  <a name="996754"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-1  what they be</font>
+</h2>
+
+
+<p>
+  <a name="996756"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We used to have F1 and F2 functions, with the C3PO extensions.  Now I think we have dyadic and monadic vector functions, or channel math and transforms, all in one pile in the UI. </font>
+</p>
+
+
+<p>
+  <a name="999991"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel math is a combination of two channels' data, creating a new virtual channel.  It makes sense to display that as live as possible, and to allow all analog measurements on channel math.  Channel math can use either peak or hi-res data, and it should have thruput rivaling a single analog channel, since not everyone will rush out and buy a differential probe.</font>
+</p>
+
+
+<p>
+  <a name="999992"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Transforms are done on a single channel, and they vastly alter the appearance of the data.  They are more mathematically intensive than channel math, and user expectations of thruput are justi-fiably reduced for transforms.  Most measurements no longer make sense on them.  It is no loss to produce only hi-res output of a transform, even if the silly user has chosen peak data for input.</font>
+</p>
+
+
+<p>
+  <a name="996764"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Because these functions are in the display loop, speed is important.  Channel math is done right out of waveform ram, without a separate normalization.  I don't anticipate implementing any user functions on the digital channels.</font>
+</p>
+
+
+<p>
+  <a name="996769"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The impetus to run a filter comes thru the acqMgr as a result of a UI request, from somewhere in the Math menu.  The output from any filter is displayed in 16.8 format (8 whole Q bits, 4 fraction bits, and 4 pad bits) so it looks like data from the average filter, and it goes to a waveform bank, of which there are two.  Each filter has the option of running an automatic Yscaling that shows centered offset and maximum amplitude without clipping.   We can run a filter on the output from another filter, but we can display only the final output.  We've decided not to offer transform of a transform, so similar to the old C3PO these compound filters are only transforms of channel math.  Likewise we do not show transforms in the delayed window, but that may change.</font>
+</p>
+
+
+<p>
+  <a name="1000120"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Horozontal pan&amp;zoom of channel math is via the dedicated horozontal knobs, changing the actual channels at the same time.  Vertical scaling after autoscale is done with the entry knob in a filter scaling menu.  If the box is stopped, the user can pan&amp;zoom, which uses the hardware scaler instead of re-calculating from the constant source data.</font>
+</p>
+
+
+<h2>
+  <a name="1000119"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-2  technical aspects of the filter system</font>
+</h2>
+
+
+<h3>
+  <a name="999576"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-2.1  record length and content</font>
+</h3>
+
+
+<p>
+  <a name="996778"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In jediPlus, while we expect some abstraction on input record length, we can assume our analysis is constant at 2000 points.  Of course if the box is stopped and the data is compressed there can be less than 2000 points.</font>
+</p>
+
+
+<p>
+  <a name="999582"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Some data may be holes, and for channel math, hole in gives hole out.  This would goof up a peak-detect display, but we aren't going to display functions with peak-detect.  For the transforms, I am filling in the data holes, and always giving good points out.  On the screen, every other point is plotted, so filter output could be 1000 pairs, and I could have saved some mips by not calcu-lating more than is displayed.  But for consistency in the measurement algorithms and the bus data query, I calculate all 2000 points.</font>
+</p>
+
+
+<p>
+  <a name="1002755"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Filter output is always hi-res, put in a waveform buffer for display.  Even the dark function is held temporarily in a display buffer.  This way normalization always uses a waveform record as source.</font>
+</p>
+
+
+<h3>
+  <a name="996787"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-2.2  how they are set up</font>
+</h3>
+
+
+<p>
+  <a name="996789"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The UI can add or remove a filter, set offset and gain, or call for measurements to be done thereon.  See analysis.doc and acqMgr.doc.  It appears that we add filters whenever we want to change source or algorithm, and whenever we change vertical scale.</font>
+</p>
+
+
+<h3>
+  <a name="996792"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-2.3  how they are run</font>
+</h3>
+
+
+<p>
+  <a name="996794"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Filters in the display loop are called by acqMgr when data is available, and are displayed at a display rate, as often as possible.  If the box is stopped and the UI calls for a filter on existing data, the acqMgr will call the filter.  There are some change bits in the signal that allow SAL to determine that it may not need to calculate a filter, so the acqMgr typically calls for filters more often than they are actually run.</font>
+</p>
+
+
+<h3>
+  <a name="996797"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-2.4  filters you will never see in software</font>
+</h3>
+
+
+<p>
+  <a name="996799"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Averaging will be done by hardware, producing 16.8 format shorts in Coyote.  When the scope is averaging, acquisitions are done in some kind of hi-res mode, and this averaged data is the only data available, ie the un-averaged data does not appear in waveform ram.  We can measure and filter on this data, so we don't need a parallel averaging filter.</font>
+</p>
+
+
+<p>
+  <a name="996805"> </a><font face="Verdana, Arial, Helvetica, sans-serif">I would like to be able to average the outputs of some noisy filters like dV/dt or FFT, but until this meets JEF we won't write such a filter.</font>
+</p>
+
+
+<p>
+  <a name="996809"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Vertical pan&amp;zoom will be done in the Coyote scaler, out of sight of the waveform ram.  So I can't make measurements on pan&amp;zoomed data.  There is a separate hardware scaler for the function buffers to scale the results of one of the filters, just during vertical pan&amp;zoom.  I believe that measuring on pan&amp;zoomed data and outputting pan&amp;zoomed data should give the same results as using the un-pan&amp;zoomed data, so there is no need to make a software filter for this.  </font>
+</p>
+
+
+<p>
+  <a name="1002758"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It leaves open the question of whether I should artificially clip the data I measure or send over the bus, just because it's zoomed and clipped on the screen.  I think that's a feature we don't need, but if we decide we need it, then I would need to vp&amp;z in parallel with Coyote.</font>
+</p>
+
+
+<h2>
+  <a name="996817"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-3  channel math</font>
+</h2>
+
+
+<p>
+  <a name="996819"> </a><font face="Verdana, Arial, Helvetica, sans-serif">addition</font>
+</p>
+
+
+<p>
+  <a name="996820"> </a><font face="Verdana, Arial, Helvetica, sans-serif">subtraction</font>
+</p>
+
+
+<p>
+  <a name="996821"> </a><font face="Verdana, Arial, Helvetica, sans-serif">multiplication</font>
+</p>
+
+
+<p>
+  <a name="996823"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel math should produce a virtual channel, which can be quickly displayed and measured similar to any other channel.  These point-wise combinations can be easily done from the waveform buffer, which is fortunate because it is for these filters that the user has the highest expectation of thruput.  If one of the domain points is a hole, the result is a hole.  Hardware scaling is not employed to scale the result for display, except during pan&amp;zoom.  To maintain highest rate of updates to the screen, channel math is calculated right back into another waveform buffer.  If the user has chosen this channel math as input to a transform, then it will be normalized before the transform runs.</font>
+</p>
+
+
+<p>
+  <a name="996829"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The unit names of the two channels should be the same, or else we would be adding apples and kiwi.  Then their sum or difference would have the same unit.  But the unit names of channels to be multiplied may be different, and their product will have yet another unit, and we may not know what to call it.  The units system in jediPlus is very general, but right now I'm just calling the product Volts squared.  opportunity.</font>
+</p>
+
+
+<p>
+  <a name="999990"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There will be two versions of each of these channel math filters, one for peak data and one for hi-res.   For peak data, there could be an issue about how to define the resulting min/max when combining min/max data, and the solution depends on whether the noise is correlated in the two channels.  But the best compromise seems to assume the noise is correlated.</font>
+</p>
+
+
+<p>
+  <a name="1002759"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Although channel math yields a hole when one of the channels has a hole, we have ignored the suggestion to yield a clip when one of the channels is clipped.  Clip values are very near extreme valid Q levels, and are used as if they were valid.  This garbage-in good-out could annoy some customers.</font>
+</p>
+
+
+<h2>
+  <a name="996834"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-4  analog transforms on a waveform buffer</font>
+</h2>
+
+
+<h3>
+  <a name="996836"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-4.1  filter autoscaling</font>
+</h3>
+
+
+<p>
+  <a name="1000133"> </a><font face="Verdana, Arial, Helvetica, sans-serif">On Moab there is an autoscale key for FFT, and arguably the need for it on the other transforms.  I don't consider this a feature so much as the ability for the user to correct for the fact that we've displayed it wrong.  Of course the user needs to be able to scale the output, but until he does, we should do a good job of coming up with a first scaling.  To accomplish this, I have a flag in the filter schedule that tells whether filter autoscaling is needed, ie whether this is the first time thru the filter.  The behavioral layer sets this flag when you first choose the filter (new algorithm or new source), and after that it's reset.  When the filter is calculated, if this bit is on, we choose a filter scaling to make the result nicely fill the screen.  After that, only changes from the UI filter scaling menu can change the scaling.  Some of the filters used to change their own scaling as side effects of other control changes, but this has been fixed.</font>
+</p>
+
+
+<h3>
+  <a name="996854"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-4.2  ground coupling</font>
+</h3>
+
+
+<p>
+  <a name="999721"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For a grounded channel, jedi crammed zeros into the data with a trivial filter.  But they forgot to zero the resBits too.  In Muskrat, we could open the input or maybe even short it instead, acquiring crowbarred data.  There is no ground filter for jediPlus.</font>
+</p>
+
+
+<h3>
+  <a name="996867"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-4.3  differentiation</font>
+</h3>
+
+
+<p>
+  <a name="996868"> </a><font face="Verdana, Arial, Helvetica, sans-serif">dV/dt is done on the normalized data, and we've disabled some dithering for it.  To develop an estimate of the derivative, I use a linear combination of 4 points, sort of an average of two slopes.</font>
+</p>
+
+
+<p>
+  <a name="999744"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Anybody in his right mind doing dV/dt should be using hi-res or averaged data, so I probably don't have to handle peak data very well.  Since it uses normalized data, it uses the undithered<br>samples of Bob-mode in normal mode and the hi-res samples in hi-res, but it uses the peak data<br>in peak-detect.  You notice the noise of dV/dt goes down in peak-detect, however, because of <br>a resonance between the data format and the algorithm.</font>
+</p>
+
+
+<p>
+  <a name="1000106"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The new units should be easy to derive from the old ones, by dividing by time units.  I think V/us is better than MV/s but this is too hard for the units system.</font>
+</p>
+
+
+<h3>
+  <a name="996880"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-4.4  integration</font>
+</h3>
+
+
+<p>
+  <a name="999753"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Integration is done on normalized data, and one would think it should be easy to do.  There are several problems with using the integration filter on a scope, and the first two I did not solve.</font>
+</p>
+
+
+<p>
+  <a name="1002781"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If the input signal is not zero-mean, channel offset and filter offset will not fix this, and after the first part of the signal the function walks off screen.  I tried subtracting the data mean, but it's easier to use AC coupling, and that is up to the user.</font>
+</p>
+
+
+<p>
+  <a name="1002782"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The input signal may be zero mean but it still has low frequency noise, or slight instability in the offset, or sampling asymetries on a large number of periods.  Even if the error is as small as 1/16 of a Q level, after 2000 samples the filter is off by a half screen.  Unlike differentiation, averaging doesn't help much.  You can see this with an integration of many periods of a sine, and the filter flaps like a flag.  If there are 100 periods or so on screen, the amplitude of this Wiener process is easily larger than the amplitude of integration.  On Moab and Solo the flag flapped pretty slow so it doesn't look as bad as it does in Muskrat, but the amplitude of flapping is just as bad.  It helps to look at only a few periods, but that's up to the user.</font>
+</p>
+
+
+<p>
+  <a name="1002784"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Integrating a periodic zero-mean function with stable offset is still hard to scale, and this I could fix.  If the arbitrary constant is zero by construction, then such a filter will be very sensitive to phase delay and time per division.  By choosing this constant to put the first zero crossing in the middle of the screen, I was able to make the Yscaling much less sensitive to changes in Xscale.  It has been pointed out that I should bring that constant out to the user as a number on screen.</font>
+</p>
+
+
+<p>
+  <a name="1002779"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There isn't be much difference in the results if the input is peak or hi-res, but I have to provide both options.  We should multiply the unit by seconds.</font>
+</p>
+
+
+<h3>
+  <a name="996886"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-4.5  Fourier transform</font>
+</h3>
+
+
+<p>
+  <a name="996888"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We have always implemented a short, low-performance,  minimal FFT, and I think we should have a similar one here, just for nostalgia.  I will use normalized data as in the other transforms, and for this, the only slow filter, I will provide a bailing facility so we can interrupt it.</font>
+</p>
+
+
+<p>
+  <a name="996903"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For the rectangular window it is tempting to expand the 2000 Coyote points into 2048, because the window doesn't contribute to zero padding.  There are 6 options for doing this:</font>
+</p>
+
+<ul>
+  <li><a name="996906"> </a><font face="Verdana, Arial, Helvetica, sans-serif">we could turn the display off when we eavesdrop the data, so we can acquire the extra points without filling the margin on the display.  The display might be blinky.</font>
+  <li><a name="996908"> </a><font face="Verdana, Arial, Helvetica, sans-serif">we could look at the periodicity of the signal to find those extra 48 points.  But some users will have carefully tuned a number of periods to the screen, not knowing they should have tuned them to a slightly bigger screen.</font>
+  <li><a name="996912"> </a><font face="Verdana, Arial, Helvetica, sans-serif">change the vernier timebase to an optimum value that enhances the periodicity.  Or change the vernier timebase for an instant, blank the display and eavesdrop the data, then restore all to normalcy.  As with fine measurements in Crestone, the user wonders what happened.</font>
+  <li><a name="996916"> </a><font face="Verdana, Arial, Helvetica, sans-serif">give up and use a 1K FFT and throw away half the data, even  though the user thought he was using the most transparent of the window functions.  This is probably worse than padding, and it grossly violates wysiwyg.</font>
+  <li><a name="996919"> </a><font face="Verdana, Arial, Helvetica, sans-serif">on Puma, eavesdropping will be different, and we may be able to get the full 2K from ZEUM.</font>
+  <li><a name="1002815"> </a><font face="Verdana, Arial, Helvetica, sans-serif">run the 2000 points thru a linear variable rate filter to get 2048 points out.  I might be able to do this without any divides, so it's worth a look.</font>
+</ul>
+
+<p>
+  <a name="999812"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Changing time vernier and doing invisible acquisitions is novel, but I think this kind of cleverness oft goes awry, and would be hard to explain.  So even for a window that doesn't implicitly pad zeros, we will pad the 48 points and put up with the shitty results.  Who uses rectangular window anyway, and do they realize they are zero-padding when they do this?  Maybe we won't have to with Puma.</font>
+</p>
+
+
+<p>
+  <a name="1002791"> </a><font face="Verdana, Arial, Helvetica, sans-serif">With a 2048 point FFT we generate 1024 result points for display, but we can only show 1000.  Most likely we only want far less than that anyway (the partial spectrum of interest), and we interpolate to get to the display 1000.  I tried rectangular interpolation (used in Solo) but I was told it looked "broken".  I wrote a cubic spline interpolater, but it uses floats and takes too long.  Right now I use a quadradic interpolator, which looks sort of clunky but better than nothing.</font>
+</p>
+
+
+<p>
+  <a name="1000167"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The older Jedi products used 4K data in a 1K FFT.  Decimate the data in half, then stuff every other number into real and imaginary parts of a 1K complex buffer.  They still had to pad out to 1024, and the performance was that of a 1K FFT, even though it was widely reported to be 2K.  I want better performance in the frequency domain, so I will take our 2000 points, pad them to 2048, and use them as the real part of a complex buffer in a 2K FFT.  In talking to Rod Schlater I think I may have done my experiment wrong and there may yet be a way to make this same calculation in a 1K FFT, which would be faster.</font>
+</p>
+
+
+<p>
+  <a name="996925"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It is tempting to use floating math for the quieter noise floor, but for thruput I want to use integer math.  I will tables of pre-computed fixed-point values for the trig functions, the window func-tions, and the bit-reversal indices.  Floating math could give a quieter noise floor, but this FFT is slow enough already, so I will use integer math.  Final speed for the 2K FFT is about 200 ms with the 68020., a hair slower than the 1K FFT on the 68000.  I should point out that the first time thru this FFT is still 200 ms, whereas the older FFT takes a second to build magnitude tables.</font>
+</p>
+
+
+<p>
+  <a name="1000180"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The X scaling of an FFT has always been wanting.  You turn on the FFT and get some fuzzy cascade down the left end of your screen, going Gigahertz beyond the bandwidth of your scope on the right.  I decided that my autoscale should show the details we all want to see.  I scaled the display to show the fundamental at the first division on screen.  Then the other divisions show the next 9 harmonics.  If you changed the time scaling of your scope, this filter scaling remained the same, so that peak may get fatter or finer but it stays at the first division, and the frequency scaling doesn't change.  You could easily choose a different scaling if you want in the Math Settings menu, but this is the X scaling you started out with.</font>
+</p>
+
+
+<p>
+  <a name="1002828"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This nifty X component of the autoscaling was not valued by our panel of experts, however, so we have the Preset button.  For the FFT, which has both X and Y scaling, this key not only sets the Y scaling but also sets the frequency span and center controls to show a maximal amount of spectrum on the display.  Besides being actuated by a softkey, Preset is the action taken by function autoscale for FFT.  After preset, and before manual X scaling, the span and center are slaved to the time/div knob.  After the user adjusts either span or center, these are no longer slaved.  If our experts are right, this is less confusing than the harmonic analizer I had envisioned.</font>
+</p>
+
+
+<p>
+  <a name="1000171"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Because we are using 12-bit data, we need more resolution in the fixed-point math.  I have increased the resolution of the trig functions to 16 bits.   This increase, and the increase in record length, mean that the numbers in the FFT get larger than we can handle with 32-bit integers, especially when finding their magnitude by summing the squares of the real and imaginary parts.  If the complex type is a pair of 32-bit ints, then they can't get more than 16 bits in them before this magnitude blows up.  I found that for a 2048-point FFT with 12 bit data and 16 bit trig functions, the magnitude can be as large as 41 bits.  We can't even store these numbers in a list of 32 bit ints, so the notion of a dB table of magnitudes becomes less attractive.  </font>
+</p>
+
+
+<p>
+  <a name="1000179"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Fortunately I was able to make a logrithm function that takes int64's and returns a fixed point (16.8) result in little more than the amount of time it takes for a table lookup.  So I convert the FFT result to logrithms and store them, in a list of shorts.  Plotting and scaling are done from that list.</font>
+</p>
+
+
+<p>
+  <a name="999833"> </a><font face="Verdana, Arial, Helvetica, sans-serif">As we do it, the output vertical unit of a Fourier Transform is dB.  There is always the dilemma of what reference to use for the dB.  The most attractive reference is relative to the maximum in the spectrum.  But traditionally we have offered either dBV (relative to the spectral line of a 1 Vrms sine, or 2.828 Vpp) or dBm (relative to the spectral line of a sine with 1 mW into 50 ohms, or 0.632 Vpp).  I decided for the autoscale to put the top of the screen at the level a full-screen sine would transform to.  After the initial autoscale, of course, the user can choose any scale they want.</font>
+</p>
+
+
+<h2>
+  <a name="996934"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-5  long analog data</font>
+</h2>
+
+
+<h3>
+  <a name="996936"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-5.1  wave:data? all</font>
+</h3>
+
+
+<p>
+  <a name="996937"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This long data query over the bus will not be displayed or reinserted.  So I can stop the box and pick my way thru the acq data, spitting out the bytes.  A similar function may write long files on the disk.  They do not access eavesdrop memory.  I would like to know what customers use this data for, because it could suggest some future enhancements or mitigations.  This should probably be one of the first filters implemented, for developers or filter writers.  The options in Moab are byte/word, msb first/last, length.  We may have more format options.  In implementation, I expect to provide 2000 points (the easy length), and word format, to the routine doing the bus call.  If they want to decimate the data or present it as bytes or ascii strings, they can easily do that.  I will also have to provide a long call.  I will expect to provide the WAV:POINTS:ALL length, one million points more or less, in word format.  Unless I can hog the whole spooler, I will have to handshake with the bus routine to block the data.  We may find there is enough pull for a nearlyALL length, and I would decimate while I block.</font>
+</p>
+
+
+<h3>
+  <a name="996945"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-5.2  LFT (not JEF)</font>
+</h3>
+
+
+<p>
+  <a name="996946"> </a><font face="Verdana, Arial, Helvetica, sans-serif">I would like to offer an enhanced FFT using more data, called maybe the Long Fourier Transform.  It certainly won't be Fast.  Because it uses a long record, on Muskrat it would stop the box while it works, and the display would not be seamless.  I expect using this stopped raw data would avoid having to un-dither it if I used a hi-res mode?  The resources impacted by LFT are response time and system ram.  Presumably the user can choose to wait for the results, but he can't chose to have more memory in the box.  I think I could offer up to a 16K transform, maybe only that length.  It would probably turn off all other transforms and measurements, maybe destroy saved traces.</font>
+</p>
+
+
+<p>
+  <a name="996955"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Using integer math wouldn't save memory, but it would save time.  It would take 16K points of data, going into complex points in working storage (taking 128K bytes of system ram as integers), so memory management is critical.  There would be no room to store a full-size trig table or a windowing function, so those would be calculated and interpolated.</font>
+</p>
+
+
+<p>
+  <a name="996963"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These things make it slow, and response to changes in timebase and such would also be slow, but the users might be willing to wait.  There will be requests for yet longer FFTs, even up to 1M, but I think the point of diminishing returns is 16K.  There are better ways to make a frequency meas-urement.  The rare user who wants this can always do his own transform on the long bus data.</font>
+</p>
+
+
+<p>
+  <a name="996970"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It would be easy to offer the phase data as well as the magnitude.  Easy in the short FFT also, but I am thinking of that one as more of a no-brainer, no frills, no options FFT.  We could also average the results of the transform, given enough system ram.  I know, I'll use the floppy for virtual memory.  Maybe there's some display memory I can use.  Not really, says Matt.</font>
+</p>
+
+
+<h2>
+  <a name="996981"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-6  digital filters</font>
+</h2>
+
+
+<h3>
+  <a name="996983"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-6.1  encoding</font>
+</h3>
+
+
+<p>
+  <a name="1000163"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The user wants to interpret his data at a given time, such as hex or ascii mode in the cursor readout.  To facilitate this, as well as the serial cursor modes, we have the encoding filter.  This will take selected sources and make up an array of parallel shorts, which can then be easily analysed and formatted.  We can also take this filter output and encode the whole screen as bus data, which is not JEF.  So right now this is an internal filter, used just for cursor interpretation.</font>
+</p>
+
+
+<h3>
+  <a name="997006"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-6.2  correlation (not JEF)</font>
+</h3>
+
+
+<p>
+  <a name="997007"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Correlation and autocorrelation filters may be useful to manufacturers of disk drives or communi-cations analyzers.  Or we could use them to measure ISI, channel-channel coupling, or even channel bandwidth.  I've heard no demand for these, so I will give them a zero priority.  But they could be inserted without too much difficulty, on digital waveform ram.  The autocorrelation filter could work pretty fast if you limit the offset time.</font>
+</p>
+
+
+<h2>
+  <a name="1002799"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">22-7  innovations</font>
+</h2>
+
+
+<p>
+  <a name="1002800"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Here is a list of things which are new to jediPlus filters, which may be confusing or delightful to the user.</font>
+</p>
+
+<ul>
+  <li><a name="1002801"> </a><font face="Verdana, Arial, Helvetica, sans-serif">filters are Yautoscaled the first time they are invoked</font>
+  <li><a name="1002831"> </a><font face="Verdana, Arial, Helvetica, sans-serif">filters use 12-bit data when it's available, so FFT and dV/dt are quieter</font>
+  <li><a name="1002803"> </a><font face="Verdana, Arial, Helvetica, sans-serif">FFT noise floor is better, especially when averaging</font>
+  <li><a name="1002804"> </a><font face="Verdana, Arial, Helvetica, sans-serif">FFT Xscaling is controlled by the Preset mode instead of always slaved to the timebase knob</font>
+  <li><a name="1002805"> </a><font face="Verdana, Arial, Helvetica, sans-serif">dynamics of the integrate filter show a better display, with a mystery number</font>
+  <li><a name="1002832"> </a><font face="Verdana, Arial, Helvetica, sans-serif">wysiwyg problems -- math functions on clipped data may not appear clipped, so it won't be obvious that measurements on them are potentially bogus.</font>
+</ul>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="meas.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="curs.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

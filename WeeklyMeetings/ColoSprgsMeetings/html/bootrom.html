@@ -1,0 +1,1589 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:27:33 2002">
+<title>CHAPTER 26 Bootrom and Flash Programming</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="selfTest.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="os_wrapr.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="47"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 26 	 Bootrom and Flash Programming</font>
+</h1><hr>
+
+
+<h2>
+  <a name="384"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-1   Introduction  </font>
+</h2>
+
+
+<p>
+  <a name="974"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This document describes the LDS Bootrom.  The LDS bootrom is designed to provide a designer with a way to very quickly get started with a 68000 based hardware design.  The bootrom code itself is linked into an archive which is then used as a toolkit from which various features can be selected.  The primary features of the bootrom are as follows: </font>
+</p>
+
+<ul>
+  <li><a name="984"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CPU32 and 680X0 support. (except 68000)</font>
+  <li><a name="985"> </a><font face="Verdana, Arial, Helvetica, sans-serif">ROM Checksum tests.</font>
+  <li><a name="1919"> </a><font face="Verdana, Arial, Helvetica, sans-serif">RAM Tests.</font>
+  <li><a name="1920"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Hardware Monitor (peek/poke)</font>
+  <li><a name="1921"> </a><font face="Verdana, Arial, Helvetica, sans-serif">GDB kernel interface.</font>
+  <li><a name="1922"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Easy configuration.</font>
+  <li><a name="1923"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Flash ROM programming.</font>
+  <li><a name="1924"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Downloading code from various interfaces such as HP-IB or RS23.</font>
+  <li><a name="1950"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Ability to run power-on tests without using RAM.</font>
+</ul>
+
+<p>
+  <a name="986"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This document contains detailed descriptions of each feature as well as example code to illustrate the concepts.</font>
+</p>
+
+
+<p>
+  <a name="2876"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If you are in a real hurry to get something going and do not want to read the whole document, you should focus on the <em>Configuring the Bootrom</em> and <em>Example Code </em>sections.  To make the hewie demo, you can update all files under lds/bootrom, cd to lds/bootrom/examples, and invoke 'make hewierom'.</font>
+</p>
+
+
+<h2>
+  <a name="5097"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-2  Typical memory layout</font>
+</h2>
+
+
+<p>
+  <a name="5103"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In order understand the rest of the document, it is important to have some idea of the memory layout used by the bootrom.  A "typical" layout is shown below.   or illustration purposes, ROM begins at address 0x0 and RAM begins at address 0xe00000.  The bootrom code itself obviously resides in the ROM section while the stack used by the bootrom is at the beginning of RAM.  By default, the top of the bootrom stack is at the beginning of the data/bss segments of the bootrom as configured by the BDATA_START make variable.  By setting BDATA_START to be 0x800 bytes past the beginning of RAM, the bootrom stack is effectively 2KB.</font>
+</p>
+
+<a name="5110"> </a>TABLE 12.  Typical memory layout
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="5149"> </a>Address</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="5173"> </a>Function</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="5151"> </a>Space</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="5200"> </a>Make Define</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5153"> </a>0x000000 - 0x01ffff</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5175"> </a>BOOTROM</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5155"> </a>ROM</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5202"> </a>TEXT_START</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="11364"> </a>0x020000 - 0x0fffff</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="11366"> </a>System</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="11368"> </a>ROM</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="11370"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="11372"> </a>0x100000 - 0x1fffff</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="11374"> </a>Help system</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="11376"> </a>ROM</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="11378"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5157"> </a>0x500000 - 0x5007ff</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5177"> </a>Bootrom Stack</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5159"> </a>RAM</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5204"> </a>-</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5161"> </a>0x500800 - 0x500bff</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5179"> </a>Bootrom Data/Bss</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5163"> </a>RAMs</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5206"> </a>BDATA_START</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5165"> </a>0x500c00 - 0x57ffff</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5181"> </a>General Memory</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5167"> </a>RAM</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="5208"> </a>-</font></td>
+  </tr>
+</table>
+
+
+
+
+<h2>
+  <a name="1925"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-3  Configuring the Bootrom</font>
+</h2>
+
+
+<p>
+  <a name="1931"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This section describes the platform specific customizations which are required before the bootrom code can be used. In most situations, these structures can all be placed in a single file and are defined using C.  See the section titled <em>Example Code </em>for templates which can be used for your design.</font>
+</p>
+
+
+<h3>
+  <a name="1948"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-3.1  Bootrom Stack - Optional</font>
+</h3>
+
+
+<p>
+  <a name="1949"> </a><font face="Verdana, Arial, Helvetica, sans-serif">At reset, the processor will load it's stack pointer from memory address 0 and the initial PC from address 4.  However, to provide the most reliable instrument software possible, it is a good practice to make the contents of address 0 be zero.  This allows dereferences of NULL pointers to be NULL.  Also NULL char* pointers will end up pointing to null strings.  Because of this, the stack pointer will initially be loaded with zero and then immediately loaded with the "real" value by initialization code.  The initialization code will load the value of the bootrom stack pointer from the variable <em>bootStackPointer.  </em>This variable is declared as </font>
+</p>
+
+<pre>
+<a name="1951"> </a>void * const bootStackPointer;
+</pre>
+
+<p>
+  <a name="1961"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are several important considerations which need to be given to how this variable is initialized.  The safest thing to do is to initialize it to point into some location where write operations are always allowed without side affects.  The bootrom power-on tests and initialization code are all written so that the stack is not needed so one option is to initialize this to point into RAM space just before the data segment:</font>
+</p>
+
+<pre>
+<a name="1967"> </a>extern char _bdata;  /* beginning of data segment */
+const void * const bootStackPointer = (void *) &amp;_bdata; /* the default */
+</pre>
+
+<p>
+  <a name="1962"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Note that the stack will grow "down" from the _<em>bdata</em> area.  If your RAM layout does not have usable memory below _<em>bdata</em> (or even worse, the text segment is there), you should pick another value for <em>_bdata</em> such as end of memory.  </font>
+</p>
+
+
+<p>
+  <a name="2866"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Older bootroms would initialize this to ROM space but with newer generation flash devices this practice is no longer recommended because the intelligent identifier can be invoked by writing to the chip at only  +5V.  Initializing to ROM space requires your hardware to not generate bus errors when writes are attempted to ROM.  If the ramRefresh test is used, the dynamic memory which is tested for refresh should not also contain the <em>bootStackPointer</em>. </font>
+</p>
+
+
+<p>
+  <a name="11385"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The recommended practice is to use a bit bucket address.  An address which simply writes into the ozone allows stack operations to occur on exceptions without requiring RAM to be operable.</font>
+</p>
+
+<pre>
+<a name="11386"> </a>void * const bootStackPointer = (void *) 0x7300000; /* bit bucket */
+</pre>
+
+<p>
+  <a name="2789"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This bit bucket is defined in the jediPlus bootrom with the BOOT_STACK macro. In the bootrom's makefile, the macro BOOT_STACK is defined to be 0x580000. This is just above the last valid system RAM address. The stack will move down in memory as it is used and it is unlikey that there will be any real memory here, but the CPU doesn't hang when writing here. See the file bootstk.c</font>
+</p>
+
+<pre>
+<a name="11437"> </a>#ifdef BOOT_STACK 
+<a name="11438"> </a>  const void * const bootStackPtr = (void *); /* bit bucket */
+<a name="11440"> </a>#endif
+</pre>
+
+<h3>
+  <a name="11439"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-3.2  Low-level Hardware Initialization - Required</font>
+</h3>
+
+
+<p>
+  <a name="1985"> </a><font face="Verdana, Arial, Helvetica, sans-serif">After the stack pointer is loaded, an optional callout is made to provide a mechanism where unique hardware initialization can be done to satisfy the requirements of the power-on diagnostics.  For CPU32 designs this may involve setting up the appropriate chip select programming.  Other initialization such as gate array programming may also be required before RAM can be accessed.  In many cases, the serial port should be initialized at this time as well.  </font>
+</p>
+
+
+<p>
+  <a name="2031"> </a><font face="Verdana, Arial, Helvetica, sans-serif">To customize this callout, a table (<em>bootInitTable) </em>is created with pointers to functions to be called for initialization.  Since RAM may not be available until after initialization, a JMP instruction is used <font  size="2" face="Verdana, Arial, Helvetica, sans-serif">for the first table entry.</font>   The return address for all table entries is contained in register A5.  These routines can be written in either assembly or C but the user should be warned that RAM may not be working at this point so stack based routines are not recommended even though the calling convention allows it for table entries other than the first one.  The <em>bootInitTable</em> is NULL terminated.</font>
+</p>
+
+
+<p>
+  <a name="2054"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following is the initial jediPlus definition for <em>bootInitTable (see boot.c)</em>:</font>
+</p>
+
+<pre>
+<a name="2059"> </a>#include &lt;lds_pub/bootrom.h&gt;
+<a name="2063"> </a>const BootInitTable bootInitTable =
+{
+	 sioInit,            /* called with a jmp, return addr in a5 */
+	 NULL,             /* end of list */
+};
+</pre>
+
+<p>
+  <a name="2071"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If you do not provide an initialization for <em>bootInitTable</em>, it will default to a NULL table which will essentially cause the callout to be ignored.</font>
+</p>
+
+
+<h3>
+  <a name="1825"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-3.3  I/O Configuration - Required</font>
+</h3>
+
+
+<p>
+  <a name="2094"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The bootrom I/O mechanism is deliberately primitive.  While an I/O "system" as such does not exist, bootrom code is able to use read(1) and write(1) compatible routines to do it's job.  A table is used to "hardwire" an equivalence between the unix concept of file descriptors and the available drivers in the bootrom.  Each driver to be available is listed in a table called <em>bootIOTable</em>. Each element of the <em>bootIOTable</em> has information about the driver such as it's name and the functions to use for reading, writing, and initialization:</font>
+</p>
+
+<pre>
+<a name="2101"> </a>const BootIOTable bootIOTable = 
+{
+	 { "RS232,LIST", readMFP,     writeMFP,    NULL },       /* driver 0 */
+	 { "HPIB",  bootReadHpib, bootWriteHpib, bootInitHpib },/* driver 1 */
+	 { NULL}
+};
+</pre>
+
+<p>
+  <a name="4941"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The calling convention for the read and write routines are the same as the unix <em>read(1)</em> and <em>write(1)</em> functions.  When the downloader is invoked with no parameters ('hm'), it will search this table first for a device called DOWNLOAD, then HPIB, then RS232BINARY.   If an RS232 driver is aliased to DOWNLOAD, it should be referenced as DOWNLOAD,LIST in the table.  The ,LIST specifier tells the downloader that it must read all segments to be downloaded and keep a list of them rather than programming as the data is downloaded.   This is because most implementations do not have hardware handshaking (or software handshaking) so the bootrom needs to read the data all at once rather than a byte at a time as it is needed for programming.  </font>
+</p>
+
+
+<p>
+  <a name="5686"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This initialization function is not invoked by the low level diagnostic code but rather is invoked when the bootopen() function is called to open a device for reading or writing.</font>
+</p>
+
+
+<h3>
+  <a name="4942"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-3.4  Self Test Configuration - Required</font>
+</h3>
+
+
+<p>
+  <a name="2137"> </a><font face="Verdana, Arial, Helvetica, sans-serif">As with the other configurations described in this document, the configuration for the diagnostic tests is also table driven.  In the case of diagnostics, the table is quite a bit more complicated and requires a fair amount of detailed knowledge about the hardware configuration.</font>
+</p>
+
+
+<p>
+  <a name="2138"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each entry in the  structure defines one test:  </font>
+</p>
+
+<pre>
+<a name="2152"> </a>typedef struct 
+{ 
+     SelfTestFunction *function;
+     const char       *name;
+     Lds_Int32        errorBit;
+     Lds_Int32        busErrorBit;
+     Lds_Int32        arg1;
+     Lds_Int32        arg2;
+     Lds_Int32        arg3;
+     Lds_Int32        arg4; 
+} SelfTestEntry ;
+</pre>
+
+<p>
+  <a name="2184"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The elements of the structure have the following meaning:</font>
+</p>
+
+
+<p>
+  <a name="2162"> </a><font face="Verdana, Arial, Helvetica, sans-serif">function	 The address of the function to call to invoke this test.</font>
+</p>
+
+
+<p>
+  <a name="2163"> </a><font face="Verdana, Arial, Helvetica, sans-serif">name	 The name of the test to be printed when the test begins</font>
+</p>
+
+
+<p>
+  <a name="2190"> </a><font face="Verdana, Arial, Helvetica, sans-serif">errorBit	 The bit <em>number</em> to set in the Test Result Register D7 if the test fails.  The bit number is determined by the user and can be in the range 1:19.  The SILENT_TEST,  ALWAYS_RUN_TEST, and SKIP_TEST_ON_ERROR attributes described below can be included in addition to the user test number.</font>
+</p>
+
+
+<p>
+  <a name="2186"> </a><font face="Verdana, Arial, Helvetica, sans-serif">busErrorBit	 The bit <em>number</em> to set in the Test Result Register D7 if an unexpected bus error occurs.  The bit number is determined by the user and can be in the range 1:19.  The SKIP_TEST_ON_ERROR attribute can be applied to this field.  The value in this field can be the same as the errorBit.  That is, different error numbers need not be used to distinguish between a bus error failure and a general failure.</font>
+</p>
+
+
+<p>
+  <a name="2165"> </a><font face="Verdana, Arial, Helvetica, sans-serif">arg1, arg2, arg3, arg4	 Arguments to pass to the test function.  The arguments are passed on the boot stack (as defined by <em>bootStackPointer</em>) as well as being passed in registers D0-D3 respectively.</font>
+</p>
+
+
+<p>
+  <a name="2313"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following code configures 3 test routines.  The first displays the bootrom copyright message.  The second tests the bootrom checksum (using bootromChecksumTable as a parameter).  The third test tests the size of "main ram". </font>
+</p>
+
+<pre>
+<a name="2314"> </a>const SelfTestTable selfTestTable = { 
+    { testNull, bootromCopyright, ALWAYS_RUN_TEST },
+    { testChecksum, bootromRevision,
+           ERR_BOOTROM | ALWAYS_RUN_TEST, ERR_BOOTROM,
+           bootromChecksumTable },
+    { testRamSize, "Main RAM\r\n",
+        ERR_MAINRAM_SIZE | ALWAYS_RUN_TEST, ERR_MAINRAM_DSACK,
+        0x040000,       /* 1/4 Mbyte minimum */
+        0xe00000,       /* initial ram value */
+        0xe00000,       /* min ram loc */
+        0xe3ffff,       /* max ram loc */ },
+<a name="2272"> </a>    { NULL }            /* end of table */
+};
+</pre>
+
+<p>
+  <a name="2290"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The errorBit and busErrorBit values are user defined and should represent a single bit between 1 and 19.  Bits 20-31 are reserved for internal use which allows up to 19 unique user test error bits.  The errorBit and busErrorBit value can each have several test configuration modifiers present.  These modifiers are defined in bootrom.h:</font>
+</p>
+
+
+<p>
+  <a name="2297"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SILENT_TEST	 <br>Do not print any error messages or test names.  This modifier should only be applied to the errorBit field.</font>
+</p>
+
+
+<p>
+  <a name="2298"> </a><font face="Verdana, Arial, Helvetica, sans-serif">ALWAYS_RUN_TEST	 <br>Always run this test, even if tests are disabled.  One of the configuration bits configures a mode bit which suppresses all  tests which are not configured with the ALWAYS_RUN_TEST bit.  This modifier should only be applied to the errorBit field.</font>
+</p>
+
+
+<p>
+  <a name="2331"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SKIP_TEST_ON_ERROR	   <br>If the error bit for this test is already set, skip this test.  This allows tests to be skipped if the results of a previous test detected an error.  This modifier can be applied to both the errorBit field and the busErrorBit field.</font>
+</p>
+
+
+<p>
+  <a name="2886"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="2887"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Between each test, registers D6, A2, A3, and A4 are not modified.  This allows using these registers to pass state information between tests.  In fact, this is how information is passed from the <em>testRamSize</em> routine to the <em>testRam </em>routine.</font>
+</p>
+
+
+<h4>
+  <a name="2332"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Library Test Routines</font>
+</h4>
+
+
+<p>
+  <a name="2356"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The libboot.a library contains a number of tests which are available for use in defining your self test configuration table.  These tests are externed in bootrom.h and are <em>NOT</em> C callable.  Parameters below marked with D0, D1, D2, or D3 come from the <em>selfTestTable</em> definition while other registers are inherited from the result of previous tests.</font>
+</p>
+
+
+<p>
+  <a name="2367"> </a><font face="Verdana, Arial, Helvetica, sans-serif">void testNull()	 This is a null  test which does nothing.  It is useful when you simply want to have something displayed as tests progress.  This is easily done by simply defining a test name for it in the configuration table:</font>
+</p>
+
+
+<p>
+  <a name="11451"> </a><font face="Verdana, Arial, Helvetica, sans-serif">    {  testNull,  "Tests are almost done\r\n" }</font>
+</p>
+
+
+<p>
+  <a name="2368"> </a><font face="Verdana, Arial, Helvetica, sans-serif">void testChecksum(void *checksumTable)</font>
+</p>
+
+
+<p>
+  <a name="5047"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Run a checksum verification test.  The first parameter is a pointer to the beginning of the checksum table.  See the <em>generating checksums</em> section for details on how this table is configured.  For the bootrom, the checksum table can be found via the global symbol <font  size="3" face="Verdana, Arial, Helvetica, sans-serif">bootromChecksumTable.  </font></font>
+</p>
+
+
+<p>
+  <a name="5251"> </a><font face="Verdana, Arial, Helvetica, sans-serif">	 When specifying checksum tables for ROMs which are separate from the bootrom,  an absolute address is usually required.  This is most often accomplished by linking the checksum table as the very first or second file in the executable and arranging for the table to be after a jmp instruction:</font>
+</p>
+
+
+<p>
+  <a name="5252"> </a><font face="Verdana, Arial, Helvetica, sans-serif">	       .text<br>start:  jmp startMainFirmware<br>mainFirmwareChecksumTable:              | offset 6 bytes from start</font>
+</p>
+
+
+<p>
+  <a name="5260"> </a><font face="Verdana, Arial, Helvetica, sans-serif">	 In this case, the value of 0x300006 might be used to indicate where the checksum table is located within the 0x300000 ROM space.</font>
+</p>
+
+
+<p>
+  <a name="5256"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="2371"> </a><font face="Verdana, Arial, Helvetica, sans-serif">(A3,A2) testRamSize (Lds_UInt32 minRamSize_D0, <br>void *searchBegin_D1, void *lowLimit_D2, void * highLimit_D3)</font>
+</p>
+
+
+<p>
+  <a name="5046"> </a><font face="Verdana, Arial, Helvetica, sans-serif">	 Test the size of a RAM area.  This test has 4 parameters which determine how the test is done.  The first parameter determines the minimum amount of RAM which must be present.  If less than this amount is found, an error is generated.  The second parameter is a memory address within the RAM area to begin searching.  The third and fourth parameters determine the absolute minimum and absolute maximum address which should be searched.  This test leaves the start address in register A3 and the stop address in register A2.</font>
+</p>
+
+
+<p>
+  <a name="5037"> </a><font face="Verdana, Arial, Helvetica, sans-serif">	 The ram size is determined by "looking" up in memory until the limit is reached, a bus error occurs, or a doubly mapped memory location is found.  The search then proceeds down in memory using the same criteria.  This allows memory to grow and have it's size automatically determined.</font>
+</p>
+
+
+<p>
+  <a name="2372"> </a><font face="Verdana, Arial, Helvetica, sans-serif">(D6) testRam(void *startAddr_A3, void *stopAddr_A2)</font>
+</p>
+
+
+<p>
+  <a name="5048"> </a><font face="Verdana, Arial, Helvetica, sans-serif">	 Test a RAM area.  Assumes start and stop addresses are in registers A3 and A2 respectively.  The testRamSize test usually precedes this test so the values in A3 and A2 are results from the testRamSize test.  This test does a walking ones test on memory and has a fast version and a slow version.  It finds shorted address lines, shorted data lines and opens.  Any bit errors are marked in register D6.  A set bit indicates a problem.  For byte-wide and word-wide memory, errors may show up in the upper bits of D6 because the memory tests are done with long (32 bit) accesses.</font>
+</p>
+
+
+<p>
+  <a name="5068"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="2373"> </a><font face="Verdana, Arial, Helvetica, sans-serif">(D6) testRamRefresh(void *startAddr_A3, void *stopAddr_A2)</font>
+</p>
+
+
+<p>
+  <a name="5053"> </a><font face="Verdana, Arial, Helvetica, sans-serif">	 Test to see if dynamic RAM is being refreshed properly.  This test writes a random pattern to the memory area, waits a little bit for refresh cycles to occur and then checks to see if the contents of memory are still valid.  If you are using static RAMs, this test will be unlikely to catch any problems.  This test will retain any previous bits set in register D6 and will only add new bits if a problem is found.</font>
+</p>
+
+
+<p>
+  <a name="2853"> </a><font face="Verdana, Arial, Helvetica, sans-serif">void saveRamResults(  void *resultLocation_D0,  <br>void *startAddr_A2, void *stopAddr_A3, Lds_UInt32 errorBits_D6)</font>
+</p>
+
+
+<p>
+  <a name="5058"> </a><font face="Verdana, Arial, Helvetica, sans-serif">	 Save the start addr, stop addr, and error bits into memory pointed to by parm1.  The results are then available for later query.</font>
+</p>
+
+
+<h4>
+  <a name="5637"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Custom Test Routines</font>
+</h4>
+
+
+<p>
+  <a name="5638"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Users are free to create their own test routines to be invoked from the test table.  In general, the following guidelines should be followed:</font>
+</p>
+
+<ul>
+  <li><a name="5639"> </a><font face="Verdana, Arial, Helvetica, sans-serif">D7 should not be modified except to set appropriate error bits</font>
+  <li><a name="5642"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Use A5 as the return address unless C calling conventions are used.</font>
+  <li><a name="5640"> </a><font face="Verdana, Arial, Helvetica, sans-serif">To be safe, assume that I/O routines use D0-D3/D5/A0-A1/A5.  See the register usage table in the Bootrom Internals section for details.</font>
+  <li><a name="5641"> </a><font face="Verdana, Arial, Helvetica, sans-serif">D6/A2-A4 are not used between tests.  These can be used to pass parms between cooperating tests.</font>
+</ul>
+
+<h3>
+  <a name="2386"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-3.5  Main Stack Pointer - Optional</font>
+</h3>
+
+
+<p>
+  <a name="2397"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>mainStackPointer</em> variable contains the initial stack pointer for the C run-time environment.  The stack pointer is loaded with this value before the data and bss segments have been initialized. The default value for <em>mainStackPointer</em> is to have it start right below the beginning of the data segment:</font>
+</p>
+
+<pre>
+<a name="2404"> </a>extern char _bdata;  /* beginning of data segment */
+void *const mainStackPtr = (void *) &amp;_bdata;
+</pre>
+
+<p>
+  <a name="2405"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If your application needs a different value for <em>mainStackPointer</em>, you must define the value.  If you need to figure this value out with an algorithm, you should make a test entry which invokes a routine to do this for you.  You can use the ALWAYS_RUN_TEST and SILENT_TEST attributes to make this test invisible.</font>
+</p>
+
+
+<p>
+  <a name="2888"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Note that the stack will grow "down" from the _<em>bdata</em> area.  If your RAM layout does not have usable memory below _<em>bdata</em> (or even worse, the text segment is there), you should pick another value for <em>_bdata</em> such as end of memory. </font>
+</p>
+
+
+<h3>
+  <a name="2406"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-3.6  Main Entry Point - Optional</font>
+</h3>
+
+
+<p>
+  <a name="2413"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>mainEntryPoint </em>variable specifies the first routine to execute after the data and bss segments have been initialized.  This function is the logical equivalent of main() (and in fact may be main() in some applications).  For the bootrom, the default value for the <em>mainEntryPoint</em> variable is <em>startBootmon</em>, which causes the bootrom monitor program to be initiated:</font>
+</p>
+
+<pre>
+<a name="2417"> </a>VoidFunction *mainEntryPoint = startBootmon;
+</pre>
+
+<p>
+  <a name="2418"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If you want to use s<em>tartBootmon</em> as your entry point but want to do additional initialization before it is started, you can define your own function:</font>
+</p>
+
+<pre>
+<a name="2419"> </a>VoidFunction koalaMon;   /* forward decl */
+<a name="2420"> </a>VoidFUnction *mainEntryPoint = &amp;koalaMon;
+<a name="2424"> </a>void koalaMon(void)
+{
+	 pcmciaPort = (void *) 0x700000;
+	 startBootmon();
+}
+</pre>
+
+<h3>
+  <a name="2428"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-3.7  writeTestNumber - Optional</font>
+</h3>
+
+
+<p>
+  <a name="2429"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>writeTestNumber</em> function is used by the test executive to communicate progress of the self tests.  As each test is executed in the selfTestTable, the <em>writeTestNumber</em> function is called with the test number as a parameter.  The usual implementation of this function is to simply write the test number to a bank of LEDS.  If one of the self tests encounters an error, <em>writeTestNumber</em> is not called for any following tests, thus leaving the number for the failing test on the display device.  The default implementation of <em>writeTestNumber</em> is to do nothing.  This function can be either in assembler or C, with an assembler implementation preferred to allow execution even if RAM is not functional.  The following is the default implementation which does "nothing".  If you have an LED register you wish to write to, simply change the nop to something like   move.l  d0,_myLEDPort.  If the polarity of your led port requires a "0" level to turn on the led, simply to a neg.l d0 before the move.l.</font>
+</p>
+
+<pre>
+<a name="2431"> </a>	 	 .globl  _writeTestNumber
+_writeTestNumber:
+	 	 nop        | The test number is in register D0
+	 	 jmp  a5@   | The return address is in register A5
+</pre>
+
+<h3>
+  <a name="5590"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-3.8  hpibPort - Required if using HP-IB</font>
+</h3>
+
+
+<p>
+  <a name="5595"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The hpibPort variable is a pointer to the TI9914 base address.  Offsets from this address will be used when communicating to the TI9914.  It can be initialized in C with code similar to:</font>
+</p>
+
+
+<p>
+  <a name="5599"> </a><font face="Verdana, Arial, Helvetica, sans-serif">volatile union _HpibPort *hpibPort = (volatile union _HpibPort *) 0x10a000</font>
+</p>
+
+
+<h3>
+  <a name="5591"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-3.9  bootHpibAddress - Required if using HP-IB</font>
+</h3>
+
+
+<p>
+  <a name="5600"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In order to communicate over the HP-IB interface, a unique address is needed for each device.  This address ranges from 0-30.  If you are using HP-IB, you should provide a definition for this as well as the hpibPort variable.  An example definition is shown below:</font>
+</p>
+
+
+<p>
+  <a name="5601"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Lds_Int8 bootHpibAddress = 19;</font>
+</p>
+
+
+<p>
+  <a name="5603"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The default value of 19 is recommended for compatibility with other divisions using HP-IB bootrom communication.</font>
+</p>
+
+
+<h2>
+  <a name="2430"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-4  Generating Checksums</font>
+</h2>
+
+
+<p>
+  <a name="5038"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Checksums are generated by a program called<em> pchksum</em>.  This program was written long long ago and has been continually modified to meet changing needs as time has progressed.  The basic strategy used in the checksum generation is to read the object file, compute modulo 16 bit sums, and then stuff the sums back into the object file.  Some configuration is done via command line options and some configuration is done via global symbols found in the object file itself.  For example, a command line option specifies the width i n bytes of ROM while a global symbol in the object file specifies where to place the checksum.  </font>
+</p>
+
+
+<p>
+  <a name="5093"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In order for the<em> pchksum</em> program to stuff results back into the object file, space must be allocated somewhere in the file to place the results.  This is done automatically by code in csumtbl.S.  In order for the table to be generated properly, two compile time flags must be set - ROMS_PER_BANK, and MAX_ROM_BANKS.  See <em>Making libboot.a</em> for how to configure these values.</font>
+</p>
+
+
+<p>
+  <a name="5239"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All the checksums are stored in the lowest bank of ROMS.  In addition, each byte has only checksums in it for that byte so that if Bit0 is stuck,  checksums can still be performed on a device using bits 8-15, 16-23 or 24-31.</font>
+</p>
+
+
+<p>
+  <a name="5243"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For exact details on how the table is constructed and defined, the reader is referred to detailed comments in the source file csumtbl.S. </font>
+</p>
+
+
+<h2>
+  <a name="2563"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-5  Flash Programming</font>
+</h2>
+
+
+<p>
+  <a name="2564"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The bootrom code supports all known (at least at one point in time) flash devices.  This includes the 28F010, 28F020, 28F001 28F400 and 28F200.  Both the new block oriented devices with embedded programming algorithms and the older chips which push all the smarts out into the user's code are supported.  </font>
+</p>
+
+
+<p>
+  <a name="4956"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When using Flash Bootroms, a special programming technique called 'mirrors' is used.  Because the CPU cannot read it's instructions from the bootrom while it is being programmed, a special executable is created which can be run from RAM to program the bootrom.  This executable is linked at an absolute RAM address and stored in the bootrom.  This program is copied from the bootrom to RAM and then executed to perform the flash programming.  In the makefile for the example programs, this special executable is called flashprg.o.  When the flashprg.o file is created, it needs to be linked with a subset of the bootrom drivers.  The bootrom configuration files for the example programs have their configuration definitions split between two separate files to facilitate this extra linking process.  For example, the hewie example has hewie.c and hewie2.c.  The file hewie2.c contains only the configuration information needed by the flash program loaded into RAM.</font>
+</p>
+
+
+<p>
+  <a name="4963"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The flash code requires a handful of user routines to do it's job properly.  These routines are used to help the flash programming code make decisions about where ROMs are located in memory, how to do calibrated delays, and how to enable the programming voltage.  The current externals needed for flash programming are:</font>
+</p>
+
+
+<p>
+  <a name="4968"> </a><font face="Verdana, Arial, Helvetica, sans-serif">adrMask	 A function to help determine the first location in a ROM from an arbitrary address.</font>
+</p>
+
+
+<p>
+  <a name="4969"> </a><font face="Verdana, Arial, Helvetica, sans-serif">disable_target_vpp	 A function to disable the flash programming voltage.</font>
+</p>
+
+
+<p>
+  <a name="4970"> </a><font face="Verdana, Arial, Helvetica, sans-serif">enable_target_vpp	 A function to enable the flash programming voltage.</font>
+</p>
+
+
+<p>
+  <a name="4971"> </a><font face="Verdana, Arial, Helvetica, sans-serif">uDelay6	 A function to delay 6 microseconds.</font>
+</p>
+
+
+<p>
+  <a name="4972"> </a><font face="Verdana, Arial, Helvetica, sans-serif">uDelay10	 A function to delay 10 microseconds.</font>
+</p>
+
+
+<p>
+  <a name="4973"> </a><font face="Verdana, Arial, Helvetica, sans-serif">uDelayN	 A function to delay an arbitrary number of microseconds.</font>
+</p>
+
+
+<p>
+  <a name="4974"> </a><font face="Verdana, Arial, Helvetica, sans-serif">uDelaySetup	 A function to initialize any hardware necessary to do high precision delays.</font>
+</p>
+
+
+<p>
+  <a name="4975"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Sample versions of Th. uDelay functions are provided for the CPU32 processors and assume a 16.77 MHz system clock.  If you are using a different system clock you will want to modify these routines for your target hardware.</font>
+</p>
+
+
+<p>
+  <a name="4981"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following illustrate possible implementation of the adrMask function:</font>
+</p>
+
+
+<p>
+  <a name="4982"> </a><font face="Verdana, Arial, Helvetica, sans-serif">char *adrMask(char * adrs, long mask)<br>{<br>    /**********************************************************/<br>    /* Special case for the program roms.  For 4x1Mbyte roms, */<br>    /* we need to subtract the base address of 300000 before  */<br>    /* we do the masking for part sizes.                      */<br>    /* This works for all sizes of Flash.                     */<br>    /**********************************************************/<br>    if ((long)adrs &gt;= 0x300000 &amp;&amp; (long)adrs &lt; 0x800000)<br>        return (char *) 0x300000 + (mask &amp; ((long) adrs - 0x300000));<br>    else<br>        return (char *) (mask &amp; (long) adrs);<br>}</font>
+</p>
+
+
+<h2>
+  <a name="2701"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-6  Bootrom Traps</font>
+</h2>
+
+
+<p>
+  <a name="2702"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are several trap service routines provided in the bootrom which can be used or replaced as necessary.</font>
+</p>
+
+
+<h3>
+  <a name="2706"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-6.1  Trap Summary</font>
+</h3>
+
+
+<p>
+  <a name="2707"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Trap	 Function</font>
+</p>
+
+
+<p>
+  <a name="2708"> </a><font face="Verdana, Arial, Helvetica, sans-serif">  0	 unix system calls, not used in bootrom</font>
+</p>
+
+
+<p>
+  <a name="2709"> </a><font face="Verdana, Arial, Helvetica, sans-serif">  1	 unix/gdb breakpoint (see trap 15 too)</font>
+</p>
+
+
+<p>
+  <a name="2710"> </a><font face="Verdana, Arial, Helvetica, sans-serif">  2	 unused</font>
+</p>
+
+
+<p>
+  <a name="2711"> </a><font face="Verdana, Arial, Helvetica, sans-serif">  3	 default pSOS system call</font>
+</p>
+
+
+<p>
+  <a name="2712"> </a><font face="Verdana, Arial, Helvetica, sans-serif">  4	 default pSOS i/o system call</font>
+</p>
+
+
+<p>
+  <a name="2713"> </a><font face="Verdana, Arial, Helvetica, sans-serif">  5	 default pSOS return from interrupt</font>
+</p>
+
+
+<p>
+  <a name="2714"> </a><font face="Verdana, Arial, Helvetica, sans-serif">  6	 unused</font>
+</p>
+
+
+<p>
+  <a name="2715"> </a><font face="Verdana, Arial, Helvetica, sans-serif">  7	 unused</font>
+</p>
+
+
+<p>
+  <a name="2716"> </a><font face="Verdana, Arial, Helvetica, sans-serif">  8	 floating point exception</font>
+</p>
+
+
+<p>
+  <a name="2717"> </a><font face="Verdana, Arial, Helvetica, sans-serif">  9	 unused</font>
+</p>
+
+
+<p>
+  <a name="2721"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> 10	 unused</font>
+</p>
+
+
+<p>
+  <a name="2722"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> 11	 get supervisor mode</font>
+</p>
+
+
+<p>
+  <a name="2723"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> 12	 unused</font>
+</p>
+
+
+<p>
+  <a name="2724"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> 13	 unused</font>
+</p>
+
+
+<p>
+  <a name="2731"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> 14	 make a bootrom system call</font>
+</p>
+
+
+<p>
+  <a name="2732"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> 15	 gdb breakpoint (see also 1)</font>
+</p>
+
+
+<h3>
+  <a name="2733"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-6.2  Trap 14</font>
+</h3>
+
+
+<p>
+  <a name="2815"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Bootrom trap 14 is used to interact with the bootrom code without needing to have absolute addresses into the bootrom code.  Parameters for this trap are handled just like any other C function - they are pushed on the stack.  Return values are returned in d0.   Conceptually, the trap 14 handler appears as:</font>
+</p>
+
+<pre>
+<a name="2819"> </a>Lds_UInt32 trap14(Lds_UInt32 subFunction, ...);
+</pre>
+
+<p>
+  <a name="2820"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each sub function is indicated by a unique code and may have a variable number of parameters.  Current sub functions are as follows:</font>
+</p>
+
+
+<p>
+  <a name="2822"> </a><font face="Verdana, Arial, Helvetica, sans-serif">1	 Query a pointer to the bootrom BootVars structure.  This structure contains information about power on tests and configuration information.</font>
+</p>
+
+
+<p>
+  <a name="2823"> </a><font face="Verdana, Arial, Helvetica, sans-serif">2	 Invoke the bootrom fprintf() function.  Up to 8 parameters are used and passed on to the bootfprintf routine.  </font>
+</p>
+
+
+<p>
+  <a name="2896"> </a><font face="Verdana, Arial, Helvetica, sans-serif">3	 Invoke the bootrom printf function.  Up to 8 parameters are used and passed on to the bootfprintf routine.</font>
+</p>
+
+
+<p>
+  <a name="2907"> </a><font face="Verdana, Arial, Helvetica, sans-serif">4	 Invoke the bootrom write(1) function.  3 parameters are expected.</font>
+</p>
+
+
+<p>
+  <a name="2908"> </a><font face="Verdana, Arial, Helvetica, sans-serif">5	 Invoke the bootrom read(1) function. 3 parameters are expected.</font>
+</p>
+
+
+<p>
+  <a name="5269"> </a><font face="Verdana, Arial, Helvetica, sans-serif">6)	 Return a pointer to the bootrom UserBootVars structure.  This is a structure whose size and contents are completely user definable.  By default, this is simply a single 4 byte data store.</font>
+</p>
+
+
+<p>
+  <a name="5687"> </a><font face="Verdana, Arial, Helvetica, sans-serif">7	 Invoke the cmdparse() routine with values on the stack.</font>
+</p>
+
+
+<p>
+  <a name="5688"> </a><font face="Verdana, Arial, Helvetica, sans-serif">8	 Invoke the zapRoms() routine.  See flash.h for paramater list.</font>
+</p>
+
+
+<p>
+  <a name="5689"> </a><font face="Verdana, Arial, Helvetica, sans-serif">9	 Return a pointer to the bootConfigPtr</font>
+</p>
+
+
+<p>
+  <a name="5690"> </a><font face="Verdana, Arial, Helvetica, sans-serif">10	 Execute a bootrom monitor command indicated by a char* parm on the stack.</font>
+</p>
+
+
+<p>
+  <a name="2827"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The example below creates a function called getBootVarPtr which returns a pointer to the BootVar variable in the bootrom.</font>
+</p>
+
+<pre>
+<a name="2847"> </a>asm("
+	 	 	 .globl  _getBootromVarPtr
+_getBootromVarPtr:
+	 	 	 move.l  #1,sp@-    | push the function number
+	 	 	 trap    #14        | invoke the trap
+	 	 	 addq.l  #4,sp      | pop the function number parm
+	 	 	 rts                | return pointer in d0
+");
+</pre>
+
+<p>
+  <a name="2837"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h2>
+  <a name="5694"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-7  C wrappers/libbootutil.a</font>
+</h2>
+
+
+<p>
+  <a name="5697"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The file bootvars.h contains function prototypes for functions found in libbootutil.a.  These functions are useful for interfacing to the bootrom from the 'main' firmware which is not part of the bootrom.  The currently available functions are:</font>
+</p>
+
+<pre>
+<a name="5728"> </a>BootVars *getBootVarsPtr(void);
+	 return a pointer to the bootrom BootVars structure.
+<a name="5739"> </a>void *getUserBootVarsPtr(void);
+	 return a pointer to the UserBootVars bootrom structure.
+<a name="5738"> </a>void *getBootConfigPtr(void);
+	 return a pointer to the bootrom configuration structure.
+<a name="5737"> </a>void fprintfBootrom(void *file, const char *format, ...);
+	 invoke the bootrom fprintf() function.  The file parm is ignored.
+<a name="5736"> </a>void printfBootrom(const char *format, ...);
+	 invoke the bootrom printf() function.
+<a name="5735"> </a>Lds_UInt32 writeBootrom(Lds_UInt32 fildes, void *buf, Lds_UInt32 count);
+	 invoke the bootrom write() function.
+<a name="5734"> </a>Lds_UInt32 readBootrom(Lds_UInt32 fildes, void *buf, Lds_UInt32 count);
+	 invoke the bootrom read() function.
+<a name="5733"> </a>void cmdparseBootrom(Lds_Int32 argc, Lds_Char *argv[]);
+	 invoke the bootrom cmdparse() function.
+<a name="5729"> </a>void bootRomCommand(Lds_Char *command);
+	 invoke the bootrom bootRomCommand() function.
+</pre>
+
+<p>
+  <a name="5730"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h2>
+  <a name="2744"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-8  Making libboot.a</font>
+</h2>
+
+
+<p>
+  <a name="2745"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The makefile in lds/bootrom/src is used to build the archive <em>libboot.a</em> from which the utilities in the bootrom can be extracted for linking.  Due to the specific nature of bootrom code, it is necessary to provide some definitions so that the code is properly configured and compiled.  This section describes these make definitions so that you can compile <em>libboot.a</em> for your application.  For an example, the reader is referred to the <em>Bootrom Examples</em> section.</font>
+</p>
+
+
+<p>
+  <a name="2746"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CFLAGS_EXTRA	 This make variable specifies extra flags passed to the C compiler.  You should place definitions in this variable which tell the compiler what kind of processor you have.  Other options go here to control flash programming and to select the type of SIM module for CPU32 designs.</font>
+</p>
+
+
+<p>
+  <a name="5238"> </a><font face="Verdana, Arial, Helvetica, sans-serif">-DFLASH	 Include flash programming code</font>
+</p>
+
+
+<p>
+  <a name="5235"> </a><font face="Verdana, Arial, Helvetica, sans-serif">-DRAMBOOTROM	 Compile so the bootrom can run from RAM rather than ROM.  This is useful for testing new versions of the bootrom.      </font>
+</p>
+
+
+<p>
+  <a name="5232"> </a><font face="Verdana, Arial, Helvetica, sans-serif">-DSIM40     	 Use code for a 68340 System Integration Module.</font>
+</p>
+
+
+<p>
+  <a name="2753"> </a><font face="Verdana, Arial, Helvetica, sans-serif">-DSIM332	 Use code for a 68332 System Integration Module.</font>
+</p>
+
+
+<p>
+  <a name="2909"> </a><font face="Verdana, Arial, Helvetica, sans-serif">-DHPIB_BYTES_PER_REG=2  	 Assume each 9914 register is at a word offset from the previous reg.</font>
+</p>
+
+
+<p>
+  <a name="2910"> </a><font face="Verdana, Arial, Helvetica, sans-serif">-DHPIB_BYTES_PER_REG=1	 Assume each 9914 register is at a byte offset from the previous reg.</font>
+</p>
+
+
+<p>
+  <a name="5215"> </a><font face="Verdana, Arial, Helvetica, sans-serif">-DROMS_PER_BANK=4	 Generate checksum tables which are for 32 bit wide memory.  Use 1 for 8 bit memory and 2 for 16 bit memory.  4 is the default.</font>
+</p>
+
+
+<p>
+  <a name="5216"> </a><font face="Verdana, Arial, Helvetica, sans-serif">-DMAX_ROM_BANKS=8	 Generate checksum entries for up to 8 banks of ROMS.  This only configures the maximum number of entries.  If all entries are not needed, they will be ignored by the checksum generator as well as the checksum tester.  8 is the default.</font>
+</p>
+
+
+<p>
+  <a name="5217"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="2766"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For example:   </font>
+</p>
+
+<pre>
+<a name="2914"> </a>make libboot.a CFLAGS_EXTRA="-msoft-float -mnobitfield -DSIM332 -DFLASH"
+</pre>
+
+<p>
+  <a name="2758"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h2>
+  <a name="2760"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-9  Example Code</font>
+</h2>
+
+
+<p>
+  <a name="2550"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Several examples are provided to illustrate how the bootrom customizations can be implemented.  Currently there are examples for the MC68332/68331, MC68340, and MC68020/MC68030 processors.  Each example is a complete working system which has actually run in target hardware.</font>
+</p>
+
+
+<p>
+  <a name="2573"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each example consists of 2-3 files.   One file contains routines which are necessary to support flash programming and another file which contains bootrom configuration definitions as described in the<em> Configuring the Bootrom</em> section.  On CPU32 processors, a third file is used which contains microprocessor initialization defaults (such as Chip Select programming for the 683xx processors).</font>
+</p>
+
+
+<p>
+  <a name="2697"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For a new design, the best approach would be to copy the files used in one of the configurations below to a private directory of your choosing and then customize the files to meet your needs.</font>
+</p>
+
+
+<p>
+  <a name="2915"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The lds/bootrom/examples/makefile shows how to build each of the targets described below.  This makefile is only an example and will need to be copied and extensively modified for each new project.  The makefile shows how the special flash RAM utility is created as well as showing how to generate checksums and several Data I/O compatible output files.</font>
+</p>
+
+
+<h3>
+  <a name="2581"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-9.1  68340 Example</font>
+</h3>
+
+
+<p>
+  <a name="2610"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The 68340 example is called hewie and runs on an LSID gjob board called hewie.  This design has 128K flash ROM and 256K of static RAM.  I/O is done thru the internal serial module of the 68340.  The custom files for the 68340 example are:</font>
+</p>
+
+
+<p>
+  <a name="2611"> </a><font face="Verdana, Arial, Helvetica, sans-serif">hewie.c	 Bootrom configuration definitions.</font>
+</p>
+
+
+<p>
+  <a name="2595"> </a><font face="Verdana, Arial, Helvetica, sans-serif">hewie2.c	 Support routines necessary for flash programming.  The bootIOTable is also defined here so the flash routine loaded into RAM can do printf I/O.</font>
+</p>
+
+
+<p>
+  <a name="2596"> </a><font face="Verdana, Arial, Helvetica, sans-serif">mc68340.c	 This file contains the initialization values for many of the <em>System Integration Module</em> registers.  Each register is explained and a default value is provided.  </font>
+</p>
+
+
+<h3>
+  <a name="2597"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-9.2  68332/68331 Example</font>
+</h3>
+
+
+<p>
+  <a name="2615"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The 68332 example is called vidie and runs on a early production prototype board used at vid.  This board has 512K ROM and 256K RAM.  I/O is done thru the internal SCI interface of the 68332 processor.  The custom files for the 68332 example are:</font>
+</p>
+
+
+<p>
+  <a name="2632"> </a><font face="Verdana, Arial, Helvetica, sans-serif">vidie.c	 Bootrom configuration definitions.</font>
+</p>
+
+
+<p>
+  <a name="2633"> </a><font face="Verdana, Arial, Helvetica, sans-serif">vidie2.c	 Support routines necessary for flash programming.  The bootIOTable is also defined here so the flash routine loaded into RAM can do printf I/O.</font>
+</p>
+
+
+<p>
+  <a name="2634"> </a><font face="Verdana, Arial, Helvetica, sans-serif">mc68332.c	 This file contains the initialization values for many of the <em>System Integration Module</em> registers.  Each register is explained and a default value is provided.  </font>
+</p>
+
+
+<h3>
+  <a name="2638"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-9.3  68020/68030 Example</font>
+</h3>
+
+
+<p>
+  <a name="2654"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The 68020/68030 example is called koala and runs on the HP89410/HP89440A CPU board.  This board has 3MB ROM and 4MB RAM and uses a 68901 MFP chip for serial I/O.  The custom files for this configuration example are:</font>
+</p>
+
+
+<p>
+  <a name="2641"> </a><font face="Verdana, Arial, Helvetica, sans-serif">koala.c	 Bootrom configuration definitions.</font>
+</p>
+
+
+<p>
+  <a name="2642"> </a><font face="Verdana, Arial, Helvetica, sans-serif">koala2.c	 Support routines necessary for flash programming.  The bootIOTable is also defined here so the flash routine loaded into RAM can do printf I/O.</font>
+</p>
+
+
+<p>
+  <a name="5655"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="5658"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-9.4  68360 Example</font>
+</h3>
+
+
+<p>
+  <a name="5659"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The 68360 example is called portal and runs on the E2050A Lan/HP-IB Gateway.  This unit has 512KB ROM and 1MB RAM.  The custom files for this configuration example are:</font>
+</p>
+
+
+<p>
+  <a name="5660"> </a><font face="Verdana, Arial, Helvetica, sans-serif">portal.c	 Bootrom configuration definitions.</font>
+</p>
+
+
+<p>
+  <a name="5661"> </a><font face="Verdana, Arial, Helvetica, sans-serif">portal2.c	 Support routines necessary for flash programming.  The bootIOTable is also defined here so the flash routine loaded into RAM can do printf I/O.</font>
+</p>
+
+
+<p>
+  <a name="5668"> </a><font face="Verdana, Arial, Helvetica, sans-serif">mc68360.c	 This file contains the initialization values for many of the <em>System Integration Module</em> registers.  Each register is explained and a default value is provided.  </font>
+</p>
+
+
+<p>
+  <a name="5656"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="2930"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-9.5  pSOS Example</font>
+</h3>
+
+
+<p>
+  <a name="2931"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are two makefile targets which force inclusion of the code necessary for linking in pSOS and the Cygnus C library.  The files involved with this example are:</font>
+</p>
+
+
+<p>
+  <a name="2932"> </a><font face="Verdana, Arial, Helvetica, sans-serif">main.c	 The main entry point for a "user program".  This program simply sets up the configuration for pSOS and then invokes 'start_psos'.</font>
+</p>
+
+
+<p>
+  <a name="2933"> </a><font face="Verdana, Arial, Helvetica, sans-serif">glue.c	 This file contains stubs for the C library such as read(1), and write(1).  The stubs assume that output is directed to a TTY type device such as a terminal.  A full I/O subsystem is beyond the scope of this example.</font>
+</p>
+
+
+<h2>
+  <a name="2686"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-10  Monitor Command Reference</font>
+</h2>
+
+
+<p>
+  <a name="2936"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The bootrom monitor comes with a number of "built-in" commands for peeking/poking memory, interfacing with gdb, and for downloading.  Commands can be abbreviated to the minimum unique length.  If the command cannot be identified due to not enough significant characters, a list of possible completions is listed.  There is not a command history queue.  hex is used for addresses and can have a leading 0x if desired.  The initial set of commands are as follows:</font>
+</p>
+
+
+<p>
+  <a name="5273"> </a><font face="Verdana, Arial, Helvetica, sans-serif">bootvars	 - display the bootrom variables</font>
+</p>
+
+
+<p>
+  <a name="2964"> </a><font face="Verdana, Arial, Helvetica, sans-serif">dbyte	 [&lt;hex start address&gt; [num bytes]] - display memory using bytes</font>
+</p>
+
+
+<p>
+  <a name="2968"> </a><font face="Verdana, Arial, Helvetica, sans-serif">dlong	 [&lt;hex start address&gt; [num bytes]] - display memory using longs</font>
+</p>
+
+
+<p>
+  <a name="2972"> </a><font face="Verdana, Arial, Helvetica, sans-serif">dmem	 [&lt;hex start address&gt; [num bytes]] - display memory using bytes</font>
+</p>
+
+
+<p>
+  <a name="2976"> </a><font face="Verdana, Arial, Helvetica, sans-serif">dword	 [&lt;hex start address&gt; [num bytes]] - display memory using words</font>
+</p>
+
+
+<p>
+  <a name="2980"> </a><font face="Verdana, Arial, Helvetica, sans-serif">gbreak	 - force a gdb breakpoint</font>
+</p>
+
+
+<p>
+  <a name="2984"> </a><font face="Verdana, Arial, Helvetica, sans-serif">gdb	 - enable gdb trapping of exceptions</font>
+</p>
+
+
+<p>
+  <a name="2988"> </a><font face="Verdana, Arial, Helvetica, sans-serif">hmon	 [device] - download into memory</font>
+</p>
+
+
+<p>
+  <a name="2992"> </a><font face="Verdana, Arial, Helvetica, sans-serif">sbyte	 &lt;hex start address&gt; &lt;hexchars&gt; - set memory using bytes</font>
+</p>
+
+
+<p>
+  <a name="2996"> </a><font face="Verdana, Arial, Helvetica, sans-serif">slong	 &lt;hex start address&gt; &lt;hexchars&gt; - set memory using longs</font>
+</p>
+
+
+<p>
+  <a name="3000"> </a><font face="Verdana, Arial, Helvetica, sans-serif">smem	 &lt;hex start address&gt; &lt;hexchars&gt; - set memory using bytes</font>
+</p>
+
+
+<p>
+  <a name="3004"> </a><font face="Verdana, Arial, Helvetica, sans-serif">sword	 &lt;hex start address&gt; &lt;hexchars&gt; - set memory using words</font>
+</p>
+
+
+<p>
+  <a name="3008"> </a><font face="Verdana, Arial, Helvetica, sans-serif">version 	 - display bootrom version</font>
+</p>
+
+
+<p>
+  <a name="3010"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Normally, when the bootrom monitor starts, it does not enable any gdb communication.  The gdb and gbreak commands allow gdb communication to begin when directed.  The gbreak command actually generates a breakpoint trap to begin immediately communicating with gdb.</font>
+</p>
+
+
+<h3>
+  <a name="3054"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-10.1  Configuring New Monitor Commands</font>
+</h3>
+
+
+<p>
+  <a name="3055"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The commands for the monitor are table driven (of course!) and can be very easily extended to provide additional functionality.  All of the example platforms have added their own command 'zz' to the list of commands.  Conceptually, all that is needed is to specify 4 things:  the name of the command, the number of required arguments, a function to call, and a help line similar to those listed in the previous section.  The following is an example of how you might define a command table which has all the default bootrom commands as well as your own special command 'waggle' which takes at least one parameter.</font>
+</p>
+
+
+<p>
+  <a name="3059"> </a><font face="Verdana, Arial, Helvetica, sans-serif">const struct cmds bootromCmds<br>{<br>    ALL_MONITOR_CMDS,   /* include default commands */<br>    { "waggle",  doWaggle, 1, "waggle &lt;bit&gt; - waggle a bit" },<br>    LAST_CMD<br>};</font>
+</p>
+
+
+<p>
+  <a name="3069"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The functions to execute the bootrom commands have the same argument list as would a C main() function.  e.g.  argc and argv.  argc contains the number of arguments in the argv array with element zero of the array being the command name:</font>
+</p>
+
+<pre>
+<a name="3076"> </a>Lds_Int32 doWaggle(Lds_Int32 argc, char *argv[]);
+</pre>
+
+<p>
+  <a name="3077"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Macros in bootrom.h contain the definition of ALL_MONITOR_CMDS and LAST_CMD.</font>
+</p>
+
+
+<p>
+  <a name="3084"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If you add a nifty new subsystem, please contribute it to the bootrom source by sending it to glenne@lsid.hp.com.</font>
+</p>
+
+
+<h2>
+  <a name="3078"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-11  Download Command Reference</font>
+</h2>
+
+
+<p>
+  <a name="2685"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The downloader uses an antiquated command syntax originally developed for a RAM/ROM simulator hooked up to a 1000 minicomputer at LID.  Over the years this has been retained simply for compatibility reasons and it continues to hang in there with us.  The following commands are supported in this implementation:</font>
+</p>
+
+
+<p>
+  <a name="3085"> </a><font face="Verdana, Arial, Helvetica, sans-serif">WL&lt;start addr&gt;&lt;stop addr&gt;&lt;data&gt;	 Write to memory.</font>
+</p>
+
+
+<p>
+  <a name="3086"> </a><font face="Verdana, Arial, Helvetica, sans-serif">GU&lt;addr&gt;	 Go Unix - Go execute at the specified address.</font>
+</p>
+
+
+<p>
+  <a name="3087"> </a><font face="Verdana, Arial, Helvetica, sans-serif">H0 	 Halt, return to command interpretor.</font>
+</p>
+
+
+<p>
+  <a name="3088"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="3089"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Note that the addresses above are in binary and not in ascii or hexadecimal.  Each address consists of 4 bytes which make up a 32 bit address.  Thus, the GU&lt;addr&gt; command is 6 bytes.   The WL&lt;addr&gt;&lt;addr&gt;&lt;data&gt; command is 10 bytes plus the number of data bytes.</font>
+</p>
+
+
+<h2>
+  <a name="2598"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-12  Bootrom Internals</font>
+</h2>
+
+
+<p>
+  <a name="4092"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This section of the document describes various internal machinations of the bootrom.  Some of the design constraints are explained in more detail and serve to provide assistance those who wish to make enhancements or fixes to the existing code. </font>
+</p>
+
+
+<p>
+  <a name="4540"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following table documents the register usage of the pre-packaged diagnostic routines found in the bootrom.  Of particular importance is the fact that the I/O routines use a fair number of registers so care needs to be taken whenever one of these routines are called to insure that important state information is not lost.  </font>
+</p>
+
+<a name="4932"> </a>TABLE 13.  Register usage by function.
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4543"> </a>Function</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4545"> </a>D0</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4547"> </a>D1</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4549"> </a>D2</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4551"> </a>D3</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4553"> </a>D4</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4555"> </a>D5</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4557"> </a>D6</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4559"> </a>D7</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4561"> </a>A0</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4563"> </a>A1</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4565"> </a>A2</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4567"> </a>A3</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4569"> </a>A4</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="4571"> </a>A5</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4573"> </a>ErrorBits</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4575"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4577"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4579"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4581"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4583"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4585"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4587"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4589"> </a>D7</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4591"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4593"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4595"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4597"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4599"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4601"> </a>-</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4603"> </a>RamErrorBits</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4605"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4607"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4609"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4611"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4613"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4615"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4617"> </a>D6</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4619"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4621"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4623"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4625"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4627"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4629"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4631"> </a>-</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4633"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4635"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4637"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4639"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4641"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4643"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4645"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4647"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4649"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4651"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4653"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4655"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4657"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4659"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4661"> </a>-</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4663"> </a>writeXXX</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4665"> </a>D0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4667"> </a>D1</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4669"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4671"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4673"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4675"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4677"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4679"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4681"> </a>A0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4683"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4685"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4687"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4689"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4691"> </a>A5</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4693"> </a>bootwrite</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4695"> </a>D0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4697"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4699"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4701"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4703"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4705"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4707"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4709"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4711"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4713"> </a>A1</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4715"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4717"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4719"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4721"> </a>A5</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4723"> </a>writeTestString</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4725"> </a>D0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4727"> </a>D1</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4729"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4731"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4733"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4735"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4737"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4739"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4741"> </a>A0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4743"> </a>(A1)</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4745"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4747"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4749"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4751"> </a>A5</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4753"> </a>writeTestHexString</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4755"> </a>D0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4757"> </a>D1</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4759"> </a>D2</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4761"> </a>D3</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4763"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4765"> </a>D5</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4767"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4769"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4771"> </a>A0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4773"> </a>(A1)</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4775"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4777"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4779"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4781"> </a>A5</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4783"> </a>writeTestDecString</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4785"> </a>D0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4787"> </a>D1</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4789"> </a>D2</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4791"> </a>D3</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4793"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4795"> </a>D5</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4797"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4799"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4801"> </a>A0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4803"> </a>(A1)</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4805"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4807"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4809"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4811"> </a>A5</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4813"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4815"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4817"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4819"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4821"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4823"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4825"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4827"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4829"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4831"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4833"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4835"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4837"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4839"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4841"> </a>-</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4843"> </a>testRamSize</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4845"> </a>D0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4847"> </a>D1</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4849"> </a>D2</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4851"> </a>D3</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4853"> </a>D4</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4855"> </a>D5</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4857"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4859"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4861"> </a>A0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4863"> </a>A1</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4865"> </a>A2</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4867"> </a>A3</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4869"> </a>A4</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4871"> </a>A5</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4873"> </a>testRamRam</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4875"> </a>D0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4877"> </a>D1</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4879"> </a>D2</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4881"> </a>D3</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4883"> </a>D4</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4885"> </a>D5</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4887"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4889"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4891"> </a>A0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4893"> </a>A1</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4895"> </a>A2</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4897"> </a>A3</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4899"> </a>A4</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4901"> </a>A5</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4903"> </a>testChecksum</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4905"> </a>D0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4907"> </a>D1</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4909"> </a>D2</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4911"> </a>D3</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4913"> </a>D4</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4915"> </a>D5</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4917"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4919"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4921"> </a>A0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4923"> </a>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4925"> </a>A2</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4927"> </a>A3</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4929"> </a>A4</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="4931"> </a>A5</font></td>
+  </tr>
+</table>
+
+
+
+
+<p>
+  <a name="4933"> </a><font face="Verdana, Arial, Helvetica, sans-serif">(A1) = This register is used by a function directly called by the function. </font>
+</p>
+
+
+<p>
+  <a name="4531"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Register A6 is not used in any of the low level drivers and diagnostics.  This allows some functions to be implemented in C where a <em>link A6 </em>instruction may be used.</font>
+</p>
+
+
+<h2>
+  <a name="5274"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-13  Object File Formats</font>
+</h2>
+
+
+<p>
+  <a name="5571"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The default output format for the bootrom is the m68k-aout Cygnus format as produced by gcc68k.  This is essentially the Sun format and is the "standard" format used by Cygnus for 68k cross compiler output.  This format contains a text segment for all constants and object code,  a data segment for variables which need initializers, and a bss segment which is all zeros.  The bss segment is not really stored in the object file but it's size is in the file header.  Also stored in the file are symbol table information and debugging information.  </font>
+</p>
+
+
+<h2>
+  <a name="5578"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">26-14  Utility Programs</font>
+</h2>
+
+
+<p>
+  <a name="3095"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A number of utility programs are used to assist the programmer in downloading, generating checksums, interfacing to a Data I/O programmer, and generally dealing with object files:</font>
+</p>
+
+
+<p>
+  <a name="3099"> </a><font face="Verdana, Arial, Helvetica, sans-serif">ldhpib	 downloads an a.out file thru a unix device file (e.g. hp-ib, rs232, LAN, ...)</font>
+</p>
+
+
+<p>
+  <a name="3100"> </a><font face="Verdana, Arial, Helvetica, sans-serif">objcopy	 converts a.out file between different formats.  Of particular interest is the motorola SRecord format.  These files can be loaded into the Data I/O programmer.  Also available is the IEEE795 format which is used by AxLS.   Bugs have been reported in previous versions of the ieee format but simply tests seem to work OK.</font>
+</p>
+
+
+<p>
+  <a name="3101"> </a><font face="Verdana, Arial, Helvetica, sans-serif">pchksum	 generates checksums and inserts them into an object file.</font>
+</p>
+
+
+<p>
+  <a name="3102"> </a><font face="Verdana, Arial, Helvetica, sans-serif">cvtboot	 modifies an a.out file to combine the text and data segments.  This is needed as a step before the unisite program is used.  It is also advisable to run cvtboot before making ROMS so force the data segment copy to become part of the text segment for the final ROMs.</font>
+</p>
+
+
+<p>
+  <a name="5585"> </a><font face="Verdana, Arial, Helvetica, sans-serif">unisite	 converts an a.out file into a file compatible with the Data I/O programmer.  This program only knows how to process the old s300 a.out format as input so the cvtboot utility should be uesd on the object file before using unisite.</font>
+</p>
+
+
+<p>
+  <a name="5302"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="selfTest.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="os_wrapr.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

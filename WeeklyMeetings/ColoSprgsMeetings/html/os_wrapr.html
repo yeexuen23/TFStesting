@@ -1,0 +1,1273 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:27:38 2002">
+<title>CHAPTER 27 OS Interface Wrappers</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="bootrom.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="psosTimingRef.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="47"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 27 	 OS Interface Wrappers</font>
+</h1><hr>
+
+
+<h2>
+  <a name="758"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-1   Introduction </font>
+</h2>
+
+
+<p>
+  <a name="974"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This document describes the operating system (OS) services required by the jediPlus modules. It is based a document describing a similar service provided for some LDS modules. It describes:</font>
+</p>
+
+<ul>
+  <li><a name="9305"> </a><font face="Verdana, Arial, Helvetica, sans-serif">services required by the jediPlus modules</font>
+  <li><a name="1999"> </a><font face="Verdana, Arial, Helvetica, sans-serif">how a generic interface was put in place</font>
+  <li><a name="9298"> </a><font face="Verdana, Arial, Helvetica, sans-serif">which specific operating systems interface wrappers are currently provided</font>
+  <li><a name="9300"> </a><font face="Verdana, Arial, Helvetica, sans-serif">guidelines for adding interfaces to new OS's</font>
+</ul>
+
+<h3>
+  <a name="2014"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-1.1  Intended Audience</font>
+</h3>
+
+
+<p>
+  <a name="2015"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This document will be useful to anyone who:</font>
+</p>
+
+<ul>
+  <li><a name="2016"> </a><font face="Verdana, Arial, Helvetica, sans-serif">wants an overview of OS services and the interfaces to them</font>
+  <li><a name="12176"> </a><font face="Verdana, Arial, Helvetica, sans-serif">must add any new OS services required by new or existing modules</font>
+  <li><a name="2017"> </a><font face="Verdana, Arial, Helvetica, sans-serif">must port jediPlus modules to a currently unsupported OS</font>
+</ul>
+
+<h3>
+  <a name="2021"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-1.2  Where to go for More information</font>
+</h3>
+
+
+<p>
+  <a name="9311"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Consult other chapters of this manual for more information on the jediPlus system.</font>
+</p>
+
+
+<p>
+  <a name="13151"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The documentation supplied by providers of operating systems should be consulted for further details on the actual implementations of the OS services for a specific OS. This document used the pSOS classic and VxWorks documentation as reference sources.</font>
+</p>
+
+
+<h2>
+  <a name="13152"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-2  Overview</font>
+</h2>
+
+
+<p>
+  <a name="14005"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The goal of the OS interface wrappers is to make the usage of any OS services required by the code to be as generic as possible. This facilitates porting the code to multiple different operating systems. It also provides an interface that is descriptive of the actual services required rather than a particular implementation of those services.</font>
+</p>
+
+
+<p>
+  <a name="14006"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>NOTE</strong> - In pSOS there are processes and in VxWorks there are tasks. Both provide separate contexts so different parts of the application can maintain individual threads of control and access the system resources. The functionality of the two in their respective environments are very similar. Since the implementation will be done first in pSOS, this document will use the term process vs. task.</font>
+</p>
+
+
+<h3>
+  <a name="2038"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-2.1  Required OS Services</font>
+</h3>
+
+
+<p>
+  <a name="2039"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Many modules require services from the underlying OS. These services fall into the following categories:</font>
+</p>
+
+<ul>
+  <li><a name="2046"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Memory Management - malloc, free, etc.</font>
+  <li><a name="10654"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Process Management - Starting, stopping and controlling processes.</font>
+  <li><a name="10659"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Process Synchronization (signals &amp; semaphores) - Simple flag-based interprocess communication</font>
+  <li><a name="2048"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Resource Locking - Mutual exclusion of a system resource.</font>
+  <li><a name="10225"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Message Passing - Complex message-based interprocess communication.</font>
+  <li><a name="12752"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Interrupt Management - Enable &amp; disable interrupts.</font>
+  <li><a name="3359"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Time Unit Conversion - Convert conventional time into system time.</font>
+</ul>
+
+<h2>
+  <a name="2074"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-3  Interface Details</font>
+</h2>
+
+
+<p>
+  <a name="2075"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Most of the interface functions are passed an OS structure pointer that is defined as needed to satisfy the requirements of the underlying OS that will implement the services. Other parameters are kept to a minimum to simplify the interface.</font>
+</p>
+
+
+<h3>
+  <a name="2076"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-3.1  Memory Management</font>
+</h3>
+
+
+<p>
+  <a name="2193"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The system requires the standard memory management tools, malloc() and free(). Most memory requirements in jediPlus are handled statically, but several modules require this functionality. The memory management functions are:</font>
+</p>
+
+<pre>
+<a name="11330"> </a>osMalloc() - Allocate a block of memory from the system.
+<a name="12765"> </a>osFree() - Return a block of memory to the system.
+</pre>
+
+<h3>
+  <a name="10986"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-3.2  Process management</font>
+</h3>
+
+
+<p>
+  <a name="10998"> </a><font face="Verdana, Arial, Helvetica, sans-serif">An integral part of the operating system is the creation, deletion and management of the processes. The jediPlus system will not delete or restart processes, but a deletion function is provided.</font>
+</p>
+
+
+<p>
+  <a name="14028"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The current implementation does not provide a supervisor stack on a per process basis. Instead pSOS will use the system stack when a process operates in supervisory mode. If a process does not operate in the supervisory mode, uses little stack in the supervisor mode or provides that the stack size is small when a context switch is possible, this will not effect performance. But at a context switch, this stack must be copied from the system stack into the process's stack and the appropriate supervisory stack for the new process be copied in its place. If supervisor stack sizes are large, this will affect performance. See section 2.6.7 of the pSOS manual. VxWorks provides only one stack per process and the VxWorks documentation is not clear about how this works. </font>
+</p>
+
+
+<p>
+  <a name="14027"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> The process management interface can be divided into 4 categories:</font>
+</p>
+
+<ul>
+  <li><a name="10999"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Process life control </font>
+<pre>
+<a name="11012"> </a>osInitProc() - Initialize and activate a process, making it ready to run.
+<a name="11013"> </a>osDeleteProc() - Delete a process.
+</pre>
+  <li><a name="11025"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Process flow control</font>
+<pre>
+<a name="11005"> </a>osSuspendProc() - Suspend and prevent execution of a process.
+<a name="11006"> </a>osResumeProc() - Allow a suspended process to resume execution.
+<a name="11007"> </a>osPauseProc() - Suspend process execution for a specified number of OS ticks.
+</pre>
+  <li><a name="11055"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Process mode control</font>
+<pre>
+<a name="11360"> </a>osLockProc() - Set a process's mode to non-preemptive. This does not prevent 
+interrupts.
+<a name="11361"> </a>osUnlockProc() - Restore the process's mode to the same state it was before the 
+call to osLockProc().
+<a name="11362"> </a>osIncrProcPriority() - Increment a process's priority by a specified amount.
+<a name="11041"> </a>osSetProcPriority() - Set a process's priority to a specified level.
+<a name="11042"> </a>osMakeProcSupv() - // Don't know if this can be duplicated in VxWorks
+</pre>
+  <li><a name="11064"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Process information</font>
+<pre>
+<a name="11355"> </a>osGetProcPriority() - Retrieve a process's current priority level.
+<a name="11065"> </a>osGetProcId() - Use the process's name to retrieve its process id.
+<a name="11066"> </a>osGetProcInfo() - Use the process's name to retrieve its process id and status.
+</pre>
+</ul>
+
+<h3>
+  <a name="2077"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-3.3  Process synchronization</font>
+</h3>
+
+
+<p>
+  <a name="11103"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Process synchronization is simply the facility to communicate between two processes to coordinate work. This can be accomplished by various methods including signals or binary semaphores. There is another type of semaphore, counting, but it will not be discussed and the term semaphore will refer to binary semaphores. Both signals and semaphores need two general operations - send (give) and get (take). The send operation is not blocking, but it could unblock a higher priority process, thus causing the sending process to go idle. The get operation is blocking, but the blocking can have a time-out and the time-out can be immediate. Signals and semaphores have unique characteristics that govern their use, so they will be considered separately.</font>
+</p>
+
+
+<h4>
+  <a name="14073"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Semaphores</font>
+</h4>
+
+
+<p>
+  <a name="11104"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A semaphore is a simple interprocess communication method that allows a process to give/take a system resource or broadcast its status or make simple requests. A process may not know which other processes are using the semaphore and thus a semaphore is an inherently N-to-N communication method. There are two types of semaphores:</font>
+</p>
+
+<ul>
+  <li><a name="11105"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Syncing Semaphore - Used to request service from or announce status to the system. A process sets the semaphore to request service or to announce that its status has changed. If the semaphore is already set, the second set has no tangible effect, other than to take time. </font>
+  <li><a name="11106"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Locking Semaphore - Used to facilitate control of a system resource. See the section on resource locking.</font>
+</ul>
+
+<p>
+  <a name="14061"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The semaphore interface is:</font>
+</p>
+
+<pre>
+<a name="14062"> </a>osCreateSem() - Create a binary semaphore.
+<a name="14063"> </a>osDeleteSem() - Delete a semaphore.
+<a name="14064"> </a>osGiveSem() - Put the key in a semaphore.
+<a name="14065"> </a>osTakeSemWait() - Attempt to retrieve the key from a semaphore. If the key is not 
+available, wait a specified number of OS ticks.
+<a name="14066"> </a>osTakeSemNoWait() - Attempt to retrieve the key from a semaphore. Return immedi-
+ately whether or not the key is available.
+<a name="14067"> </a>osTakeSemWaitForever() - Attempt to retrieve the key from a semaphore. Wait 
+indefinitely for the key to become available.
+</pre>
+
+<p>
+  <a name="14089"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The last two functions, <em>osTakeSemNoWait</em> and <em>osTakeSemWaitForever</em> can be implemented as two special cases of the function <em>osTakeSemWait</em> with the time-out parameter set to NO_WAIT or WAIT_FOREVER, respectively. This would require some overhead in the calls, but would simplify the interface. See similar comments on the queue and signal interfaces.</font>
+</p>
+
+
+<h4>
+  <a name="11191"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Signals</font>
+</h4>
+
+
+<p>
+  <a name="14070"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A signal is a simple interprocess communication method that delivers a specific request or status change to a process. Unlike a semaphore, a signal is aimed at a specific process. Therefore a signal is an inherently N-to-1 interprocess communication method.</font>
+</p>
+
+
+<p>
+  <a name="11085"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>NOTE:</strong> For most of the various interprocess communication methods available in pSOS classic and VxWorks, there is good overlap of functionality. But how signals are handled is different. In both, signals are sent to a specific process. In pSOS, one or several signals (events) can be sent with a single call. In VxWorks, only one signal can be sent per call. Both allow a process to block waiting for one or more signals and both provide a time-out mechanism for this block. When blocking on multiple signals, pSOS allows the user to require that all specified signals be present to unblock (AND condition) or that any of the specified signals be present to unblock (OR condition). VxWorks only allows the OR condition. Both allow the user to specify the blocking signals, but the mechanism is slightly different between the two. VxWorks also provides a method to control which signals can be received by a process. When multiple signals are requested, pSOS returns (and therefore clears) all available signals. VxWorks only returns (and clears) the lowest numbered available signal. In both OS's, the signaled process can ignore any signal. VxWorks allows a specific function or signal handler to be defined that is invoked when the process is signaled. The function runs the next time the process's priority allows it, whether the process is blocked or not. This mechanism is similar to the signal mechanism found in Unix and is orientated toward exception or interrupt handling. This type of mechanism has a place in our system, but pSOS v4.1 does not provide this mechanism. In conclusion, the following signal rules should be followed:</font>
+</p>
+
+<ul>
+  <li><a name="10784"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Only send one signal per call.</font>
+  <li><a name="12223"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When blocking on one or more signal, always use the OR condition.</font>
+  <li><a name="10978"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Avoid reading multiple signals at one time. VxWorks returns only the lowest available signal and pSOS returns all available signals requested.</font>
+</ul>
+
+<p>
+  <a name="11181"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All of the above are enforced by the functions provided except the 3rd item, requesting multiple signals. This problem will need to be addressed if/when VxWorks is implemented.</font>
+</p>
+
+
+<p>
+  <a name="12224"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The signal interface is:</font>
+</p>
+
+<pre>
+<a name="11185"> </a>osSendSig() - Send a signal to a specific process.
+<a name="11215"> </a>osGetSigWait() - Attempt to retrieve one or more signals. If none are available, 
+wait a specified number of OS ticks.
+<a name="11186"> </a>osGetSigNoWait() - Attempt to retrieve one or more signals. Return immediately 
+whether or not any specified signals are available.
+<a name="11222"> </a>osGetSigWaitForever() - Attempt to retrieve one or more signals. Wait indefi-
+nitely until one or more specified signals become available.
+</pre>
+
+<p>
+  <a name="12251"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The last two functions, <em>osGetSigNoWait</em> and <em>osGetSigWaitForever</em> can be implemented as two special cases of the function <em>osGetSigWait</em> with the time-out parameter set to NO_WAIT or WAIT_FOREVER, respectively. This would require some overhead in the calls, but would simplify the interface. See similar comments on the queue and semaphore interfaces.</font>
+</p>
+
+
+<h3>
+  <a name="2121"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-3.4  Resource Locking</font>
+</h3>
+
+
+<p>
+  <a name="11171"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Resource locking is needed to protect shared resources from simultaneous access by different parts of the executing program. This is usually provided through the use of locking semaphores. A locking semaphore represents the ownership of the resource. Any process can take the semaphore, thus announcing to the rest of the system that the resource is in use. When the process is done with the resource, it returns the semaphore and the another process can take it. If no processes are requesting the semaphore, it sits idle, waiting for the next request. If another process has requested the resource, the requesting process may become active immediately if it has a high priority. If the requesting process does not have priority, it will become pending and will run when its priority entitles it.</font>
+</p>
+
+
+<p>
+  <a name="11319"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> The resource locking functions are the same as the semaphore functions discussed elsewhere and are repeated here:</font>
+</p>
+
+<pre>
+<a name="12960"> </a>osCreateSem() - Create a binary semaphore.
+<a name="12961"> </a>osDeleteSem() - Delete a semaphore.
+<a name="12962"> </a>osGiveSem() - Put the key in a semaphore.
+<a name="12963"> </a>osTakeSemWait() - Attempt to retrieve the key from a semaphore. If the key is not 
+available, wait a specified number of OS ticks.
+<a name="12964"> </a>osTakeSemNoWait() - Attempt to retrieve the key from a semaphore. Return immedi-
+ately whether or not the key is available.
+<a name="14092"> </a>osTakeSemWaitForever() - Attempt to retrieve the key from a semaphore. Wait 
+indefinitely for the key to become available.
+</pre>
+
+<p>
+  <a name="14093"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><font  size="3" face="Verdana, Arial, Helvetica, sans-serif">Note</font><font  size="3" face="Verdana, Arial, Helvetica, sans-serif">:</font> There is no protection against priority inversion when using semaphores. This mechanism would be hard to implement in pSOS, but is provided in VxWorks.</font>
+</p>
+
+
+<h3>
+  <a name="14094"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-3.5  Message Passing - Queues</font>
+</h3>
+
+
+<p>
+  <a name="14138"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Often a process will want to send/receive more than a simple flag to another process; the process will want to exchange information with the other process. This requires the concept of passing messages. Also, the semaphore or signal methods of interprocess communication have a buffer size of 1. No matter how many calls are made to the "send" function between calls to the "get" function, the receiver will only register it once. Sometimes the receiving process may receive several messages before it is able to handle them. It is important to handle the messages in the order they are received and not to lose any of them. Also, often the receiving process is receiving information from multiple sources. It is important that the message have some means of identifying its source. All these requirements call for a higher interprocess communication mechanism, a message queue.</font>
+</p>
+
+
+<p>
+  <a name="14139"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The message queue interface is:</font>
+</p>
+
+<pre>
+<a name="14140"> </a>osCreateQ() - Create a message queue.
+<a name="11455"> </a>osDeleteQ() - Delete a message queue.
+<a name="11487"> </a>osSendQ() - Send a message to end of the specified queue.
+<a name="11490"> </a>osJamQ() - Send a message to start of the specified queue.
+<a name="13014"> </a>osGetQWait() - Attempt to retrieve a message from an queue. If no messages are 
+available, wait a specified number of OS ticks.
+<a name="13015"> </a>osGetQNoWait() - Attempt to retrieve a message from an queue. If no messages are 
+available, return immediately.
+<a name="13016"> </a>osGetQWaitForever() - Attempt to retrieve a message from an queue. If no messages 
+are available, wait indefinitely for one to become available.
+<a name="11493"> </a>osGetQId() - Use a queue's name to retrieve its queue id.
+<a name="11494"> </a>osGetQInfo() - Use a queue's name to retrieve its queue id, the number of pro-
+cesses blocked on this queue and the number of messages in the queue. These 
+last two parameter are mutually exclusive, one must be 0.
+</pre>
+
+<p>
+  <a name="14096"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The last two get functions, <em>osGetQNoWait</em> and <em>osGetQWaitForever</em> can be implemented as two special cases of the function <em>osGetQWait</em> with the time-out parameter set to NO_WAIT or WAIT_FOREVER, respectively. This would require some overhead in the calls, but would simplify the interface. See similar comments on the signal and semaphore interfaces.</font>
+</p>
+
+
+<p>
+  <a name="9578"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><font  size="3" face="Verdana, Arial, Helvetica, sans-serif">Note</font><font  size="3" face="Verdana, Arial, Helvetica, sans-serif">:</font> There is no time-out on the send function. The current pSOS implementation does not provide for this, but it could be added to the OS wrapper. VxWorks does provide this mechanism. It works like this: 1) a message is sent; 2) if the queue is full, the send function waits N OS ticks for free space; 3) if space becomes available, the message is sent; 4) otherwise the send function returns an error.</font>
+</p>
+
+
+<h3>
+  <a name="12707"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-3.6  Interrupt Management</font>
+</h3>
+
+
+<p>
+  <a name="12708"> </a><font face="Verdana, Arial, Helvetica, sans-serif">An important part of system management is the ability to disable and enable interrupts. These features are necessary to protect critical code sections from interrupts.</font>
+</p>
+
+
+<p>
+  <a name="14153"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The interrupt control interface is:</font>
+</p>
+
+<pre>
+<a name="12703"> </a>setIntLevel() - Set the interrupt level to a specified level.
+<a name="12704"> </a>lockInt() - Disable interrupts.
+<a name="12705"> </a>unlockInt() - Enable interrupts.
+</pre>
+
+<h3>
+  <a name="3360"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-3.7  Time Unit Conversion</font>
+</h3>
+
+
+<p>
+  <a name="3361"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Time unit conversion is used to pass delays or time-outs to the OS that the user wants in terms of seconds rather than OS ticks. The user can use this function to convert a time in seconds to OS ticks for use by the <em>os*Wait functions or the osPauseProc</em>.</font>
+</p>
+
+
+<p>
+  <a name="14166"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> The time unit conversion interface is:</font>
+</p>
+
+<pre>
+<a name="3358"> </a>osTicksPerSec() - Returns the OS sense of time. This is useful to convert real 
+time to OS ticks.
+</pre>
+
+<h2>
+  <a name="9590"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-4  Naming conventions and conversions</font>
+</h2>
+
+
+<p>
+  <a name="10272"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This section attempts to cross reference the syntax used by previous systems &amp; the proposed standard.</font>
+</p>
+
+
+<h3>
+  <a name="10339"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-4.1  This section cross references the moab and jediPlus naming conventions. </font>
+</h3>
+
+
+<p>
+  <a name="11797"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="9865"> </a>Moab syntax</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="9867"> </a>jediPlus syntax</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9869"> </a>spawnProcess(), activateProcess()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9871"> </a>osInitProc()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9910"> </a>deleteProcess()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9912"> </a>osDeleteProc()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9914"> </a>suspendProcess()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9916"> </a>osSuspendProc()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9918"> </a>resumeProcess()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9920"> </a>osResumeProc()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9877"> </a>identifyProcess(), activateProcess()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9879"> </a>osGetProcId()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9937"> </a>pauseProcess()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9939"> </a>osPauseProc()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9941"> </a>createExchange()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9943"> </a>osCreateQ(), osCreateSem()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9945"> </a>jamExchange()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9947"> </a>osJamQ()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9949"> </a>sendExchange()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9951"> </a>osSendQ()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9953"> </a>requestExchange()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9955"> </a>osGetQWait(), osGetQNoWait(), osGetQWaitForever()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="11667"> </a>signalEvent(), os_signal()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9959"> </a>osSendSig()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9965"> </a>waitEvent(), os_wait()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9967"> </a>osGetSigWait(), osGetSigWaitForever()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9973"> </a>getEvent()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9975"> </a>osGetSigNoWait()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9977"> </a>getVersion()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9979"> </a>osGetVersion()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9981"> </a>setMode()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9983"> </a>osLockProc(), osUnlockProc()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9985"> </a>os_mem_alloc()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9987"> </a>osMalloc()</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9989"> </a>os_mem_free()</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="9991"> </a>osFree()</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h3>
+  <a name="11679"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-4.2  Functions cross references.</font>
+</h3>
+
+
+<p>
+  <a name="14177"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This section was used as part of the design process and is a bit long and tedious. It documents the OS functions used in the moab, denali and 16500 system. It provides the VxWorks functions that would be used to implement similar features. It is provided as future reference and may be skipped for the inspection.</font>
+</p>
+
+
+<h4>
+  <a name="11680"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Process Life Control</font>
+</h4>
+
+
+<p>
+  <a name="11681"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Moab:</font>
+</p>
+
+<pre>
+<a name="11682"> </a>int8 spawnProcess(const char *name, int8 groupId, int8 priority, int32 stack-
+size, const int16 *argList, const int32 *processId);
+<a name="11683"> </a>int8 activateProcess(int32 processId, uint32 processAddr);
+<a name="11684"> </a>int8 deleteProcess(int32 processId);
+
+<p>
+  <a name="11685"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Denali:</font>
+</p>
+
+<a name="11686"> </a>int8 InitProcess(char *name, int16 groupId, int16 priority, int16 mstrStak, 
+int16 userStak, int32 *argList, int32 *processId, int32 processAddr);
+<a name="11687"> </a>int8 delete_p(int32 processId);
+
+<p>
+  <a name="11688"> </a><font face="Verdana, Arial, Helvetica, sans-serif">16500B:</font>
+</p>
+
+<a name="11689"> </a>int8 InitProcess(char *name, int16 groupId, int16 priority, int16 mstrStak, 
+int16 userStak, int32 *argList, int32 *processId, void (*)() process);
+<a name="11690"> </a>int8 delete_p(int32 processId);
+
+<p>
+  <a name="11691"> </a><font face="Verdana, Arial, Helvetica, sans-serif">VxWorks:</font>
+</p>
+
+<a name="11692"> </a>STATUS taskInit(WIND_TCB *taskId, char *name, int priority, int options char 
+*pStakBase, int stakSize, FUNCTPTR taskAddr, int arg1, .... int arg10);
+<a name="11693"> </a>STATUS taskActivate(int taskId);
+<a name="11694"> </a>int taskSpawn(char *name, int priority, int options int stakSize, FUNCTPTR 
+taskAddr, int arg1, .... int arg10);
+<a name="11695"> </a>STATUS taskRestart(int taskId);
+<a name="11696"> </a>STATUS taskDelete(int taskId);
+
+<p>
+  <a name="11697"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Proposed:</font>
+</p>
+
+<a name="11698"> </a>int8 osInitProc(char *name, int16 groupId, int16 priority, int16 mstrStakSize, 
+int16 userStakSize, int16 *argList, int32 *processId, void (*)() process);
+<a name="11699"> </a>int8 osDeleteProc(int32 processId);
+</pre>
+
+<h4>
+  <a name="11700"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Misc. process</font>
+</h4>
+
+
+<p>
+  <a name="11701"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Moab:</font>
+</p>
+
+<pre>
+<a name="11702"> </a>int8 indentifyProcess(char *name, int32 *processId, int8 *status);
+<a name="11703"> </a>int8 setMode(int8 newMode, int8 mask, int8 *oldMode);
+<a name="11704"> </a>int8 priorityProcess(int32 processId, int16 increment int8 *oldPriority);
+
+<p>
+  <a name="11705"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Denali:</font>
+</p>
+
+<a name="11706"> </a>int8 indent_p(char *name, int32 *processId, int8 *status);
+<a name="11707"> </a>int8 mode_p(int16 newMode, int16 mask, int16 *oldMode);
+<a name="11708"> </a>int8 priority_p(int32 processId, int16 increment int8 *oldPriority);
+<a name="11709"> </a>int16 super_p(void);
+
+<p>
+  <a name="11710"> </a><font face="Verdana, Arial, Helvetica, sans-serif">16500B:</font>
+</p>
+
+<a name="11711"> </a>same as Denali
+
+<p>
+  <a name="11712"> </a><font face="Verdana, Arial, Helvetica, sans-serif">VxWorks:</font>
+</p>
+
+<a name="11713"> </a>int taskIdSelf(void);
+<a name="11714"> </a>int taskNameToId(char *name);
+<a name="11715"> </a>STATUS taskGetInfo(int taskId, TASK_DESC pTaskDesc);
+<a name="11716"> </a>STATUS taskLock(void);
+<a name="11717"> </a>STATUS taskUnlock(void)
+<a name="11718"> </a>STATUS taskPriorityGet(int taskId, int *priority);
+<a name="11719"> </a>STATUS taskPrioritySet(int taskId, int priority);
+
+<p>
+  <a name="11720"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Proposed:</font>
+</p>
+
+<a name="11721"> </a>int8 osGetProcInfo(char *name, int32 *processId, int8 *status);
+<a name="11722"> </a>int8 osGetProcId(char *name, int32 *processId);
+<a name="11723"> </a>int8 osLockProc(int16 newMode);
+<a name="11724"> </a>int8 osUnlockProc(int16 newMode);
+<a name="11725"> </a>int8 osIncrProcPriority(int32 processId, int16 incr int8 *oldPriority);
+<a name="11726"> </a>int8 osGetProcPriority(int32 processId, int8 *Priority);
+<a name="11727"> </a>int8 osSetProcPriority(int32 processId, int8 newPriority, int8 *oldPriority);
+<a name="11728"> </a>int8 osMakeProcSupv(void);   // Don't know if this can be duplicated in Vxworks
+</pre>
+
+<h4>
+  <a name="11729"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Suspend, resume or pause a process</font>
+</h4>
+
+
+<p>
+  <a name="11730"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Moab:</font>
+</p>
+
+<pre>
+<a name="11731"> </a>int8 suspendProcess(int32 processId);
+<a name="11732"> </a>int8 resumeProcess(int32 processId);
+<a name="11733"> </a>int8 pauseProcess(int32 ticks);
+
+<p>
+  <a name="11734"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Denali:</font>
+</p>
+
+<a name="11735"> </a>int8 suspend_p(int32 processId);
+<a name="11736"> </a>int8 resume_p(int32 processId);
+<a name="11737"> </a>int8 pause_p(int32 ticks);
+
+<p>
+  <a name="11738"> </a><font face="Verdana, Arial, Helvetica, sans-serif">16500B:</font>
+</p>
+
+<a name="11739"> </a>int8 suspend_p(int32 processId);
+<a name="11740"> </a>int8 resume_p(int32 processId);
+<a name="11741"> </a>int8 pause_p(int32 ticks);
+
+<p>
+  <a name="11742"> </a><font face="Verdana, Arial, Helvetica, sans-serif">VxWorks:</font>
+</p>
+
+<a name="11743"> </a>STATUS taskSuspend(int taskId);
+<a name="11744"> </a>STATUS taskResume(int taskId);
+<a name="11745"> </a>STATUS taskDelay(int taskId);
+
+<p>
+  <a name="11746"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Proposed:</font>
+</p>
+
+<a name="11747"> </a>int8 osSuspendProc(int32 processId);
+<a name="11748"> </a>int8 osResumeProc(int32 processId);
+<a name="11749"> </a>int8 osPauseProc(int32 ticks);
+</pre>
+
+<h4>
+  <a name="11751"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Signals</font>
+</h4>
+
+
+<p>
+  <a name="11752"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Moab:</font>
+</p>
+
+<pre>
+<a name="11753"> </a>int8 signalEvent(int32 processId, int16 sentEvents);
+<a name="11754"> </a>int8 waitEvent(int16 waitEvents, int8 condition, int32 time-out, int16 *caugh-
+tEvents);
+<a name="11755"> </a>int8 getEvent(int16 waitEvents, int8 condition, int16 *caughtEvents);
+
+<p>
+  <a name="11756"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Denali:</font>
+</p>
+
+<a name="11757"> </a>int8 signal_v(int32 processId, int16 sentEvents);
+<a name="11758"> </a>int8 wait_v(int16 waitEvents, int8 condition, int32 timeOut, int16 *caugh-
+tEvents);
+<a name="11759"> </a>int8 get_v(int16 waitEvents, int8 condition, int16 *caughtEvents);
+
+<p>
+  <a name="11760"> </a><font face="Verdana, Arial, Helvetica, sans-serif">16500B:</font>
+</p>
+
+<a name="11761"> </a>same as Denali
+
+<p>
+  <a name="11762"> </a><font face="Verdana, Arial, Helvetica, sans-serif">VxWorks (POSIX 1003.1):</font>
+</p>
+
+<a name="11763"> </a>int kill(int taskId, int sigNum);
+<a name="11764"> </a>int sigtimedwait(const sigset_t *waitSigs, struct siginfo *caughtInfo, const 
+struct timespec *pTimeout);
+<a name="11765"> </a>int sigwaitinfo(const sigset_t *waitSigs, struct siginfo *caughtInfo);
+
+<p>
+  <a name="11766"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Proposed:</font>
+</p>
+
+<a name="11767"> </a>int8 osSendSig(int32 processId, int16 sigNum);
+<a name="11768"> </a>int8 osGetSigWait(int16 reqSigs, int16 *fndSigs, int32 timeOut);
+</pre>
+
+<h4>
+  <a name="11769"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Semaphores:</font>
+</h4>
+
+
+<p>
+  <a name="11770"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Moab:</font>
+</p>
+
+<pre>
+<a name="11771"> </a>int8 createExchange(const char *name, int8 property = FIFO, int8 maxMsg = 1, 
+const int32 *exchangeId);
+<a name="11772"> </a>int8 sendExchange(int32 exchangeId, struct Message *pMsg);
+<a name="11773"> </a>int8 jamExchange(int32 exchangeId, struct Message *pMsg);
+<a name="11774"> </a>int8 requestExchange(int32 exchangeId, struct Message *pMsg, int8 waitOpt, int32 
+timeoutOpt);
+
+<p>
+  <a name="11775"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Denali:</font>
+</p>
+
+<a name="11776"> </a>int8 create_x(const char *name, int8 property = FIFO, int8 maxMsg = 1, int32 
+*exchangeId);
+<a name="11777"> </a>int8 send_x(int32 exchangeId, struct Message *pMsg);
+<a name="11778"> </a>int8 jam_x(int32 exchangeId, struct Message *pMsg);
+<a name="11779"> </a>int8 req_x(int32 exchangeId, struct Message *pMsg, int16 waitOpt, int32 timeou-
+tOpt);
+<a name="11780"> </a>int8 delete_x(int32 exchangeId);
+<a name="11781"> </a>int8 attach_x(char *name, int32 *exchangeId, int32 *numProcQd, int32 *numMsgQd);
+<a name="11782"> </a>int8 liberate_x(int32 *exchangeId, struct Message *pMsg int minMsgs, int8 *pMs-
+gAdded, int8 *procLiberated);
+</pre>
+
+<p>
+  <a name="11783"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="11784"> </a><font face="Verdana, Arial, Helvetica, sans-serif">16500B:</font>
+</p>
+
+<pre>
+<a name="11785"> </a>int8 create_x(const char *name, int8 property = FIFO, int8 maxMsg = 1, int32 
+*exchangeId);
+<a name="11786"> </a>int8 send_x(int32 exchangeId, struct Message *pMsg);
+<a name="11787"> </a>int8 req_x(int32 exchangeId, struct Message *pMsg, int16 waitOpt, int32 timeou-
+tOpt);
+<a name="11788"> </a>int8 attach_x(char *name, int32 *exchangeId, int32 *numProcQd, int32 *numMsgQd);
+
+<p>
+  <a name="12400"> </a><font face="Verdana, Arial, Helvetica, sans-serif">VxWorks:</font>
+</p>
+
+<a name="12435"> </a>SEM_ID semBCreate(int options, SEM_B_STATE initState);
+<a name="12416"> </a>SEM_ID semMCreate(int options);
+<a name="12417"> </a>STATUS semDelete(SEM_ID semId);
+<a name="12451"> </a>STATUS semGive(SEM_ID semId);
+<a name="12418"> </a>STATUS semTake(SEM_ID semId, int timeout);
+
+<p>
+  <a name="12401"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Proposed:</font>
+</p>
+
+<a name="12404"> </a>int8 osCreateSem(int32 *semId, int8 options, boolean set);
+<a name="12405"> </a>int8 osDeleteSem(int32 semId);
+<a name="12406"> </a>int8 osGiveSem(int32 semId);
+<a name="12407"> </a>int8 osTakeSemWait(int32 semId, int32 timeOut);
+</pre>
+
+<h4>
+  <a name="12462"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Message Queues:</font>
+</h4>
+
+
+<p>
+  <a name="12463"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Moab:</font>
+</p>
+
+<pre>
+<a name="12464"> </a>int8 createExchange(const char *name, int8 property = FIFO, int8 maxMsg = 1, 
+const int32 *exchangeId);
+<a name="12465"> </a>int8 sendExchange(int32 exchangeId, struct Message *pMsg);
+<a name="12466"> </a>int8 jamExchange(int32 exchangeId, struct Message *pMsg);
+<a name="12467"> </a>int8 requestExchange(int32 exchangeId, struct Message *pMsg, int8 waitOpt, int32 
+timeoutOpt);
+
+<p>
+  <a name="12468"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Denali:</font>
+</p>
+
+<a name="12469"> </a>int8 create_x(const char *name, int8 property = FIFO, int8 maxMsg = 1, int32 
+*exchangeId);
+<a name="12470"> </a>int8 send_x(int32 exchangeId, struct Message *pMsg);
+<a name="12471"> </a>int8 jam_x(int32 exchangeId, struct Message *pMsg);
+<a name="12472"> </a>int8 req_x(int32 exchangeId, struct Message *pMsg, int16 waitOpt, int32 timeou-
+tOpt);
+<a name="12473"> </a>int8 delete_x(int32 exchangeId);
+<a name="12474"> </a>int8 attach_x(char *name, int32 *exchangeId, int32 *numProcQd, int32 *numMsgQd);
+<a name="12475"> </a>int8 liberate_x(int32 *exchangeId, struct Message *pMsg int minMsgs, int8 *pMs-
+gAdded, int8 *procLiberated);
+</pre>
+
+<p>
+  <a name="12476"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="12477"> </a><font face="Verdana, Arial, Helvetica, sans-serif">16500B:</font>
+</p>
+
+<pre>
+<a name="12478"> </a>int8 create_x(const char *name, int8 property = FIFO, int8 maxMsg = 1, int32 
+*exchangeId);
+<a name="12479"> </a>int8 send_x(int32 exchangeId, struct Message *pMsg);
+<a name="12480"> </a>int8 req_x(int32 exchangeId, struct Message *pMsg, int16 waitOpt, int32 timeou-
+tOpt);
+<a name="12481"> </a>int8 attach_x(char *name, int32 *exchangeId, int32 *numProcQd, int32 *numMsgQd);
+
+<p>
+  <a name="12482"> </a><font face="Verdana, Arial, Helvetica, sans-serif">VxWorks:</font>
+</p>
+
+<a name="12483"> </a>MSG_Q_ID msgQCreate(int maxMsgs, int maxMsgLength, int options);
+<a name="12485"> </a>STATUS msgQDelete(MSG_Q_ID qId);
+<a name="12486"> </a>STATUS msgQSend(MSG_Q_ID qId, char *buffer, UINT nBytes, int timeOut, int prior-
+ity);
+<a name="12562"> </a>STATUS msgQReceive(MSG_Q_ID qId, char *buffer, UINT nBytes, int timeOut);
+<a name="12487"> </a>STATUS msgQInfoGet(MSG_Q_ID qId, MSG_Q_INFO *pInfo);
+
+<p>
+  <a name="12488"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Proposed:</font>
+</p>
+
+<a name="12506"> </a>int8 osCreateQ(char *name, int8 options, int16 qSize, int32 *qId);
+<a name="12507"> </a>int8 osDeleteQ(int32 qId);
+<a name="12508"> </a>int8 osSendQ(int32 qId, Message *pMsg);
+<a name="12509"> </a>int8 osJamQ(int32 qId, Message *pMsg);
+<a name="12510"> </a>int8 osGetQWait(int32 qId, Message *pMsg, int32 timeOut);
+<a name="12513"> </a>int8 osGetQId(char *name, int32 *qId);
+<a name="12514"> </a>int8 osGetQInfo(char *name, int32 *qId, int16 *numProcQd, int16 *numMsgQd);
+</pre>
+
+<h4>
+  <a name="12573"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Interrupts:</font>
+</h4>
+
+
+<p>
+  <a name="12574"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Moab:</font>
+</p>
+
+<pre>
+<a name="12625"> </a>uint16 setPriority(uint16 newLevel);
+
+<p>
+  <a name="12626"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Denali:</font>
+</p>
+
+<a name="12627"> </a>????
+
+<p>
+  <a name="12588"> </a><font face="Verdana, Arial, Helvetica, sans-serif">16500B:</font>
+</p>
+
+<a name="12589"> </a>uint16 setIntLevel(int16 newLevel);
+
+<p>
+  <a name="12593"> </a><font face="Verdana, Arial, Helvetica, sans-serif">VxWorks:</font>
+</p>
+
+<a name="12647"> </a>int intLevelSet(int newLevel);
+<a name="12655"> </a>int intLock(void);
+<a name="12649"> </a>void intUnlock(int lockKey);
+<a name="12657"> </a>void intLockLevelSet(int newLevel);
+<a name="12594"> </a>int intLockLevelGet(void);
+
+<p>
+  <a name="12599"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Proposed:</font>
+</p>
+
+<a name="12671"> </a>uint16 setIntLevel(int16 newLevel);
+<a name="12676"> </a>uint16 lockInt(void);
+<a name="12674"> </a>void unlockInt(uint16 *oldLevel);
+</pre>
+
+<h2>
+  <a name="3354"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-5  Operating Systems Currently Supported</font>
+</h2>
+
+
+<p>
+  <a name="2091"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Only pSOS is currently provided with OS wrappers. A local version of pSOS has been installed and is available as a library. It is located in the jediPlus/psos directory. A more robust version of pSOS is also available as a reusable LDS library. This document provides the necessary information to implement the OS wrapper for VxWorks. It is assumed that the user will be supplying VxWorks. This document was built using the manuals for VxWorks version 5.3 as a reference.</font>
+</p>
+
+
+<h3>
+  <a name="2092"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-5.1  pSOS Implementation Specifics</font>
+</h3>
+
+
+<p>
+  <a name="11829"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The pSOS interface is an integral part of the pSOS reusable library. No additional files need to be linked in for the interface functions. Modify the target project's make file to build and link the psos library, libpsos.a. See the build environment document.</font>
+</p>
+
+
+<h4>
+  <a name="14185"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Process Management</font>
+</h4>
+
+
+<p>
+  <a name="14186"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The process manager implementation uses the pSOS functions <em>spawn_p, activate_p, delete_p, ident_p, mode_p, priority_p, super_p </em>(????),<em> suspend_p, resume_p</em> and <em>pause_p</em>. The spawn and activate functions are combined into one function. Process delays are implemented in pSOS using <em>pause_p</em>. The wait time is specified in OS ticks.</font>
+</p>
+
+
+<h4>
+  <a name="2208"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Memory Management</font>
+</h4>
+
+
+<p>
+  <a name="2221"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The memory manager interface and implementation are part of the pSOS library that is supplied. The pSOS functions used are <em>alloc_seg</em> and <em>free_seg</em>. </font>
+</p>
+
+
+<h4>
+  <a name="11832"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Process Synchronization - Signals</font>
+</h4>
+
+
+<p>
+  <a name="2227"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Signalling in pSOS is accomplished through the use of pSOS events. The pSOS functions of interest are <em>signal_v, wait_v </em>and <em>get_v</em>. The <em>condition</em> for the <em>wait_v</em> and <em>get_v</em> commands is fixed to be <em>OR</em>.</font>
+</p>
+
+
+<p>
+  <a name="2598"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The user of the HP-IB driver and/or C488 modules must pass the PID of the process that is to be signalled to the open calls for these modules.</font>
+</p>
+
+
+<h4>
+  <a name="14200"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Process Synchronization and Resource Locking - Semaphores</font>
+</h4>
+
+
+<p>
+  <a name="2600"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Semaphores, both locking and syncing are implemented by using pSOS message exchanges, the same as queues. All semaphore functions except <em>osCreateSem </em>are implemented as macros that call a queue function. The pSOS functions of interest are <em>create_x, delete_x, send_x </em>and <em>req_x</em>. The SemId is actually the address of the exchange control block. Semaphores are always created with a maximum message count of 1. The <em>osGiveSem</em> call returns unconditionally unless preempted. The <em>osTakeSemWait </em>call will wait the specified number of OS ticks. </font>
+</p>
+
+
+<h4>
+  <a name="14210"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Message Passing - Queues</font>
+</h4>
+
+
+<p>
+  <a name="14211"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Queues are implemented by using pSOS message exchanges. The pSOS functions of interest are <em>create_x, delete_x, send_x </em>and <em>req_x</em>. The Qid is actually the address of the exchange control block. Queues must be always created with a maximum message. The <em>osSendQ</em> call returns unconditionally unless preempted even if the queue is full. The <em>osGetQWait </em>call will wait the specified number of OS ticks.</font>
+</p>
+
+
+<h4>
+  <a name="14245"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Interrupt Management</font>
+</h4>
+
+
+<h4>
+  <a name="3362"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The interrupt functions are implemented using traps and do not involve pSOS directly. The default interrupt service routine (ISR) return should use the function do_RETI. This routes the return though the pSOS dispatcher, allowing any processes made ready a chance to run. There may be some cases where this is not done. See the event scheduler document for more information.</font>
+</h4>
+
+
+<h4>
+  <a name="14247"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Time Unit Conversion</font>
+</h4>
+
+
+<p>
+  <a name="3363"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Real time is converted to OS ticks with the help of the pSOS function <em>osTicksPerSec()</em> which returns the number of OS ticks per second of real time. This is an good candidate for a macro.</font>
+</p>
+
+
+<h3>
+  <a name="2093"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-5.2  VxWorks Implementation Specifics</font>
+</h3>
+
+
+<p>
+  <a name="2501"> </a><font face="Verdana, Arial, Helvetica, sans-serif">No actual implementation for VxWorks has been done yet, but the wrapper interface was designed with such an implementation in mind. See the cross reference section. Also, an example of a VxWorks interface library for the 68040 processor is <em>lib/wind68k/vxwp040.a</em></font>
+</p>
+
+
+<h4>
+  <a name="14272"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Process Management</font>
+</h4>
+
+
+<p>
+  <a name="14309"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The process management interface is provided by the VxWorks libraries taskInfo, taskLib and taskShow. The functions considered for use are <em>taskSpawn, taskDelete, taskRestart, taskIdSelf, taskNameToId, taskgetInfo, taskLock, taskUnlock, taskPriorityGet, taskPrioritySet, taskSuspend, taskDelete </em>and<em> taskDelay</em>. Also see kernalLib and the cross reference section in this document. Process delays are implemented in VxWorks using <em>taskDelay</em>. The time to wait is specified in OS ticks.</font>
+</p>
+
+
+<h4>
+  <a name="14268"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Memory Management</font>
+</h4>
+
+
+<p>
+  <a name="2217"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The memory manager interface for VxWorks is provided by the VxWorks library memPartLib. The functions considered for use are <em>malloc, free, memPartAlloc </em>and<em> memPartFree. </em>Also see memLib and the cross reference section in this document.<em></em></font>
+</p>
+
+
+<h4>
+  <a name="14313"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Process Synchronization - Signals</font>
+</h4>
+
+
+<p>
+  <a name="14314"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Process synchronization in VxWorks is accomplished through the use of posix-style signals defined by the library sigLib. The VxWorks functions of interest are <em>kill, sigtimedwait and sigwaitinfo</em>. Wait times are in OS ticks.</font>
+</p>
+
+
+<h4>
+  <a name="2280"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Process Synchronization - Semaphores</font>
+</h4>
+
+
+<p>
+  <a name="2281"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Process synchronization in VxWorks is accomplished through the use of binary semaphores defined by the libraries semBLib and semLib. The VxWorks functions of interest are <em>semBCreate, semDelete, semTake</em> and <em>semGive</em>. Wait times are in OS ticks.</font>
+</p>
+
+
+<p>
+  <a name="2283"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The user of the HP-IB driver and/or C488 modules could ignore the PID parameter to the open calls for these modules. Anything (0 for example) can be passed in for this parameter since it is unused in the VxWorks implementation. However, it is recommended that the proper PID be passed into the module in an OS independent fashion to maximize the portability of the code being written.</font>
+</p>
+
+
+<p>
+  <a name="12294"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>Resource</strong> <strong>Locking</strong></font>
+</p>
+
+
+<p>
+  <a name="2304"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Resource locking in VxWorks is accomplished by using mutual exclusion semaphores defined by the libraries semMLib and semLib. The VxWorks functions of interest are <em>semMCreate, semDelete, semTake</em> and <em>semGive</em>. Wait times are in OS ticks. The <em>name </em>parameter in the <em>osCreateSem</em> call is ignored by VxWorks.</font>
+</p>
+
+
+<p>
+  <a name="3282"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>osCreateSem</em> call can fail if creating the underlying mutex semaphore fails.</font>
+</p>
+
+
+<p>
+  <a name="14347"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>Message Passing - Queues</strong></font>
+</p>
+
+
+<h4>
+  <a name="14330"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Message passing in VxWorks is accomplished by using message queues defined by the libraries msgQLib and msgQShow. The VxWorks functions of interest are msgQCreate, msgQDelete, msgQSend, msgQReceive and msgQInfoGet. A time-out parameter is provide for both the send and receive functions and times are in OS ticks.</font>
+</h4>
+
+
+<h4>
+  <a name="14349"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif"> Interrupt Management</font>
+</h4>
+
+
+<p>
+  <a name="14331"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Interrupt management in VxWorks is accomplished through the use the library intArchLib. The VxWorks functions of interest are <em>intLevelSet, intLock, intUnlock, intLockLevelSet and intLockLevelGet</em>. Also see intLib and the cross section reference in this document.</font>
+</p>
+
+
+<h4>
+  <a name="3364"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Time Unit Conversion</font>
+</h4>
+
+
+<p>
+  <a name="3365"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Real time is converted to OS ticks with the help of the VxWorks function <em>sysClkRateGet() </em>which returns the number of OS ticks per second of real time. It is in the library sysLib.</font>
+</p>
+
+
+<h2>
+  <a name="2363"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-6  Porting to Additional Operating Systems</font>
+</h2>
+
+
+<h3>
+  <a name="2364"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-6.1  Memory Management</font>
+</h3>
+
+
+<p>
+  <a name="2372"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The OS must provide implementations of the osMalloc() and osFree() functions.</font>
+</p>
+
+
+<h3>
+  <a name="2368"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-6.2  Process Synchronization</font>
+</h3>
+
+
+<p>
+  <a name="2374"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This can be accomplished by various methods in different OS's including signals or binary semaphores. To facilitate this, interface functions have been defined that accept a pointer to an OS structure. The actual contents of the structure as well as the functions themselves should be implemented in most appropriate way for the particular OS being used.</font>
+</p>
+
+
+<h3>
+  <a name="2369"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-6.3  Resource Locking</font>
+</h3>
+
+
+<p>
+  <a name="2384"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Resource locking is used to protect shared resources from simultaneous access by different parts of the executing program. This is usually provided through the use of semaphores. The LDS modules require that a specific resource can be recursively locked and then unlocked a corresponding number of times from within the same process. Access functions use a pointer to an OS structure to facilitate implementation in different OS's. The actual contents of the structure and the implementation of the functions should be implemented in the most appropriate way for the OS being used. The implementor is free to ignore the <em>name </em>parameter that is passed to the create functions.</font>
+</p>
+
+
+<h3>
+  <a name="2370"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-6.4  Process Delays</font>
+</h3>
+
+
+<p>
+  <a name="3367"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Process delays are used to delay the execution of a given process for a specified time period. This will allow other process that may be ready to run to execute. The interface function expects a parameter that is the delay desired in OS time ticks. This should be implemented in the most appropriate way for the OS being used.</font>
+</p>
+
+
+<h3>
+  <a name="3374"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-6.5  Time Unit Conversion</font>
+</h3>
+
+
+<p>
+  <a name="3375"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The time unit conversion function is used to get the conversion factor for the number of OS ticks per second of real time.</font>
+</p>
+
+
+<h2>
+  <a name="3368"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-7  Function Reference</font>
+</h2>
+
+
+<p>
+  <a name="2696"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This section is intended to present the proposed prototypes for all the wrapper functions. See <em>os.h</em> for an accurate and complete description of each OS interface function.</font>
+</p>
+
+
+<h3>
+  <a name="12333"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-7.1  Memory management</font>
+</h3>
+
+<pre>
+<a name="12331"> </a>void *osMalloc(int32 size);
+<a name="12332"> </a>void osFree(void *ptr);
+</pre>
+
+<h3>
+  <a name="12329"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-7.2  Process control</font>
+</h3>
+
+<pre>
+<a name="12340"> </a>int8 osInitProc(const char *name, int8 groupId, int8 priority, int32 StakSize, 
+const int16 *pArgList, const int32 *pProcessId, void (*)() process);
+<a name="12341"> </a>int8 osDeleteProc(int32 processId);
+<a name="12343"> </a>int8 osSuspendProc(int32 processId);
+<a name="12344"> </a>int8 osResumeProc(int32 processId);
+<a name="12345"> </a>int8 osPauseProc(int32 ticks);
+<a name="12347"> </a>int8 osLockProc(int16 *pOldMode);
+<a name="12348"> </a>int8 osUnlockProc(int16 oldMode);
+<a name="12349"> </a>int8 osIncrProcPriority(int32 processId, int16 incr int8 *pOldPriority);
+<a name="12350"> </a>int8 osSetProcPriority(int32 processId, int8 newPriority, int8 *pOldPriority);
+<a name="12351"> </a>int8 osMakeProcSupv(void);   // Don't know if this can be duplicated in Vxworks
+<a name="12353"> </a>int8 osGetProcPriority(int32 processId, int8 *pPriority);
+<a name="12354"> </a>int8 osGetProcId(char *name, int32 *pProcessId);
+<a name="12355"> </a>int8 osGetProcInfo(char *name, int32 *pProcessId, int8 *pStatus);
+</pre>
+
+<h3>
+  <a name="12334"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-7.3  Signals</font>
+</h3>
+
+<pre>
+<a name="12366"> </a>int8 osSendSig(int32 processId, int16 sigNum);
+<a name="12367"> </a>int8 osGetSigWait(int16 reqSigs, int16 *pFndSigs, int32 timeOut);
+<a name="12368"> </a>int8 osGetSigNoWait(int16 reqSigs, int16 *pFndSigs);
+<a name="12369"> </a>int8 osGetSigWaitForever(int16 reqSigs, int16 *pFndSigs);
+</pre>
+
+<h3>
+  <a name="12335"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-7.4  Semaphores</font>
+</h3>
+
+<pre>
+<a name="12376"> </a>int8 osCreateSem(int32 *pSemId, int8 options, boolean set);
+<a name="12377"> </a>int8 osDeleteSem(int32 semId);
+<a name="12378"> </a>int8 osGiveSem(int32 semId);
+<a name="12379"> </a>int8 osTakeSemWait(int32 semId, int32 timeOut);
+<a name="12380"> </a>int8 osTakeSemNoWait(int32 semId);
+<a name="12381"> </a>int8 osTakeSemWaitForever(int32 semId);
+</pre>
+
+<h3>
+  <a name="12336"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-7.5  Message Queues</font>
+</h3>
+
+<pre>
+<a name="12385"> </a>int8 osCreateQ(char *name, int8 options, int8 qSize, int32 *pQid);
+<a name="12386"> </a>int8 osDeleteQ(int32 qid);
+<a name="12387"> </a>int8 osSendQ(int32 qid, Message *pMsg);
+<a name="12388"> </a>int8 osJamQ(int32 qid, Message *pMsg);
+<a name="12389"> </a>int8 osGetQWait(int32 qid, Message *pMsg, int32 timeOut);
+<a name="12390"> </a>int8 osGetQNoWait(int32 qid, Message *pMsg);
+<a name="12391"> </a>int8 osGetQWaitForever(int32 qid, Message *pMsg);
+<a name="12392"> </a>int8 osGetQId(char *name, int32 *pQid);
+<a name="12393"> </a>int8 osGetQInfo(char *name, int32 *pQid, int32 *pNumProcQd, int32 *pNumMsgQd);
+</pre>
+
+<h3>
+  <a name="12691"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-7.6  Interrupts</font>
+</h3>
+
+<pre>
+<a name="12696"> </a>uint16 setIntLevel(uint16 newLevel);
+<a name="12697"> </a>uint16 lockInt(void);
+<a name="12698"> </a>void unlockInt(uint16 oldLevel);
+<a name="14383"> </a>void enableHwInterrupts(void);
+<a name="14384"> </a>void disableHwInterrupts(void);
+</pre>
+
+<h3>
+  <a name="12337"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-7.7  OS Time Conversion</font>
+</h3>
+
+<pre>
+<a name="12397"> </a>uint32 osTicksPerSec(void);
+</pre>
+
+<h2>
+  <a name="10085"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">27-8  Required OS Services</font>
+</h2>
+
+
+<p>
+  <a name="10135"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The other chapters in this document should specify the OS services required by the portion of the system they document. Also see the Process Model.</font>
+</p>
+
+
+<p>
+  <a name="10083"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="bootrom.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="psosTimingRef.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

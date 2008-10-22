@@ -1,0 +1,744 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:26:50 2002">
+<title>CHAPTER 24 Signal Analysis Library (SAL)</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="curs.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="selfTest.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="996844"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 24 	 Signal Analysis Library (SAL)</font>
+</h1><hr>
+
+
+<h2>
+  <a name="1002349"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">24-1  overview</font>
+</h2>
+
+
+<p>
+  <a name="1006075"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This chapter gives a general description of what the Signal Analysis Library does, how it fits into the JediPlus firmware, and rationale for some of the decisions that were made in its high-level design.  To serve the needs of maintenance, the chapter has been updated with more graphics and explanation of the internal design of SAL.  Fine details about the low-level nitty-gritty are probably in another chapter.  At the end of the chapter is a list of SAL entry points, its API.</font>
+</p>
+
+
+<h4>
+  <a name="1006605"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">what it does</font>
+</h4>
+
+
+<p>
+  <a name="1006598"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SAL has several functions:</font>
+</p>
+
+<ul>
+  <li><a name="1006599"> </a><font face="Verdana, Arial, Helvetica, sans-serif">maintain and execute the set of screen measurements, on input from the UI</font>
+  <li><a name="1006600"> </a><font face="Verdana, Arial, Helvetica, sans-serif">maintain and execute the list of filters</font>
+  <li><a name="1006601"> </a><font face="Verdana, Arial, Helvetica, sans-serif">provide for internal and bus measurements, aka "immediate" measurements</font>
+  <li><a name="1006602"> </a><font face="Verdana, Arial, Helvetica, sans-serif">provide for parallel and serial cursor interpretation</font>
+</ul>
+
+<h4>
+  <a name="1006606"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">SAL structure</font>
+</h4>
+
+
+<p>
+  <a name="1006352"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SAL software is in two distinct layers, the access layer and the engine.  The engine contains algorithms for analyzing waveform data: filtering, measuring, and interpreting cursors.  The access layer contains entry points for external access, as well as various do-lists such as the set of screen measurements.  All the accuracy and performance and nifty algorithms are in the engine, and all the negotiation with the user interface is in the access layer.  This chapter describes the access layer, and some about the engine, which is more detailed in meas.doc, func.doc, or curs.doc (the "definition" chapters for measurements, math functions, and cursor interpretations).  SAL assumes that its 8-bit and 12-bit data are perfectly accurate, doing no operations that would degrade their precision.</font>
+</p>
+
+
+<h4>
+  <a name="1006604"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">where it sits in JediPlus</font>
+</h4>
+
+
+<p>
+  <a name="1006593"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SAL's main JediPlus customers are the AcqMgr, the ScreenMgr, and the UI.  See fig. 43.</font>
+</p>
+
+<a name="1006361"> </a>FIGURE 63.&#32; SAL Context Diagram<img src="images/analysisa.gif" height="790" width="624">
+
+<h2>
+  <a name="1008203"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">24-2  how SAL does screen measurements</font>
+</h2>
+
+
+<p>
+  <a name="1008418"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Asynchronous to the calculation of measurements, the UI can call SAL with a replacement list of screen measurements to be done.  This updates the measList, the list internal to SAL, an array of measurement schedule items, and the UI also updates the cursor request.  Then at the end of a scheduled acq cycle, runMeasurements() is called.  Depending on whether there is a cursor request or there are items in the measList, appropriate high-level routines are called to run the secheduled measurements or run the cursor interpretations.  Incidental to SAL, these two flags (the screen measurement list and the cursor request) are never both valid -- the UI makes only one of them, based on the state of the screen menus.  This design makes it a simple call from the acq cycle, because it doesn't have to know what measurements are actually selected.  And if there is neither a cursor request nor a screen measurement to be done, we return without having wasted any time.</font>
+</p>
+
+<a name="1008427"> </a>FIGURE 64.&#32; runMeasurements<img src="images/analysis2.gif" height="592" width="624">
+
+<p>
+  <a name="1008450"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If we are running scheduled measurements, SAL allows multiple measurements to be run with some economy together on limited resources.  Having the measList sorted by source helps save some time, and checking to see if the data is new avoids repeating analysis whose results have already been determined.  In Jedi scopes when the timebase is in Dual mode (showing both main and delayed), there is a behavior that may cause a measurement to be made on 2 different sets of data before reporting its result; that logic is put at this level.</font>
+</p>
+
+<a name="1008213"> </a>FIGURE 65.&#32; runSchedMeas<img src="images/analysis3.gif" height="686" width="624">
+
+<p>
+  <a name="1008776"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Logic measurements are particularly simple to set up, since only one resource -- the waveform edges -- is needed.  Aside from getting those edges, doLogicMeas() is a routing function to the various measurement routines that report results based on those edges.</font>
+</p>
+
+<a name="1008801"> </a>FIGURE 66.&#32; doLogicMeas<img src="images/analysis4.gif" height="754" width="624">
+
+<p>
+  <a name="1008802"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Measurements on analog channels potentially need several resources -- normalized data, histogram results, and waveform edges.  Aside from getting those resources, doAnalogMeas() is a routing function to various measurement routines reporting results based thereon.  In addition, a few exceptional routines use the eavesdropped data that is input to normalization.</font>
+</p>
+
+<a name="1008218"> </a>FIGURE 67.&#32; doAnalogMeas<img src="images/analysis5.gif" height="736" width="624">
+
+<p>
+  <a name="1008376"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The cursor interpretations are analogous to scheduled screen measurements, only simpler, since there is only one of them running at a time.  These measurements are only done on main data, even if the timebase mode is dual -- this is an opportunity since the delayed data might be better.  The design offers a lot of flexibility in the interpretation algorithms, since these are for the most part to be implemented later.  This initial release supports only parallel cusor measurements.</font>
+</p>
+
+<a name="1008341"> </a>FIGURE 68.&#32; runCursInterps<img src="images/analysis6.gif" height="673" width="624">
+
+<h2>
+  <a name="1008755"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">24-3  how SAL does immediate measurements</font>
+</h2>
+
+
+<p>
+  <a name="1008219"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The set of possible immediate measurements includes the set of screen measurements, but goes beyond that for some measurements whose parameters wouldn't fit in the screen system, such as certain bus measurements and specialized cal measurements.</font>
+</p>
+
+
+<p>
+  <a name="1008221"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Because it can handle the variety of calls to strictly internal measurement algorithms, getImmMeas() is called from calibration routines.  It acquires data, sets up the flexible call to doImmMeas(), and returns a simple result without markers or tolerance.</font>
+</p>
+
+<a name="1008805"> </a>FIGURE 69.&#32; getImmMeas<img src="images/analysis7.gif" height="554" width="624">
+
+<p>
+  <a name="1008226"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For some reason, getImmMeas() did not serve the immediate measurement needs of bus commands.   The routing function doImmMeas() is also called by execMeas() and getCsvDataSet(), which do their own call to acquire data, and which are covered elsewhere.</font>
+</p>
+
+
+<h2>
+  <a name="1008205"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">24-4  how SAL does filters</font>
+</h2>
+
+
+<p>
+  <a name="1008228"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These products can display no more than one math function.  At nearly a trigger rate, the acq system will call SAL to run any filters.  Filled asynchronously from the UI, the filter schedule can have either the filter to be displayed, or the dark function, or none.  The dark function is a filter whose output is source to the displayed filter.  So when runFilters() is called, we first run the dark function (if any) then the displayed filter.  The source data must be valid, or else the output data is left invalid.  If the newData flag is set on the source, we re-calculate the scaling in the function template.</font>
+</p>
+
+
+<p>
+  <a name="1008232"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Filter algorithms can be divided into two types -- transforms and channel math -- with the difference being that transforms use only one source, and channel math uses two sources.  Other characteristics have probably crept in, such as the fact that transforms do not produce delayed output, that the dark function can only be channel math, transforms use normalized data but cannot tolerate holes, channel math uses eavesdropped data, etc.  These properties may be more properly owned in the behavioral layer, and it might be best to just go back to the definition and try to support all these generalities.  All the filters produce non-inverted hi-res data, regardless of input.</font>
+</p>
+
+<a name="1008842"> </a>FIGURE 70.&#32; <img src="images/analysis8.gif" height="476" width="624">
+runFilters
+<p>
+  <a name="1008227"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Some common things are done to every transform.  The data is normalized, any holes are filled, if there's a short record length the output buffer is wiped and its pointer is offset, the algorithm is called, and the output status is set.</font>
+</p>
+
+<a name="1008874"> </a>FIGURE 71.&#32; runTransform<img src="images/analysis9.gif" height="764" width="624">
+
+<p>
+  <a name="1008233"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Some common things are done to every channel math.  Since there can be channel math in main and/or delayed timebase, a call to each is set up.  If the source is not valid, we have to do more than just clear the display by filling it with valid holes -- the header has to contain reasonable numbers.  Since the channel math will use eavesdropped data, which might be inverted, we have to determine the signs of the two channels (along with the implicit inversion that comes from filter subtraction), and then set the output status.</font>
+</p>
+
+<a name="1008924"> </a>FIGURE 72.&#32; runChannelMaths<img src="images/analysis10.gif" height="652" width="624">
+
+<h2>
+  <a name="1008202"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">24-5  data representations</font>
+</h2>
+
+
+<p>
+  <a name="1008112"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The initial strategy for SAL measurements was to convert eavesdropped data uniformly to an array of 2000 signed shorts, via the normalizing filter.  The problems of dealing with the variety of peak data, hi-res data, function data, logic data, and their various formats would be simplified, and the measurement routines would for the most part just be reporting the results of a proto measurement such as histogramming or edge-finding.  This would minimize adverse coupling and code size at the expense of some execution time.  That strategy has been implemented, with some exceptions:</font>
+</p>
+
+<ul>
+  <li><a name="1008117"> </a><font face="Verdana, Arial, Helvetica, sans-serif">channel math filters such as 1-2 and 1x2 use the measurement records instead of normalizing, for maximum thruput.</font>
+  <li><a name="1008162"> </a><font face="Verdana, Arial, Helvetica, sans-serif">since the only analysis of logic channels is measurements based on the edge array, I skip normalizing logic data and get logic edges directly from the measurement record.</font>
+  <li><a name="1008118"> </a><font face="Verdana, Arial, Helvetica, sans-serif">to allow peak data to cause edges to be found among the extreme data, I do normalize analog peak data but I also go back to the measurement record to find edges.</font>
+  <li><a name="1008119"> </a><font face="Verdana, Arial, Helvetica, sans-serif">certain measurements like overshoot and preshoot benefit from using peak data instead of sample data, in those display modes where peak data is available.</font>
+</ul>
+
+<p>
+  <a name="1008123"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are several data structures associated with signal analysis:</font>
+</p>
+
+<ul>
+  <li><a name="1008124"> </a><font face="Verdana, Arial, Helvetica, sans-serif">the Signal (signal.h) is a structure describing eavesdropped data, with descriptors for format, vertical scaling, timing, and pointers to the data itself, and a lot of other good stuff.</font>
+  <li><a name="1008125"> </a><font face="Verdana, Arial, Helvetica, sans-serif">the MeasRequest (dvrMeas.h) has the channel and the algorithm, whatever data is needed to request a measurement.</font>
+  <li><a name="1008129"> </a><font face="Verdana, Arial, Helvetica, sans-serif">the AnaNotes (salInt.h) is a struct of analysis notes.  It includes a pointer to the signal and to the normalized data, as well as results of histogramming or edge-finding.  Any measurements on the same channel will incrementally fill out these notes, from which most measurements are simply calculated.</font>
+  <li><a name="1008130"> </a><font face="Verdana, Arial, Helvetica, sans-serif">the MeasResult (dvrMeas.h) is a list of data coming back from the single measurement.  It includes the status of the measurement, the units, the tolerance, the floating result in the correct units, and marker values pointing to the part of the data that was used for the calculation.</font>
+  <li><a name="1008131"> </a><font face="Verdana, Arial, Helvetica, sans-serif">the MeasSched (salInt.h) has pointers to the MeasRequest, the MeasResult, and the AnaNotes associated with each measurement.  The scheduled measurements are run off an array of MeasSche, and the immediate measurements each use a single MeasSched.  So, since the routine to do each elementary measurement has a pointer to a MeasSched, it has access to all the pertinent data and result fields that it could conceivably need.</font>
+  <li><a name="1008132"> </a><font face="Verdana, Arial, Helvetica, sans-serif">the CursSched and CursResult are similar to the MeasSched and MeasResult, but for cursor measurements.</font>
+  <li><a name="1008133"> </a><font face="Verdana, Arial, Helvetica, sans-serif">the FiltSched (salInt.h) contains all the data needed for each filter.  We allow up to 4 filters to be run, but it looks like jediPlus will not offer more than 2 filters.  There are pointers in the FiltSched to the filter's channel template (dvrChan.h) and, for FFT's, a FreqDomainUserTemplate (dvrFunc.h).</font>
+</ul>
+
+<h4>
+  <a name="1006612"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">normalizer</font>
+</h4>
+
+
+<p>
+  <a name="1008140"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Analog jediPlus data could be in peak format, hi-res channel format, hi-res function format, or some other Mesa format.  It could be zippered together differently depending on which channels are on.  Analog data is inverted on some ranges and not on others.  The normalizing filter reduces this variety to one -- analytic data.  The record length is nominally 2000 samples, but even that is variable, especially when the box is stopped for horozontal pan&amp;zoom.</font>
+</p>
+
+
+<p>
+  <a name="1008145"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Analytic data is signed Q levels, so there is no offset to add for zero.  Yref is zero by construction.  The 12-bit format is sometimes called 8.4 (for an 8-bit value with 4-bit fraction), or 12.4 (for its width and precision), or 16.4 (for the width implemented on our machine, and precision); I've tried to refer to it as 16.4.  In 16 bits, the left-most 5 bits are 00000 or 11111, depending on the sign.  If the data is peak or bob-mode, and for some sweep speeds in hi-res mode, the right-most 4 bits will be zero.  No matter, SAL deals with all the normalized data uniformly.  This is different from the 16.8 data we display, which is left justified in an unsigned short.</font>
+</p>
+
+
+<p>
+  <a name="1008146"> </a><font face="Verdana, Arial, Helvetica, sans-serif">As the data is normalized, we also calculate the min and max, and count the holes.  Thus some of the need for histogramming is alleviated.  In the AnaNotes, the record length is non-zero only after normalizing, which gives a flag indicating whether it has taken place.</font>
+</p>
+
+
+<h2>
+  <a name="1008141"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">24-6  measurements</font>
+</h2>
+
+
+<p>
+  <a name="1008142"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The screen measurements are chosen every now and then by the user.  The current choice is executed and the results displayed on the screen periodically, instigated by the scheduler.  To support this behavior, there is an array of up to 6 MeasRequests in SAL, containing descriptions of what measurements are to be done in this manner.  Each member of the array was entered by a call to updateSchedMeas(), listed in the API's.  Here is the struct for MeasRequest:</font>
+</p>
+
+<pre>
+<a name="1006613"> </a>typedef struct
+<a name="1006620"> </a>{
+    MeasType   algorithm;
+    SigId      sid;
+    float64    parm;    /* used by VTIM TEDG and TVOL */
+    int16      uiKey;
+} MeasRequest;
+
+</pre>
+<ul>
+  <li><a name="1006639"> </a><font face="Verdana, Arial, Helvetica, sans-serif">algorithm is of an enumerated type, describing what kind of measurement to do, eg Freq.</font>
+  <li><a name="1006632"> </a><font face="Verdana, Arial, Helvetica, sans-serif">sid is of an enumerated type, describing what source to use for data.  It is a type related to the controls, the same as the SigId in the signals.  Since we have eliminated the 2-channel measurements (phase, delay) from the feature set for JediPlus, there is only one source in the struct.  In the feature set there is some restriction on what measurements can be done on what inputs.</font>
+  <li><a name="1007120"> </a><font face="Verdana, Arial, Helvetica, sans-serif">parm is a generalized parameter for those few measurements needing an additional input parameter.  Right now, the only instances of such a measurement are TVOL, TEDG and VTIM.  This parameter can be overloaded for other uses.</font>
+  <li><a name="1007769"> </a><font face="Verdana, Arial, Helvetica, sans-serif">uiKey is a token from the UI used for placing the measurement results on the screen.</font>
+</ul>
+
+<h4>
+  <a name="1007123"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">outputs from the measurements</font>
+</h4>
+
+
+<p>
+  <a name="1007760"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There is more data available after a measurement is performed, including a MeasRequest:</font>
+</p>
+
+<pre>
+<a name="1007121"> </a>typedef struct
+<a name="1007122"> </a>{
+    MeasRequest *request;
+    MeasStatus   stat;
+    Units        units;
+    float64      result;
+    float64      tolerance;
+    MeasMarkersUsed markUsed;
+    float64      v1, v2;  /* marker values if needed, in user units */
+    float64      t1, t2;  /* marker values if needed, in user units */
+} MeasResult
+</pre>
+<ul>
+  <li><a name="1006635"> </a><font face="Verdana, Arial, Helvetica, sans-serif">stat is the status returned from the measurement.  This would contain information that the result is valid, or it is one end of an inequality, or it was not successful at all.</font>
+  <li><a name="1006691"> </a><font face="Verdana, Arial, Helvetica, sans-serif">units is of an enumerated type.  Most of the units will be inherited from the data, but some measurements create new units, such as percent or dB.  The units displayed on the screen have to come from the measurement.</font>
+  <li><a name="1006641"> </a><font face="Verdana, Arial, Helvetica, sans-serif">result is a float, the numerical result of the measurement.  Currently we have no plans for screen measurements whose results cannot be contained in a float, although the internal measurements can be Q levels (integers) or other forms.</font>
+  <li><a name="1006642"> </a><font face="Verdana, Arial, Helvetica, sans-serif">tolerance is a float, a measure of the precision of the result.  This field will be used in formatting the screen string, to avoid reporting specious precision.  In general this tolerance will be the amount the result would change if the data were off by 1.  In hi-res mode for a voltage measurement, this will be off by only one part in 2048, so it can still report more precision than the box supports by its accuracy.</font>
+  <li><a name="1007865"> </a><font face="Verdana, Arial, Helvetica, sans-serif">markUsed is an array of 4 booleans, indicating which of the 4 marker values is valid.</font>
+  <li><a name="1006672"> </a><font face="Verdana, Arial, Helvetica, sans-serif">v1, v2, t1, t2 are marker values, useful if the cursors will be set to show the measurement.  These values are reported on every measurement because SAL is not aware of which measurement goes where or which one gets the showMeas.  And SAL doesn't want to know.</font>
+</ul>
+
+<p>
+  <a name="1006649"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The UI or the remote UI can call updateSchedMeas() to change the contents of the list of screen measurements.  The periodic measurements are done after a call to setDoMeasurement() by the system scheduler.  If we want the box to be very responsive to the addition of a new measurement, the calling routine could also call getImmMeas() to get a first value sooner than the scheduler would normally allow, as was done in Jedi.  But if we update the screen often enough (and Muskrat updates at 5 Hz), this shouldn't be necessary.</font>
+</p>
+
+
+<p>
+  <a name="1006977"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When the scheduler calls setDoMeasurement(), this routine will set the measureRequest bit in the signalPathStatus register.  This wakes up the sleeping giant and causes the AcqMgr to eavesdrop some data and call runMeasurements(), which does the whole list of screen measurements as a batch.  They will be done in source order, not in screen order.  In this way, some economy can be achieved by doing the eavesdropping and normalization, the histogram, or the edge finding a minimal amount.  For example, if there are 3 measurements all on the same channel, these time-consuming elementary operations will be done no more than once.</font>
+</p>
+
+
+<p>
+  <a name="1006651"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When we do runMeasurements(), the first step is to take each element in this list of MeasRequests and extend it in an internal MeasSched:</font>
+</p>
+
+<pre>
+<a name="1007147"> </a>typedef struct
+{
+    MeasRequest *pRq;
+    MeasResult  *pRs;
+    AnaNotes    *pAn;
+} MeasSched;
+</pre>
+
+<h4>
+  <a name="1007157"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">anaNotes, the measurement scratchpad</font>
+</h4>
+
+
+<p>
+  <a name="1007763"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This schedule links the measurement request to the results and to a packet of analysis data, called AnaNotes, internal to SAL:</font>
+</p>
+
+<pre>
+<a name="1006753"> </a>typedef struct
+{
+    AnalogSignal*pSig;        /* umbrella type could be many signals */
+    int16       *pWrk;        /* normalized output 12.4 format */
+    uint16       length;      /* should be LEN */
+    int16        vmax, vtop, vbas, vmin;
+    float32      yOrg, yInc;  /* scaling may be inverted */
+    int16        holeCount;
+    int16        edgeCount;   /* -1 means edges not done yet */
+    uint16       edges[3][3]; /* pixel indices of the 3 edges */
+    uint16       tRef;        /* index at the trigger reference point*/
+    uint16       nearTrp;     /* which edge is closest to the Trp */
+    int16        thresh[3];   /* pixel thresholds */
+    uint8        histStatus;  /* HIST_NOTDONE means not done yet */
+    boolean      trpRising;   /* is the trp edge rising? */
+    boolean      delayedSweep;/* uses delayed or main data */
+} AnaNotes;
+</pre>
+
+<p>
+  <a name="1006780"> </a><font face="Verdana, Arial, Helvetica, sans-serif">At the end of runMeasurements(), the results are posted back to the ScreenMgr by calls to reportMeasResult().  This routine (in behavioral/grpMeas.c) formats the measurement string and places it on the screen, and possibly displays the cursors according to the measurement.</font>
+</p>
+
+
+<h2>
+  <a name="1006607"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">24-7  filters</font>
+</h2>
+
+
+<p>
+  <a name="1006656"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel math filters and transforms are chosen now and then by the user.  Channel math (1+2, 1-2, 1x2) creates a new virtual channel out of two scope channels, which can be measured and displayed just like any other channel.  Monadic (taking one vector argument) transforms create a new interpretation of one scope channel's acquired data, such as FFT or time derivative.  Trans-forms are more CPU intensive than channel math, with lower user expectations of thruput, and have relatively few measurements that make sense on them.</font>
+</p>
+
+
+<p>
+  <a name="1006698"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The essential difference between measurements and filters, aside from the scalar vs vector result, <br>is that filters are run as often as acquisition and display will allow, whereas screen measurements are scheduled to be run at a few Hertz.  Filter software in JediPlus products will be simpler and faster than those in Solo and Moab, since the averaging, reconstruction, and vertical pan&amp;zoom are all done in hardware.</font>
+</p>
+
+
+<p>
+  <a name="1006658"> </a><font face="Verdana, Arial, Helvetica, sans-serif">To support this behavior, there is an array of  2 FiltScheds in SAL, containing descriptions of what filters are to be done on what data.  There is a constraint from Coyote of displaying no more than one filter, so while it is possible to run a transform on channel math, say FFT on 1-2, only one of them could be displayed due to restrictions on memory space in Coyote.  It's possible that we will only allow measurements on the displayed output, just to keep the UI simple.</font>
+</p>
+
+
+<p>
+  <a name="1006679"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Here is the struct for FiltSched, and a description of its elements:</font>
+</p>
+
+<pre>
+<a name="1006740"> </a>typedef struct
+{
+    FiltType      algorithm;
+    AnalogSignal *pS1;
+    AnalogSignal *pS2;
+    AnalogSignal *pOp;             /* output signal */ 
+    uint16       *yData;           /* where the output data goes */
+    AnaNotes     *pAn;             /* normalized input data */
+    ChanTemplate *pYt;             /* pointer to the Ytemplate */
+    FreqDomainUserTemplate *pXt;   /* pointer to the Xtemplate */
+    boolean       autoscaleNeeded;
+    boolean       delayedSweep;
+    Signs         signs;
+}  FiltSched;
+</pre>
+
+<p>
+  <a name="1007875"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="1007876"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The FiltSched may be a doomed data type, since its contents are partly redundant with the contents of the function template;  look for changes here before we release.  To schedule a filter to be run, and to enter data in one of the filtScheds, call addFilter(FiltType algorithm, ChanId c1, ChanId c2, SignalTemplate func).</font>
+</p>
+
+<ul>
+  <li><a name="1006746"> </a><font face="Verdana, Arial, Helvetica, sans-serif">algorithm is of an enumerated type, describing what kind of filter is to be used, either sum difference or product of two channels, or FFT derivative or integral of one channel.</font>
+  <li><a name="1006747"> </a><font face="Verdana, Arial, Helvetica, sans-serif">c1 and c2 tell what input(s) are to be used for the filter, referring to analog channels.  There will be no filters on logic channels, but you can run a filter on a filter.</font>
+  <li><a name="1007853"> </a><font face="Verdana, Arial, Helvetica, sans-serif">use the FUNC1 template, unless the filter is not to be displayed (the "dark" function), in which case use the FUNC2 template.</font>
+</ul>
+
+<p>
+  <a name="1006796"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The UI or the remote UI can call addFilter() or remFilter() to change the contents of the list.  addFilter() sets the filterRequest bit in the signalPathStatus register, and returns a boolean telling whether the new filter is possible.</font>
+</p>
+
+
+<p>
+  <a name="1006748"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Because the main use of a filter is for display, the FiltSched points to source or destination data in the acquisition hardware directly, so that if measurements are to be done on the displayed data, it will have to be normalized just like any other displayed data.  Filter data is always 12-bit, regardless of the input data, but formatted for display differently from acquisition hi-res data.</font>
+</p>
+
+
+<p>
+  <a name="1007987"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Filter Y-scaling is communicated to and from the UI using one of the two function templates.   One of the bits in this template is funcAutoscale.  If the UI has set this bit, then when the filter runs it determines its own Y-scaling, and all the SAL filters are written to support this.  The UI typically sets this when a "new" filter is installed.  If the user adjusts one of the manual scaling controls, this bit is cleared to give maximum control to the user.</font>
+</p>
+
+
+<p>
+  <a name="1006797"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SAL's most important filter is one the user does not choose, the normalization filter.  JediPlus data can be acquired in any of several formats -- zippered bobMode, hi-res, output from another filter, or whatever Puma comes up with.  But most of SAL runs only on simple arrays of signed shorts, similar to hi-res data.  So one of the first steps in the measurement of any channel is to normalize the eavesdropped data from that channel to a simple array.  This step is also at the beginning of the monadic transforms, so they only use hi-res data.  But channel math, which is intended to produce a virtual channel as efficiently as possible, does not use the normalization filter;  rather, there are separate hi-res and peak versions of channel add and multiply, and they all produce hi-res results.</font>
+</p>
+
+
+<p>
+  <a name="1007027"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Although there are immediate measurements, there are no immediate filters.  This is partly because filters are already run as often as possible, so there is no way to get one any sooner, and partly because there are no customers for a single filter result.  I've implemented the short bus data query as a measurement, and any long bus data queries will be exceptions to the system.</font>
+</p>
+
+
+<h2>
+  <a name="1006817"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">24-8  immediate measurements</font>
+</h2>
+
+
+<p>
+  <a name="1006818"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are measurements made by an oscilloscope that are not scheduled screen measurements.  I lump these into the class of "immediate" measurements, because they return a result immediately to their caller.  The bus can add or clear screen measurements, but it can also ask for the results of a single measurement that won't even show on the screen.  These immediate measurements are </font>
+</p>
+
+<ul>
+  <li><a name="1006853"> </a><font face="Verdana, Arial, Helvetica, sans-serif">single measurement over the bus, using the MEAS: system</font>
+  <li><a name="1006824"> </a><font face="Verdana, Arial, Helvetica, sans-serif">measurements used internally by other parts of the code.  This may be of interest to calibration routines.</font>
+  <li><a name="1006825"> </a><font face="Verdana, Arial, Helvetica, sans-serif">requests for bus data, such as WAV:DATA?  This may seem like a filter, but in data requirements it most closely resembles an immediate measurement, so I put it here.</font>
+  <li><a name="1007158"> </a><font face="Verdana, Arial, Helvetica, sans-serif">the first screen measurement done when adding a new screen measurement to the list.  If we don't want to wait for the scheduler, we can display the result right away.  Although we had this feature in older Jedi, it was not implemented in jediPlus, because the measurement update rate is pretty good and we never got an immediate acquisition cycle.</font>
+</ul>
+
+<p>
+  <a name="1007891"> </a><font face="Verdana, Arial, Helvetica, sans-serif">To do such a measurement, the internal user calls getImmMeas(), which in turn acquires the data and calls the appropriate measurement routine.  These fields are needed by the syntax of getImmMeas():</font>
+</p>
+
+<ul>
+  <li><a name="1007892"> </a><font face="Verdana, Arial, Helvetica, sans-serif">ChanId ch, the channel whose data is to be measured</font>
+  <li><a name="1007893"> </a><font face="Verdana, Arial, Helvetica, sans-serif">MeasType alg, the algorithm to be used on the data.  This is the normal set of MEAS enums, plus some Q-level extensions.</font>
+  <li><a name="1007894"> </a><font face="Verdana, Arial, Helvetica, sans-serif">float64 parm, used by TVOL, TEDG, and VTIM</font>
+  <li><a name="1007895"> </a><font face="Verdana, Arial, Helvetica, sans-serif">void *result, a general result that may be the normal float64, or a uint16 Q level.</font>
+</ul>
+
+<p>
+  <a name="1007896"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This function is implemented using the same infrastructure as screen measurements, but it lacks the communication about tolerance and inequalities.  The boolean result is TRUE only if the measurement result was MEAS_OK.  For useful results, the channel must be viewed.  None-theless this functionality should suffice for all bus measurements and internal calls.</font>
+</p>
+
+
+<p>
+  <a name="1007946"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If the measurement uses normalized data (as screen measurements do), and the data is undis-turbed between two similar calls for immediate measurements (such as two measurements on the same stopped data), then there is the opportunity for some savings of effort.  Only if the newData flag is set do I normalize new data and reset the edges and histograms.  If we get a call for a second measurement and the call to acquire() doesn't result in new data, we use the results from normalizing and elementary measurements already accomplished.  This would allow bursts of measurements on the same data to be relatively efficient.  But right now, each call to execMeas()<br>does a digitize, causing a new eavesdrop, so unless the box is stopped this economy is not realized.</font>
+</p>
+
+
+<h2>
+  <a name="1007917"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">24-9  wave data query</font>
+</h2>
+
+
+<p>
+  <a name="1007790"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The short wave:data query works similar to a measurement.  The bus user makes a single call, causing first a call for the preamble, then a call to shortWaveData() with a pointer for the data.  We wait for completion, and normalize the data, filling a list of 2000 signed shorts.  The bus routine can format and output it.  Because Jedi and Moab had a number of bugs with incompatibility between what was in the preamble and what was returned, this method was created to make sure that the data query uses the very same preamble routine as all the preamble queries.  If the user specifies a data length we will decimate the data to the nearest possible length.  If the user doesn't specify a timebase mode we will deliver data from the current mode, but the user can ask for, say, delayed data even if the box is in main mode.</font>
+</p>
+
+
+<p>
+  <a name="1007012"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The long wave:data query will be different from a measurement since it cannot use normalized or eavesdropped data.  There cannot be an output buffer large enough to hold the whole record, so the output will be blocked with software handshaking.  It will be a separate function that starts by stopping acquisition.  Its performance won't be graceful, but we expect bus requests for long data to be in a tiny corner of the use model.  There will probably be some decimation possible even on long data, so that we can fit the output onto a floppy.</font>
+</p>
+
+
+<h2>
+  <a name="1006610"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">24-10  cursor interpretations</font>
+</h2>
+
+
+<p>
+  <a name="1006970"> </a><font face="Verdana, Arial, Helvetica, sans-serif">One of the new features in JediPlus is expanded (relative to Moab) interpretations of whatever data is pointed to by the time cursors.  In Moab, there was the notion of active cursor slaved to the entry knob.  The user could move this cursor around and see an interpretation of the correspon-ding data.  For a single-channel readout, the units are probably Volts, but to interpret several channels in parallel we use units like Hex or Binary, giving a rudimentary analytical tool for data diving.  We continue that in JediPlus, bussing the instantaneous values of up to 16 channels.  We will now also have a simple protocol analyzer, taking serial logic data from several channels and interpreting it according to a communications protocol like SPI or I2C.  The UI implications of this feature are large, and beyond the scope of this document.  But to support it in the SAL, we have a structure very much like that in the screen measurements.</font>
+</p>
+
+
+<p>
+  <a name="1006986"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There is an encoding filter which, depending on the kind of interpretation, takes logic data from several channels and combines it to make a single multi-bit, analytic channel.  There is a CursSched, having the information needed to run a cursor interpretation, in this structure:</font>
+</p>
+
+<pre>
+<a name="1006987"> </a>typedef struct
+{
+    CursRequest *pRq;
+    CursResult  *pRs;
+    int16       *pWrk;  /* encoder combines sources into one buffer */
+    int16        index; /* index into meas record */
+}  CursSched;
+</pre>
+
+<p>
+  <a name="1006997"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This contains a pointer to the information needed to cause a cursor interpretation, a CursRequest having this structure:</font>
+</p>
+
+<pre>
+<a name="1006998"> </a>typedef struct
+<a name="1006999"> </a>{
+    MeasType    algorithm;
+    ChanId      s1, s2, s3, s4;
+    Set         chanSet;
+    float64     time1, time2;  /* marker times */
+}  CursRequest;
+<a name="1007084"> </a>
+</pre>
+<ul>
+  <li><a name="1006975"> </a><font face="Verdana, Arial, Helvetica, sans-serif">algorithm is what kind of interpretation to be done.</font>
+  <li><a name="1007003"> </a><font face="Verdana, Arial, Helvetica, sans-serif">some kinds of interpretation require up to 4 sources, with specific identities like Clk or Ack.  These cannot be identified by a mask, and so they are identified separately for these modes.</font>
+  <li><a name="1007004"> </a><font face="Verdana, Arial, Helvetica, sans-serif">other kinds of interpretation take a source mask better.  Say you want most of your 18 channels interpreted as a vector of hex digits.  Then you need to specify the set of which channels you want in a bit set.  We could take these channels in display order or acquisition order, but it's more consistent to use acquisition order.</font>
+  <li><a name="1007009"> </a><font face="Verdana, Arial, Helvetica, sans-serif">the times indicate where in the waveform the interpretation(s) take place.  In Moab, there are always two time cursors to be interpreted, just by analogy to other cursor outputs.  For elaborate serial interpretations it makes more sense to use only one.  Whether to do one or two interpretations then depends on the algorithm.</font>
+</ul>
+
+<p>
+  <a name="1007010"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The reader can appreciate that the encoding filter will be rather elaborate.  It's easier to do it only on logic channels, but to make a mixed signal scope offer features consistently across its inputs, we should include the analog channels.  Then we will be interpreting the analog data in software, parallel to and hopefully consistent with the operation of the digital comparators.</font>
+</p>
+
+
+<p>
+  <a name="1007083"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It turns out that we never have screen measurements and cursor adjustments at the same time, but this ambiguity need not burden the scheduler.   Depending on what menu is up in the box, the UI will call updateSchedMeas() or updateSchedCursMeas().  When the scheduler wants to update the screen, it calls setDoMeasurement(), and a subsequent call to runMeasurement() from the AcqMgr will find either a list of screen measurements or cursor interpretations, but not both, and do them.  That way the AcqMgr doesn't have to care what menu the box is in.</font>
+</p>
+
+
+<h2>
+  <a name="1008178"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">24-11  flags</font>
+</h2>
+
+
+<p>
+  <a name="1009007"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SAL was originally designed as a simple service.  Call it when you want analysis, don't call it when you don't.  This simplicity has evolved somewhat as we develop the acquisition and user interface, and as we optimize some of the services of SAL.   Here are the external flags that are currently used, in the source signal header or the function template:</font>
+</p>
+
+<ul>
+  <li><a name="1009010"> </a><font face="Verdana, Arial, Helvetica, sans-serif">points -- if the number of points is not greater than 1, we return NO_SIGNAL to a measurement or holes to a filter, just as if the data were not valid.</font>
+  <li><a name="1008180"> </a><font face="Verdana, Arial, Helvetica, sans-serif">valid -- if the data is not valid, we return NO_SIGNAL to a measurement, or to a filter we return a valid buffer full of holes.</font>
+  <li><a name="1008181"> </a><font face="Verdana, Arial, Helvetica, sans-serif">newData -- if the data is new, we mark the managed resources of normalization, histogram, and edge-finding as not done.  Then if a measurement needs these, it will get fresh results.  This flag is reset during normalization, so that the same data is not repeatedly normalized.  Since newData is also used by the filters this is a potential conflict.</font>
+  <li><a name="1008995"> </a><font face="Verdana, Arial, Helvetica, sans-serif">complete -- SAL doesn't reference the complete flag, but it does set it when creating a filter output.</font>
+  <li><a name="1008996"> </a><font face="Verdana, Arial, Helvetica, sans-serif">displayed -- SAL doesn't reference this flag, although it does call setFnSigsDisplayed() for filter output.</font>
+  <li><a name="1008997"> </a><font face="Verdana, Arial, Helvetica, sans-serif">funcChange when adding a filter will cause a new entry in the filter schedule.  Calling addFilter without this bit will change an existing entry in the schedule.</font>
+</ul>
+
+<h2>
+  <a name="1006611"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">24-12  SAL API -- descriptions of public functions</font>
+</h2>
+
+
+<p>
+  <a name="1006270"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The formal APIs for this system are in dvrMeas.h dvrFunc.h and salAcq.h, but I think some description is still useful here.</font>
+</p>
+
+
+<h4>
+  <a name="1002767"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">API to the AcqMgr</font>
+</h4>
+
+<pre>
+<a name="1007807"> </a>boolean initSAL(boolean verbose, boolean diagnostics)
+</pre>
+
+<p>
+  <a name="1007808"> </a><font face="Verdana, Arial, Helvetica, sans-serif">this has whatever power-up initialization is necessary.  We could call this from startup.c or from initSignalPath().</font>
+</p>
+
+<pre>
+<a name="1002768"> </a>void runFilters(void)
+</pre>
+
+<p>
+  <a name="1002775"> </a><font face="Verdana, Arial, Helvetica, sans-serif">AcqMgr calls this when the filterRequest bit in signalPathStatus register is set.  On entry, all the filter sources are ready.  If there are no filters to be done, do nothing, otherwise, call the filters and fill up the destination banks.  There might be 0 or 1 filters, more than that and I have to go back to the caller and tell him to turn some things off.  I could then call runMeasurements, but I will let AcqMgr do that, in case he wants to display this fine new filter output while I'm trying to measure it.  Besides they are scheduled at different rates.</font>
+</p>
+
+<pre>
+<a name="1002776"> </a>void runMeasurements(void) 
+</pre>
+
+<p>
+  <a name="1005565"> </a><font face="Verdana, Arial, Helvetica, sans-serif">AcqMgr calls this when the measureRequest bit is set.  This does the screen measurements, as the immediate measurements are done in the UI thread.  This also calls the cursor interpretations.  It then calls the ScreenMgr with the results.</font>
+</p>
+
+<pre>
+<a name="1007089"> </a>uint16 holeCounter(Waveform *w, int16 length)
+</pre>
+
+<p>
+  <a name="1007095"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The fraction of holes is a component of the definition of completeness.  I've implemented this to return an integer instead of a floating fraction to save execution time.  holeCounter() can't be an immediate measurement, which would beg the question of completeness, so it is a simple, low-level call.  I've prototyped it to take a Waveform pointer for convenience to the AcqMgr.</font>
+</p>
+
+
+<h4>
+  <a name="1003080"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">API from the AcqMgr</font>
+</h4>
+
+
+<p>
+  <a name="1002781"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The AcqMgr maintains an array of signal descriptors, one for each measurement record in eavesdrop memory.  SAL can access this to find out what has been eavesdropped, in what form, where it is.  SAL can update this array when it wants to store or display a filter output.</font>
+</p>
+
+<pre>
+<a name="1007721"> </a>Signal *getSignalPtr(SigId sig)
+</pre>
+
+<p>
+  <a name="1007729"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This is a pointer to the signal specified by the SigId, which contains pointers to the various waveforms and other descriptive data.</font>
+</p>
+
+<pre>
+<a name="1007169"> </a>acquire(uint16 timeout)
+</pre>
+
+<p>
+  <a name="1007170"> </a><font face="Verdana, Arial, Helvetica, sans-serif">does a digitize, used in immediate measurements</font>
+</p>
+
+<pre>
+<a name="1007171"> </a>setEnableFunctions(void) and clrEnableFunctions(void)
+</pre>
+
+<p>
+  <a name="1007172"> </a><font face="Verdana, Arial, Helvetica, sans-serif">set by the strobe functions to cause eavesdropping</font>
+</p>
+
+<pre>
+<a name="1008147"> </a>void waveConsumed(Waveform *wavePtr)
+</pre>
+
+<p>
+  <a name="1008151"> </a><font face="Verdana, Arial, Helvetica, sans-serif">indicates that we won't be looking at this data again, so the change bits can be reset</font>
+</p>
+
+
+<h4>
+  <a name="1002785"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">API to the user interface</font>
+</h4>
+
+<pre>
+<a name="1006276"> </a>boolean updateSchedMeas(MeasRequest **pMr)
+</pre>
+
+<p>
+  <a name="1006172"> </a><font face="Verdana, Arial, Helvetica, sans-serif">copies the list of scheduled screen measurements from UI-land</font>
+</p>
+
+<pre>
+<a name="1006165"> </a>MeasStatus getImmMeas(ChanId ch, MeasType alg, float64 parm, void *res)
+</pre>
+
+<p>
+  <a name="1006178"> </a><font face="Verdana, Arial, Helvetica, sans-serif">do an internal measurement without scheduling</font>
+</p>
+
+<pre>
+<a name="1006193"> </a>boolean updateSchedCursMeas(CursRequest *pCr)
+</pre>
+
+<p>
+  <a name="1006195"> </a><font face="Verdana, Arial, Helvetica, sans-serif">updates the request for cursor interpretation</font>
+</p>
+
+<pre>
+<a name="1007701"> </a>boolean addFilter(FilterType ft, ChanId c1, ChanId c2, SignalTemplate f)
+</pre>
+
+<p>
+  <a name="1003011"> </a><font face="Verdana, Arial, Helvetica, sans-serif">UI calls this to add a filter to the filter list.  Return value is always false, since it can't fail.</font>
+</p>
+
+<pre>
+<a name="1002793"> </a>void remFilter(SigId sO); 
+</pre>
+
+<p>
+  <a name="1003013"> </a><font face="Verdana, Arial, Helvetica, sans-serif">takes one filter off the list, the one using that signal for output. </font>
+</p>
+
+<pre>
+<a name="1002794"> </a>WaveDataStatus shortWaveData (Preamble *pre, int16 *data)
+</pre>
+
+<p>
+  <a name="1003014"> </a><font face="Verdana, Arial, Helvetica, sans-serif">outputs a preamble, and wave data from eavesdropped data.  Some of the preamble can be filled in beforehand, to indicate which time mode or record length, or it can all be defaulted.</font>
+</p>
+
+<pre>
+<a name="1006311"> </a>MeasStatus startLongWave(Preamble *pre)
+</pre>
+
+<p>
+  <a name="1006312"> </a><font face="Verdana, Arial, Helvetica, sans-serif">sets up for subsequent reading of blocks of data from deep acquisition ram, to support the long wave:data query.  This may stop the box, and we may have to keep the user from changing certain controls until the query is done.</font>
+</p>
+
+<pre>
+<a name="1006313"> </a>MeasStatus nextLongWave(int8 *p0, int32 *length)
+</pre>
+
+<p>
+  <a name="1006314"> </a><font face="Verdana, Arial, Helvetica, sans-serif">fills a buffer with a block of deep acq data.  If the spooling buffer is available, I may be able to send it all in one block, otherwise I will use smaller blocks in sysRam.  You might ask for a length, or I might just return what I can.  If you ask for data after I'm done I will return an error status.</font>
+</p>
+
+<pre>
+<a name="1007829"> </a>void getPreamble(Preamble *pre)
+</pre>
+
+<p>
+  <a name="1007830"> </a><font face="Verdana, Arial, Helvetica, sans-serif">fills a preamble struct to fill a bus query.</font>
+</p>
+
+<pre>
+<a name="1007831"> </a>void setMeasThresholds(SigId s, ThresholdMode t, float64 lo, float64 hi)
+</pre>
+
+<p>
+  <a name="1007832"> </a><font face="Verdana, Arial, Helvetica, sans-serif">access function to the measurement thresholds, someday they will be other than 10/90</font>
+</p>
+
+<pre>
+<a name="1007833"> </a>void setAnalysisNeeds(AnaNeeds a)
+</pre>
+
+<p>
+  <a name="1007834"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SAL cannot just reach into the UI to see what time mode is in use.  The UI calls this when it changes.</font>
+</p>
+
+
+<p>
+  <a name="1008248"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="curs.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="selfTest.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

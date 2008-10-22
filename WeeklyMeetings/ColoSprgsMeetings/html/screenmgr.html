@@ -1,0 +1,702 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:20:27 2002">
+<title>CHAPTER 8 Screen Management</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="scan.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="userInterface.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="996747"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 8 	 Screen Management</font>
+</h1><hr>
+
+
+<h2>
+  <a name="999225"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-1  Outline</font>
+</h2>
+
+
+<p>
+  <a name="1000371"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This document describes the JediPlus screen management system.  The screen manager will handle all displayed information in JediPlus that is not waveform data.  Philisophically, the screen manager is responsible with <em>how</em> information is presented to the user, while the information producers in the system (e.g. measurements) are responsible for <em>what</em> information is presented.</font>
+</p>
+
+
+<h2>
+  <a name="999967"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-2  Screen Management Requirements</font>
+</h2>
+
+
+<p>
+  <a name="1000015"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The screen manager must "manage" all of the on screen information apart from the waveform data.   This will allow us to more easily localize portions of that information.  Also, it will make transitioning to new display technologies like color much easier.  Also, by centralizing the management of placing information on the screen, considerations such as font choice and size may be made in one spot. </font>
+</p>
+
+
+<h3>
+  <a name="1000037"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-2.1  Localization issues</font>
+</h3>
+
+
+<h4>
+  <a name="1000395"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Localized messages</font>
+</h4>
+
+
+<p>
+  <a name="1000038"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There have been investigations that suggest that the controls of the instrument should not be localized.  The terminology generally used is recognized by many non-English speaking customers.  However, on-screen help/info/error messages should be localized.  These messages are an attempt to convey important, often verbose information.  This type of information is not recognizable to non-English speaking customers.  Also, Dale Colbert has pointed out that in other languages, often messages cannot be translated on a single line.  With that in mind, I would like our system to gracefully move messages into the waveform area when they're too long to fit on one line.  This strategy should also provide for popping the messages into the waveform area if the message line is not tall enough to support the font required for the currently selected language.</font>
+</p>
+
+
+<h4>
+  <a name="1000177"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Font issues</font>
+</h4>
+
+
+<p>
+  <a name="1000178"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Mike Karin wrote a script to count all of the unique character encodings used in the Japanese version of the Infinium help system.  On 10/16/97 we got the answer, 1002 unique characters.  Also, after having run this script on only one of the 30 to 50 files in the system, he counted about 500 characters.  So, at this point we can probably estimate that it will require somewhere between 500 and 1000 unique encodings to store a kanji font.  Since the complete 16x16 kanji font found on the HP-UX system compiles to about 600kbytes, this should get the footprint of the font to 150kbytes or lower.  Also, its important to note that we would be better off storing the font in a non-doubled form to reduce the footprint, then double it on the fly.</font>
+</p>
+
+
+<h4>
+  <a name="1001088"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Text handling</font>
+</h4>
+
+
+<p>
+  <a name="1001089"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Text handling must support different colored foreground and background colors, as well as greyed out text for non-selectable fields.</font>
+</p>
+
+
+<h3>
+  <a name="1000039"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-2.2  Use case scenarios</font>
+</h3>
+
+<ul>
+  <li><a name="1000032"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Help text placed on screen</font>
+  <li><a name="1000003"> </a><font face="Verdana, Arial, Helvetica, sans-serif">HP-IB error message needs to go on screen</font>
+  <li><a name="1000004"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Digital channel order changes</font>
+  <li><a name="1000005"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Activity indicators need to go on screen</font>
+  <li><a name="1000006"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Menu change</font>
+  <li><a name="1000007"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Dialog box</font>
+  <li><a name="1000008"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Multiple error messages need to go on screen</font>
+  <li><a name="1000009"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Sweep speed changes &amp; we want to highlight the field temporarily</font>
+  <li><a name="1000546"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Sweep speed and delay change simultaneously (or due to same user input)</font>
+  <li><a name="1000010"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Ground indicator moves and overlaps ground indicator from another channel.</font>
+  <li><a name="1000011"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Color comes to Muskrat/Puma land and channels need to be differentiated using color.</font>
+  <li><a name="1000012"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Real time on screen feedback needed like in calibration</font>
+  <li><a name="1000013"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Continuously variable parameter changes like glitch width.</font>
+  <li><a name="1000020"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Feedback on how something is progressing like slow write to floppy.</font>
+  <li><a name="1000040"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Scroll measurement onto the screen</font>
+  <li><a name="1000025"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Display calibration information on the screen.</font>
+  <li><a name="1000026"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Ask the user to confirm that overwriting an existing file is OK.</font>
+  <li><a name="1000041"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Auto trigger indicator blinking</font>
+  <li><a name="1001087"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Measurements are turned on but we're in the Edge trigger menu, the edge trigger source is digital and the selected channel doesn't match the edge trigger source.</font>
+</ul>
+
+<h3>
+  <a name="1000119"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-2.3  Types of on-screen information</font>
+</h3>
+
+<ul>
+  <li><a name="1000120"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Permanent readout (e.g. Channel sensitivity)</font>
+  <li><a name="1000121"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Permanent position (e.g. Channel ground indicator, Trigger level indicator)</font>
+  <li><a name="1000122"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Transient readout (e.g. Channel position readout, Trigger level readout)Pattern</font>
+  <li><a name="1000129"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Transient position (e.g. Trigger level marker)</font>
+  <li><a name="1000130"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Menu text (e.g. Menu prompts, Menu labels, Pattern menu "Pattern" display)</font>
+  <li><a name="1000146"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Transient message (e.g. "File saved")</font>
+  <li><a name="1000147"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Interface text (e.g. Help text)</font>
+  <li><a name="1000396"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Periodically updated readout (e.g. Measurement results)</font>
+</ul>
+
+<h2>
+  <a name="1000190"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-3  Screen Manager API
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000670"> </a>TABLE 11.  Screen objects and their dependencies</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1000674"> </a>Screen object</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1000676"> </a>Visible when</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1000801"> </a>Changes when</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000678"> </a>Scope channel 1 sensitivity readout</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000847"> </a>Scope channel 1 turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000803"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000682"> </a>Scope channel 2 sensitivity readout</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000684"> </a>Scope channel 2 turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000805"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000686"> </a>Scope channel 3 sensitivity readout</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000688"> </a>Scope channel 3 turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000807"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000690"> </a>Scope channel 4 sensitivity readout</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000692"> </a>Scope channel 4 turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000809"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000897"> </a>Scope channel 1 bandwidth limit indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000899"> </a>Scope channel 1 bandwidth limit turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000901"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000920"> </a>Scope channel 2 bandwidth limit indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000922"> </a>Scope channel 2 bandwidth limit turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000924"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000914"> </a>Scope channel 3 bandwidth limit indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000916"> </a>Scope channel 3 bandwidth limit turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000918"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000908"> </a>Scope channel 4 bandwidth limit indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000910"> </a>Scope channel 4 bandwidth limit turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000912"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000938"> </a>Scope channel 1 ac coupling  indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000940"> </a>Scope channel 1 ac coupling turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000942"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000964"> </a>Scope channel 2 ac coupling  indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000966"> </a>Scope channel 2 ac coupling turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000968"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000958"> </a>Scope channel 3 ac coupling  indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000960"> </a>Scope channel 3 ac coupling turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000962"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000952"> </a>Scope channel 1 50 ohm  indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000954"> </a>Scope channel 1 50 ohm turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000956"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001032"> </a>Scope channel 2 50 ohm  indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001034"> </a>Scope channel 2 50 ohm turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001036"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001026"> </a>Scope channel 3 50 ohm  indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001028"> </a>Scope channel 3 50 ohm turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001030"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001020"> </a>Scope channel 4 50 ohm  indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001022"> </a>Scope channel 4 50 ohm turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001024"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001068"> </a>Scope channel 1 ground indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001070"> </a>Scope channel 1 turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001072"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001062"> </a>Scope channel 2 ground indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001064"> </a>Scope channel 2 turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001066"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001056"> </a>Scope channel 3 ground indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001058"> </a>Scope channel 3 turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001060"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001050"> </a>Scope channel 4 ground indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001052"> </a>Scope channel 4 turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001054"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000694"> </a>Digital activity indicators</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000696"> </a>Transient when digital menu entered or when no scope channels turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000811"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000698"> </a>Timebase delay reference arrow</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000700"> </a>tbMode != XY</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000813"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000702"> </a>Timebase delay value</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000704"> </a>tbMode != XY</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000815"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000706"> </a>Timebase scale value</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000708"> </a>tbMode != XY</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000817"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000710"> </a>Auto trigger indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000712"> </a>auto triggering</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000819"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000714"> </a>Trigger mode description</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000716"> </a>tbMode != XY</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000821"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000726"> </a>Time 0 indicator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000728"> </a>tbMode != XY</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000827"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000730"> </a>Timebase delay reference</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000732"> </a>tbMode != XY</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000829"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000734"> </a>Graticule</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000736"> </a>Always</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000831"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000738"> </a>Cursors</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000740"> </a>Cursors turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000833"> </a>Cursor moves</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001082"> </a>Trigger level marker</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001084"> </a>Transient around trigger level adjustment</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001086"> </a>Trigger level changes</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000742"> </a>Digital channel numbers</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000744"> </a>Digital channels turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000835"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001076"> </a>Channel labels</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001078"> </a>Labels turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001080"> </a>Label list changes</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000746"> </a>Glitch trigger menu</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000748"> </a>in glitch menu</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000837"> </a>One of controls changes</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000750"> </a>Measurements</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000752"> </a>Measurements turned on</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000839"> </a>Measurement list changes</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</h2>
+
+
+<h2>
+  <a name="1000667"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-4  Screen Manager Design</font>
+</h2>
+
+
+<h3>
+  <a name="1000549"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-4.1  Screen object checkbox</font>
+</h3>
+
+
+<p>
+  <a name="1000550"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The screen manager will use a repository that we will call a checkbox data structure.  The Controls (UI Thread), Measurements(Signal Path Thread), and the Trigger Timer (Timer Interrupt Service Routine) will produce into the checkbox.  For example, the control that changes the trigger level might put "TRIGGER_LEVEL, 0.335, VOLTS_UNITS" into the checkbox in the TRIGGER_LEVEL location in the data structure. <img src="images/screenmgr7.gif" height="312" width="624">
+</font>
+</p>
+
+<a name="1000425"> </a>FIGURE 11.&#32; Screen management
+<h3>
+  <a name="1000421"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-4.2  Screen updates</font>
+</h3>
+
+
+<p>
+  <a name="1000420"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All screen updates will be requested using the <em>Screen Update Manager(SUM)</em> API that will be described below.  The SUM is solely responsible for maintaining the checkbox repository.  The API is determined by what information must be relayed to the SUM.  However, the type of information that the update requester means to convey to the screen will determine which thread the update will run under.  Based on the type of information, the SUM will determine whether the update takes place in the calling thread (e.g. immediately), or if the update will be deferred to the screen process.  The screen process is being ticked by the scheduled event manager at a 100 millisecond rate.  All updates still appearing in the checkbox repository when the screen process runs will be processed at that time.  </font>
+</p>
+
+
+<h4>
+  <a name="1000433"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">SUM Local parser invocation</font>
+</h4>
+
+
+<p>
+  <a name="1000452"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The SUM performs the following procedure when it is invoked by the Local parser:</font>
+</p>
+
+<ol type="1">
+  <li value="1"><a name="1000438"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Add new Local parser requested screen updates to the checkbox</font>
+  <li value="2"><a name="1000441"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Resolve any timer resets (Example: new advisory resets erase advisory timer)</font>
+  <li value="3"><a name="1000448"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Resolve any timer deletions (Example: new UI input causes old readout to go away)</font>
+  <li value="4"><a name="1000450"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Perform <strong>immediate</strong> updates</font>
+</ol>
+
+<h4>
+  <a name="1000453"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">SUM screen process invocation</font>
+</h4>
+
+
+<p>
+  <a name="1000454"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The SUM performs the following procedure when it is invoked from the screen process:</font>
+</p>
+
+<ol type="1">
+  <li value="1"><a name="1000461"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Count down SMS timers</font>
+  <li value="2"><a name="1000465"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Add updates caused by timer terminations</font>
+  <li value="3"><a name="1000466"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Perform <strong>all</strong> updates</font>
+  <li value="4"><a name="1000467"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Reset periodic timers</font>
+</ol>
+
+<h3>
+  <a name="1000317"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-4.3  Screen manager scheduler</font>
+</h3>
+
+
+<p>
+  <a name="1000318"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The screen process will manage all updates on the screen that require update pacing.  The process recieves an event from the system scheduler periodically.  It uses this periodic event to count down timers that pace display changes.  Some examples:</font>
+</p>
+
+<ul>
+  <li><a name="1000319"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Time till V/div readout is unhighlighted</font>
+  <li><a name="1000320"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Time till next measurement update</font>
+  <li><a name="1000321"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Time until advisory message is removed from the screen (<em>100ms per character in Moab</em>)</font>
+</ul>
+
+<p>
+  <a name="1000432"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For any update that requires a subsequent update, the SUM will install a count down timer that will illicit the subsequent update.  For those updates that require continuous updates. the SUM will install a periodic count down timer that will continuously illicit subsequent updates.  </font>
+</p>
+
+
+<p>
+  <a name="1000341"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>Question</strong>:  <em>If I put an advisory on the screen in the UI thread, how do I initialize the advisory counter?  </em></font>
+</p>
+
+
+<p>
+  <a name="1000350"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>Answer</strong>:<em> The access to the counter array must be protected just like the checkbox repository</em>.  <em>The SUM will need to reset the Screen Scheduler counters in the UI thread.</em></font>
+</p>
+
+
+<p>
+  <a name="1000346"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>Question:</strong> How do I make sure an "update at minimum 100ms rate" readout like V/div gets highlighted on the first call?</font>
+</p>
+
+
+<p>
+  <a name="1000351"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>Answer</strong>: The SUM knows whether this type of object is currently highlighted or not.  If its not currently highlighted, the first request for such an update yields an immediate update (UI Thread).  </font>
+</p>
+
+
+<h4>
+  <a name="1000326"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Screen Scheduler timers</font>
+</h4>
+
+
+<p>
+  <a name="1000340"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This should be maintained as a comprehensive list of the timers we're using.</font>
+</p>
+
+<ul>
+  <li><a name="1000331"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Advisory message</font>
+  <li><a name="1000335"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Readout highlight</font>
+  <li><a name="1000336"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Measurement update</font>
+  <li><a name="1000337"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Trigger indicator blink</font>
+  <li><a name="1000339"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Readout update minimum rate</font>
+</ul>
+
+<h2>
+  <a name="1000211"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-5  Character drawing interface</font>
+</h2>
+
+<pre>
+<a name="1000212"> </a>drawCharacter(unsigned short character,
+              unsigned short font,
+              unsigned short plane,
+              unsigned short xPosition,
+              unsigned short yPosition,
+              unsigned short bgColor,
+             unsigned short fgColor,
+             unsigned short invert)
+</pre>
+
+<h2>
+  <a name="1000213"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-6  Bitmap drawing interface</font>
+</h2>
+
+<pre>
+<a name="1000214"> </a>drawBitmap(unsigned short *bmPtr,
+           unsigned short plane,
+           unsigned short xPosition,
+           unsigned short yPosition,
+           unsigned short width,
+           unsigned short height,
+           unsigned short bgColor,
+           unsigned short fgColor)
+</pre>
+
+<h2>
+  <a name="1000145"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-7  Screen layout<img src="images/screenmgra.gif" height="407" width="624">
+</font>
+</h2>
+
+<a name="999313"> </a>FIGURE 12.&#32; Screen Layout: Major Screen Regions
+<h4>
+  <a name="999314"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">A- Waveform Area<img src="images/screenmgr2.gif" height="362" width="624">
+</font>
+</h4>
+
+<a name="999643"> </a>FIGURE 13.&#32; Waveform area regions
+<h4>
+  <a name="999674"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Description of waveform area usage:</font>
+</h4>
+
+<ol type="1">
+  <li value="1"><a name="999687"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Whole waveform area used for help text and some pop-up messages.<br>Overlay plane</font>
+  <li value="2"><a name="999997"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Main waveform area</font>
+  <li value="3"><a name="999688"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Delayed waveform area</font>
+  <li value="4"><a name="999689"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Trigger pointer reference and delay indicator area</font>
+    <dl>
+      <dt> <a name="999692"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Background plane</font>
+    </dl>
+  <li value="5"><a name="999690"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Permanent trigger level indicator area</font>
+    <dl>
+      <dt> <a name="999693"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Label plane</font>
+    </dl>
+  <li value="6"><a name="999691"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel label area</font>
+    <dl>
+      <dt> <a name="999694"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Label plane</font>
+    </dl>
+</ol>
+
+<h4>
+  <a name="1000045"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Strategy for improving config line usage</font>
+</h4>
+
+
+<p>
+  <a name="1001097"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Increase number of lines used on config line and measurement line by 4 pixels.  Use large, proportional width fonts for both the config line and the measurement line.</font>
+</p>
+
+
+<p>
+  <a name="1000048"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We can utilize a proportional width font that can be found on the 10.20 workstations which the application "xlsfonts" displays as:<br>                 "-hp-hp system-medium-r-normal-sans-12-120-72-72-p-73-iso8859-8"</font>
+</p>
+
+
+<p>
+  <a name="1000049"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Remember to use "getbdf -font "-hp-hp system-medium-r-normal-sans-12-120-72-72-p-73-iso8859-8"" to extract the font into ".bdf" format.  Then, use Brian Kerr's "xfed" application to convert to his compressed format and to edit the font.</font>
+</p>
+
+
+<h4>
+  <a name="999686"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">B- Configuration Line<img src="images/screenmgr3.gif" height="79" width="624">
+</font>
+</h4>
+
+<a name="999932"> </a>FIGURE 14.&#32; Configuration line regions
+<h4>
+  <a name="999953"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Description of configuration line usage:</font>
+</h4>
+
+<dl>
+  <dt> <a name="999941"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</dl>
+<ol type="1">
+  <li value="1"><a name="999521"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Oscilloscope channel 1 config</font>
+    <dl>
+      <dt> <a name="999607"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel Number- Retain to identify the region of the config line<br>AC or Ground coupling indicator-Move AC to frontpanel LED, Ground to WFM?<br>Bandwidth limit indicator-Move to frontpanel LED<br>Invert indicator-Move indication to the ground indicator?<br>Channel sensitivity-Retain<br>"mV/" or "V/"-Retain</font>
+    </dl>
+  <li value="2"><a name="999614"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Oscilloscope channel 2 config<br>Channel Number<br>AC or Ground coupling indicator<br>Bandwidth limit indicator<br>Invert indicator<br>Channel sensitivity<br>"mV/" or "V/"</font>
+  <li value="3"><a name="999615"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Oscilloscope channel 3 config</font>
+
+<p>
+  <a name="999588"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel Number<br>AC or Ground coupling indicator<br>Bandwidth limit indicator<br>Invert indicator<br>Channel sensitivity<br>"mV/" or "V/"</font>
+</p>
+
+  <li value="4"><a name="999592"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Oscilloscope channel 4 config &amp; MSO selected channel</font>
+
+<p>
+  <a name="999602"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel Number<br>AC or Ground coupling indicator<br>Bandwidth limit indicator<br>Invert indicator<br>Channel sensitivity<br>"mV/" or "V/"</font>
+</p>
+
+  <li value="5"><a name="999514"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Main delay &amp;Delayed sweep speed (Begins at character #31, pixel #248)</font>
+  <li value="6"><a name="999515"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Main sweep speed</font>
+  <li value="7"><a name="999516"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Peak Detect or Average acquisition mode indicator</font>
+  <li value="8"><a name="999517"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Auto level, Auto and Single indicator</font>
+  <li value="9"><a name="999518"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Trigger source indicator (Edge only)</font>
+  <li value="10"><a name="999519"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Trigger level readout</font>
+  <li value="11"><a name="999673"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Activity indicator</font>
+</ol>
+
+<h4>
+  <a name="999648"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Config line information list</font>
+</h4>
+
+
+<p>
+  <a name="999653"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel number indicator<br><strong>Channel AC indicator<br></strong>Channel Gnd indicator<br><strong>Channel Bw Limit indicator<br>Channel invert indicator<br></strong>Channel sensitivity readout<br>Channel math indicator<br>Timebase reference arrow<br>Timebase delay readout<br>Timebase delayed mode icon<br>Timebase delayed sweep speed readout<br>Timebase main sweep speed readout<br>Acquisition mode peak detect indicator<br>Acquisition mode average indicator<br>Trigger auto indicator<br>Trigger auto level indicator<br>Trigger single indicator<br>Trigger slope indicator<br>Trigger source indicator<br><strong>Trigger glitch mode indicator<br>Trigger pattern mode indicator<br>Trigger advanced mode indicator<br></strong>Run indicator<br>Stop indicator<br>Selected channel readout<br>Activity indicators<br></font>
+</p>
+
+
+<h4>
+  <a name="999697"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">C - Ground Marker &amp; Channel Number Area</font>
+</h4>
+
+
+<h4>
+  <a name="999698"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">This region contains the following information</font>
+</h4>
+
+
+<p>
+  <a name="999706"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Ground indicators for scope channels 1 - 4 for both main &amp; delayed areas<br>Channel numbers for scope channels 1 - 4 and/or digital channels D0 - D15</font>
+</p>
+
+
+<p>
+  <a name="999710"> </a><font face="Verdana, Arial, Helvetica, sans-serif">I'm currently thinking that I may use an upside down ground indicator to indicate that a channel is inverted.  This will be part of the effort to completely unload the config line channel information region to only display sensitivity.  The information displayed in this region can reside in either the label plane or the background plane..<img src="images/screenmgr5.gif" height="153" width="624">
+</font>
+</p>
+
+<a name="999705"> </a>FIGURE 15.&#32; Using ground indicator to indicate channel is inverted<img src="images/screenmgr6.gif" height="72" width="624">
+<a name="999701"> </a>FIGURE 16.&#32; Suggested bitmaps for math indicators
+<h4>
+  <a name="999758"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">D - Measurement Line</font>
+</h4>
+
+
+<p>
+  <a name="1000087"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The measurement line serves several purposes.  Indeed, it represents one of the more overloaded regions of the display.  Here's a list:</font>
+</p>
+
+<ul>
+  <li><a name="1000088"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Display dynamic automatic measurement information</font>
+  <li><a name="1000089"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Display static cursor information</font>
+  <li><a name="1000091"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Display addition menu and control information (e.g. Pattern trigger menu)</font>
+  <li><a name="1000092"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Display dynamic control change feedback (e.g. Trigger level or channel position change)</font>
+</ul>
+
+<p>
+  <a name="1000090"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Some of this information needs to "overwrite" other information temporarily.  This temporary nature may be a good reason to relegate that information to the overlay plane.  </font>
+</p>
+
+
+<h4>
+  <a name="999704"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">E - Menu Prompt &amp; Label Lines<img src="images/screenmgr4.gif" height="111" width="624">
+ </font>
+</h4>
+
+
+<h2>
+  <a name="1000054"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">8-8  Control to Screen Manager API</font>
+</h2>
+
+
+<p>
+  <a name="1000055"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Consider the message "Trigger Level (A1) = 125.0mV".  There are two pieces of information in this message that the control system knows about, the trigger source, and the trigger level.  We want the screen manager to be concerned with "how" this information is presented.  The control system is privy to the "what" portion of the message.  Therefore, we will design an API in which the control system passes the source and level values to the screen manager.  The screen manager will determine how the information is presented based on the category of information that the message falls in.  </font>
+</p>
+
+
+<p>
+  <a name="1000056"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The previous example was fairly simple.  The control can convey information to the screen manager in several forms that will work.  We might choose to make the API only handle string information based on this example alone.  However, consider the fact that this same information may need to be accompanied by a transient trigger level marker on the screen as well as the position change of the permanent trigger level marker.  What information should the control pass to the screen manager to convey where those on-screen objects should be placed?</font>
+</p>
+
+
+<p>
+  <a name="1000061"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Consider the following data structure:</font>
+</p>
+
+<pre>
+<a name="1000062"> </a>typedef struct {
+    topQvolts;
+    bottomQvolts;
+    voltsPerQ;
+}ChannelToScreenMap;
+</pre>
+
+<p>
+  <a name="1000072"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="1000073"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This is an example of a data structure that could be maintained within the screen manager to keep track of the voltages represented by each Q-level for each scope channel.  The screen manager can keep the data structure up to date by modifying it with any channel position or sensitivity change.  Then, again referring to the trigger level example, the control can simply pass the floating point value of the trigger level and the screen manager can calculate the pixel that represents that value.  This does change the API to include passing floating point values.  This is probably what we want anyway, because the formatting from float to string for a value like trigger level is a "how", not a "what".  Again, we'd like the screen manager to be responsible for "how".</font>
+</p>
+
+
+<p>
+  <a name="1000074"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Consider the form of the <em>Message</em> data structure:</font>
+</p>
+
+<pre>
+<a name="1000075"> </a>typedef struct MessageType{
+    int link;
+    int homeExchange;
+    short info;
+    short unused1;
+    int unused2;
+    int unused3;
+    int unused4;
+}Message;
+</pre>
+
+<p>
+  <a name="1000082"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="1000083"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Clearly, this data structure offers enough space to create a fairly sophisticated interface.</font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="scan.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="userInterface.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

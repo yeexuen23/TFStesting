@@ -1,0 +1,217 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:19:11 2002">
+<title>CHAPTER 1 Muskrat &amp; Puma Frontpanel</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="jediPlusTOC.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="behaviors.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="996747"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 1 	 Muskrat &amp; Puma Frontpanel</font>
+</h1><hr>
+
+
+<h2>
+  <a name="999225"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-1  Overview</font>
+</h2>
+
+
+<p>
+  <a name="1001439"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The JediPlus software system is being designed to implement two families of oscilloscopes that will replace the venerable HP546xx family of oscilloscopes.  In addition to a new software platform, these oscilloscopes will offer an new display system and a new "improved" frontpanel. Because the "Look &amp; Feel" of the product family influenced most by the frontpanel, and since the HP546xx family has such a large installed base of presumably happy customers, we put much thought and careful decision making into the changes to the front panel.  This document contains the thinking behind the majority of the frontpanel decision.  Most of the decisions are based on the Raindance research project which took place in July, August and September of 1997.  For the purposes of this discussion, the frontpanel will refered to as Raindance.</font>
+</p>
+
+<a name="1001443"> </a>FIGURE 1.&#32; Muskrat frontpanel<img src="images/frntpnla.gif" height="310" width="624">
+
+<h2>
+  <a name="1001449"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-2  General decisions</font>
+</h2>
+
+
+<p>
+  <a name="1001508"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The most significant change between Raindance and prior HP546xx family products is the use of illumination on the front panel to indicate a feature's state.  During the Raindance usability testing, we found that use of illumination as used in Infinium gave the user very strong feedback as to the state of the instrument.  Another change in thinking between existing products and Raindance is in the emphasis on consistency.  The approach to implementing user interface features in the past has been very ad hoc in nature and leaned toward a case-by-case, implementer-by-implementer approach to interface design.  On Raindance, steps have been taken to put much more emphasis on consistency.  For every feature that is accessed directly by pressing a button on the frontpanel (the button is labeled with the name of the feature), that feature is enabled immediately upon the button being pressed.  This paradigm is used on channel buttons, "Quick-Meas", "Cursors", "D0 - D7", "D8 - D15", "Labels", "Edge", "Glitch", "Pattern" and "Logic" triggering and on the "Run/Stop" and "Single" keys.  All features that can be turned on or off are turned on or off via that same key.  For one of N features like the trigger modes, the mode can only be changed from one mode to another mode.  You cannot turn Glitch triggering off without turning on some other trigger mode.  However, in general, you turn features off by pressing the button labeled with that feature.  If the menu for that feature is not displayed, then the first button press envokes the menu and the second button press turns off the feature.</font>
+</p>
+
+
+<h2>
+  <a name="1001507"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-3  Horizontal control group</font>
+</h2>
+
+
+<p>
+  <a name="1001450"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The horizontal controls consist of a S/div knob, a delay knob and a horizontal menu button labeled "Main/Delayed".  On Raindance, the location of these controls is at the top of the frontpanel, just to the right of the CRT.  To some extent, this location mimics the location used on the Infinium family of oscilloscopes.  It also moves the controls away from the vertical controls.  It has long been known that the close proximity of the vertical and horizontal controls on the HP546xx family has been a usability issue.  Users' often grasp the S/div control when they intend to change V/div and vice-verse.  Finally, this location allows an ideal four channel solution by moving the controls out of the region required for the channel 3 V/div control.</font>
+</p>
+
+
+<p>
+  <a name="1001460"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There was some discussion centering around the label on the horizontal menu button.  The HP546xx family has always used "Main/Delayed" on this button.  Since the menu accessed via this button contains more controls that just the main and delayed sweep controls, this is considered to be somewhat misleading.  There were proposals to change the label to "Menu" or "Mode", but these were considered ambiguous.  Since no definitive proposal was made, the old labeling was retained.</font>
+</p>
+
+
+<h2>
+  <a name="1001455"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-4  Run control group</font>
+</h2>
+
+
+<p>
+  <a name="1001456"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The "Run Control" group on Raindance replaces the "Storage" group on previous HP546xx family products.  Also, the erase and autostore functions have been removed from that grouping.  The buttons used for the Run/Stop and Single keys have been enlarged and backlit.  The Raindance prototype utilized more squared off versions of these keys with the same backlighting scheme.  The responses to the backlighting and the large keys was extremely positive.  In keeping with the use of oval keys on the remainder of Raindance,  these keys have been changed to oval in shape, but the size and lighting mimics the Raindance prototype.  The Run/Stop key is illuminated with a Green backlight when the scope is running continuously.  It is illuminated with a Red light when the scope is stopped.  Finally, the Single button is illuminated with an amber light when the scope is armed and waiting on a single trigger.  The location of these controls is the same as used on the HP546xx family of oscilloscopes.</font>
+</p>
+
+
+<h2>
+  <a name="1001459"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-5  Entry knob</font>
+</h2>
+
+
+<p>
+  <a name="1001461"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The general purpose parameter entry knob that has been a part of the HP546xx family of oscilloscopes from the beginning has been moved.  It also has been labeled "Entry", and an icon that is intended to suggest "rotate me" is silkscreened above the knob.  The above the knob location was chosen because it is the easiest to see location for labeling a knob.  When the knob is actually controlling some parameter in the interface, the icon is illuminated.  The new location of the entry knob was intended to accomplish two things.  First, it was thought that in moving the knob closer to the CRT, it would decrease the distance between the knob and the parameters it is controlling.  Therefore, a user looking at a parameter on the screen might be able to find the knob associated with it more easily.  The second reason for moving the knob was to create a frontpanel region for the knob.  In separating the knob from surrounding buttons and other knobs, it increases the whitespace around the knob and makes it easier to find.  The illumination of the rotate icon should also help us tell the user that the knob may be the desired control in certain situations.  Note that we intend to duplicate this icon on the CRT near any parameter that utilizes the knob.</font>
+</p>
+
+
+<h2>
+  <a name="1001471"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-6  Measure control group</font>
+</h2>
+
+
+<p>
+  <a name="1001474"> </a><font face="Verdana, Arial, Helvetica, sans-serif">During the Raindance usability testing and earlier research, it was apparent that a strong grouping among controls with similar functionality helped to improve the impression of ease of use.  It is arguable that this grouping was one of the HP546xx families' strengths.  Raindance will increase the use of grouping beginning with the measure control group.  We believe that users may lump cursor measurements and automatic measurements into a "measurement" task category.  If this is the case, then the two types of measurements are closely related.  Also, since the HP546xx had the concept of a "measurement" line, which could be used for either automatic measurement readouts or cursor readouts but not both, only one of the two measurement modes may be active at one time.  Because of this, we've changed the cursors and measurement buttons to be on/off toggles which are mutually exclusive.  The behavior is as follows.  When the feature referred to by the button label is turned off, it is unconditionally turned on when the button is pressed.  When the feature is turned on, then the button functions as an on/off toggle when the menu for that feature is displayed.  If the button is pressed when a menu other that the menu associated with the feature is displayed, and the feature is turned on, then the menu for the feature is displayed and no feature state change takes place.   If one of the two features is turned on, and the button for the other is pressed, then the new feature is turned on and the one that was on is turned off.</font>
+</p>
+
+
+<p>
+  <a name="1001479"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The location of the group was determined by two requirements.  First, it seemed desirable to keep the "Cursors" feature as close to the knob that moves the cursors as possible.  Also, the group had to reside in the miscellaneous features area bounded by the trigger group, the horizontal group and the vertical group.</font>
+</p>
+
+
+<h2>
+  <a name="1001480"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-7  Waveforms control group</font>
+</h2>
+
+
+<p>
+  <a name="1001481"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Previous HP546xx family products used a menu button labeled "Display" to access the Peak Detect, Average, Connect the Dots and Grid control features.  This approach lumps display and acquisition features together.  We've found that this seems to make finding acquisition features more difficult.  Therefore, on Raindance, we will use two menu buttons labeled "Acquire" and "Display" and surround them with a group called "Waveform".  The "Waveform" label is admittedly somewhat arbitrary and will be tested, but it does describe the area of the screen that those controls effect.  The Peak Detect, and Average acquisition mode features will be found under the "Acquire" menu button, and Connect the Dots, Infinite Persistance and Grid controls will be found under the "Display" menu button.</font>
+</p>
+
+
+<h2>
+  <a name="1001484"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-8  Autoscale button</font>
+</h2>
+
+
+<p>
+  <a name="1001485"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The autoscale button will retain the same location that it has always had on HP546xx family products.  It will also be the only button on the front panel that is white.  Their are two reasons to make this button stand out by itself.  There are many customers that use this feature often and want to be able to find it easily.  The prominent location at the edge of the keypad and the white coloring help these customers to find the feature.  The other and possibly as numerous set of customers want to make sure that they don't inadvertently press this button.  This too is a good reason to differentiate it significantly from other buttons.</font>
+</p>
+
+
+<h2>
+  <a name="1001490"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-9  Archive control group</font>
+</h2>
+
+
+<p>
+  <a name="1001493"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The archive control group will contain the "Save/Recall" menu key and the "Print" instant action key.  We intend to use "Print" to be a single keypress hardcopy feature.  We've often heard that the on key print feature was desired.  The "Save/Recall" menu will combine the functionality of trace and setup saving and recalling that was in the "Trace" and "Setup" menus respectively on previous products.  We have reason to believe that the customers don't differentiate that much between the types of data that they save and recall to/from memory and floppy disks.  During the Raindance usability testing, we tested a prototype combined menu.  The results suggested that a combined menu for trace and setup saving and recalling was a viable solution.  Finally, we've chosen the overarching label "Archive" to suggest the types of tasks that the user will be doing when using those buttons.</font>
+</p>
+
+
+<h2>
+  <a name="1001497"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-10  Utility button</font>
+</h2>
+
+
+<p>
+  <a name="1001498"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We've chosen to use the "Utility" menu as a catch all for those features that a user does not necessarily employ in normal use of the product.  The term is used throughout the industry and seems to indicate the types of things we intend to present in that menu.</font>
+</p>
+
+
+<h2>
+  <a name="1001499"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-11  Trigger control group</font>
+</h2>
+
+
+<p>
+  <a name="1001500"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In the trigger control group we will present the exact same set of controls that the HP54645D presents in that group.  However, the geometry will be changed subtly to accomodate the 4 channel oscilloscope interface.  The only major difference here is that we will use illuminated buttons to indicate which of the trigger modes is currently enabled.  Also, we will change the ordering of the keys to "Edge", "Glitch", "Pattern", then "Logic".  This presents the modes in order of increasing complexity.</font>
+</p>
+
+
+<h2>
+  <a name="1001501"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-12  Vertical control group</font>
+</h2>
+
+
+<p>
+  <a name="1001502"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The vertical control group is very similar to that used on prior HP546xx products.  The most significant difference is the use of illumination.  Raindance utilizes a very Infinium like treatment on the vertical channel keys.  These keys are illuminated when the channels that they control are turned on.  Also, they act as the only on and off controls for the vertical channels.  Additionally, we have employed AC Coupling, Bandwidth Limit and 50 Ohm state indicator LEDS next to the channel controls for easily identifying the state of the channel's analog input.  During the Raindance testing, the use of illumination for indicating a features state yielded overwhelmingly positive results.  Users find that the illumination takes a dominant feedback position in comparison to on-screen information.</font>
+</p>
+
+
+<h2>
+  <a name="1001509"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-13  Digital control group</font>
+</h2>
+
+
+<p>
+  <a name="1001510"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In the digital control group, we have split the channel on/off control button into separate pod control buttons.  There will be one button for channels 0 thru 7 and another button for channels 8 thru 15.  The buttons will serve as on/off buttons for any channels that have been enabled in each pod.  During Raindance testing we encountered very strong feedback that the behavior of the D0 thru D15 button on the HP54645D is extremely confusing.  Users indicated that their expectation is that this button should remove all digital channels from the screen or turn them on.  We will also use an illuminated "Labels" button to indicate and toggle the state of the waveform labels. </font>
+</p>
+
+
+<h2>
+  <a name="1001521"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-14  Power button</font>
+</h2>
+
+
+<p>
+  <a name="1001522"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The power button on the HP546xx scopes has always been labeled with the word "Line", a 0 and 1 and a button icon that appears to be pressed under the 1 and a button icon that appears to not be pressed under the 0.  Raindance will use a similar approach but use the word "Power" instead of line.  The Raindance prototype presented a button with the power icon that is being seen more and more often throughout the industry.  This labeling met with a significant amount of confusion and comment from users.  We feel that the labeling we've chosen to use is very obvious as to its meaning.  The only change we've made is changing "Line" to "Power", which seems to be a more ubiquitous term in the industry.</font>
+</p>
+
+
+<h2>
+  <a name="1001527"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">1-15  Intensity knob</font>
+</h2>
+
+
+<p>
+  <a name="1001528"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Raindance will use a knob near the lower left corner of the CRT to adjust intensity.  This knob will be labeled "Intensity", as opposed to being labeled with a sunburst icon.  The functionality of the knob is undecided at this point, but it will be used to adjust either the whole screen intensity, or the waveform intensity.</font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="jediPlusTOC.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="behaviors.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

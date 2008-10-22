@@ -1,0 +1,3067 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:21:36 2002">
+<title>CHAPTER 12 The Behavioral Layer and the Control Abstraction</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="localize.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="hal.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="57"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 12 	 The Behavioral Layer and the Control Abstraction</font>
+</h1><hr>
+
+
+<h2>
+  <a name="81"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-1  Introduction</font>
+</h2>
+
+
+<p>
+  <a name="106"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A large portion of the effort to implement an instrument is invested in the design and construction of the action routines that process UserRequests. For an oscilloscope, even one with just enough features, there are many different requests that can be applied to the system. The goal of the Behavioral Layer is to map UserRequests onto the underlying set of drivers provided by the Hardware Abstraction Layer, and to provide the appropriate state and status feedback in response.</font>
+</p>
+
+
+<p>
+  <a name="5838"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are some fairly well defined patterns of execution that recur within the action routines. A common example is bounds checking of user requested parameters so that only valid configurations are passed on to the drivers. Another pattern is the interdependency (coupling) of some settings and the algorithm to resolve setting conflicts. These recurring patterns are encapsulated by the control abstraction.</font>
+</p>
+
+
+<p>
+  <a name="4768"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The design goals for this layer, aside from the functional and performance requirements, is to maximize reuse of the common logic and to expose all the unique policies of the behavioral layer for easy inspection. The reuse goal is accomplished by reducing the number of behaviors to be implemented and generalizing them into a few discrete classes. Most of the design can then be focused on the "marginal" behaviors, that is, focused on the differences in how various UserRequests are processed. This partioning supports the second goal of inspectability.</font>
+</p>
+
+
+<p>
+  <a name="5850"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The design for the behavioral layer is based on the Denali control system. This is an "object-minded" approach that has been proven to satisfy the stated design goals. There are several important differences in the design of the JediPlus control system. These are:</font>
+</p>
+
+<ul>
+  <li><a name="5869"> </a><font face="Verdana, Arial, Helvetica, sans-serif">No information about how the instrument's state is rendered is held within the control system. <br>The formatting and appearence is determined in the user interface layer that lies above the controls.</font>
+  <li><a name="5873"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The footprint of controls is reduced. This is in part due to removing the UI rendering features of the design. Also, improvements in data structure design have produced savings.</font>
+  <li><a name="5874"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The overall performance of control system functions such as dependency management and execution deferal is improved through use of better data structures and algorithms.</font>
+</ul>
+
+<p>
+  <a name="5875"> </a><font face="Verdana, Arial, Helvetica, sans-serif">More information about these design features are detailed later in this chapter.</font>
+</p>
+
+
+<p>
+  <a name="5884"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The next section describes the evolution of the overall design concept of the control system. In the subsequent section is a discussion of the design of the JediPlus control system. The final section discusses the details of design and implementation of the control system.</font>
+</p>
+
+
+<h2>
+  <a name="5882"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-2  The design premise of the control system</font>
+</h2>
+
+
+<h3>
+  <a name="5885"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-2.1  The control</font>
+</h3>
+
+
+<p>
+  <a name="6175"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The primary element of the control system is the control. The control is an abstraction of a portion of the underlying functionality of the instrument. It is analogous to the physical control elements that comprise the instrument's front panel.</font>
+</p>
+
+
+<h4>
+  <a name="7206"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Primary control types</font>
+</h4>
+
+
+<p>
+  <a name="7207"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Controls can be broadly classified into several basic styles of interaction: </font>
+</p>
+
+<ul>
+  <li><a name="7208"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Momentary actuation as in a simple normally open switch</font>
+  <li><a name="7209"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Discrete "1 of N" and "M of N" selection as in a gang push button switch</font>
+  <li><a name="7210"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Continuously variable selection as in a potentiometer</font>
+  <li><a name="7216"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Alpha selection  for labeling and describing</font>
+</ul>
+
+<p>
+  <a name="7201"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In addition to these, there is the notion of a <em>meta-control</em> that is not visable on the user interface of the instrument. It is used to achieve delayed computation or to tee several other controls into a common action. The application of the meta control is illustrated later in the chapter.</font>
+</p>
+
+
+<p>
+  <a name="7219"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The control types are differentiated by having different kinds of settings. The momentary and meta have no data, the 1 of N is based on an enumeration, the M of N is based on a set, the continuous is built on an integral value and the alpha is based on a string. Beyond the underlying data type, the types of controls have different expressions of limits and algorithms for checking the setting against them.</font>
+</p>
+
+
+<h4>
+  <a name="15889"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Relationships between controls</font>
+</h4>
+
+
+<p>
+  <a name="15893"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Some controls are totally independent of other controls in the instrument. However, many controls are related because the setting of one determines the limits for another. For example, the setting of a channel's sensitivity is a factor in the limits and step size for the channel offset. So the chanOffsetCtrl is dependent on the chanScaleCtrl. This pattern of ordinate and sub-ordinate controls is the most common control relationship. </font>
+</p>
+
+
+<h4>
+  <a name="15882"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The basic control state machine</font>
+</h4>
+
+
+<p>
+  <a name="7202"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Despite differences in type or interdependencies, all controls share a common pattern of execution. The following figure depicts the state machine that executes a control's methods. The pattern is drawn in the form of a event flow diagram. This is more commonly known as a control flow diagram but that name might be a bit confusing in this context. The state machine logic is represented by the vertical bar (ProcessCtrlChange). The dashed lines are the events flowing in and out of the control and within it to select algorithms to execute. The circles are the data processing portions of the control, possibly implemented as functions or as portions of functions.</font>
+</p>
+
+
+<p>
+  <a name="7227"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The figure shows the two main control methods: adjustLimits and checkSetting. These are shown as events coming into the control state machine from the outside. These methods are actually not part of the public API to controls.</font>
+</p>
+
+<a name="7236"> </a>FIGURE 20.&#32; Event flow diagram showing the generalized execution pattern for controls.<img src="images/controls2.gif" height="541" width="576">
+
+<p>
+  <a name="15901"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The logic of the control is quite simple for these methods. If the control is told to adjustLimits, a predefined routine is invoked. Many controls have limits that are constant. For example, the timebase vernier control can always be turned on and off. Therefore, the timebase vernier control does not need an adjustLimit routine. But in contrast, the delayed scale control (s/div) can only be set to a value less than or equal to the main scale control. So the delayed scale control needs to recompute its limits any time the main scale changes. The adjustLimit method for a control is invoked at power-on to insure the limits are initialized correctly and also when any other control changes that has a setting factoring in the control's limits.</font>
+</p>
+
+
+<p>
+  <a name="15886"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When a new setting is applied to a control, the setting must be checked against limits. If the resultant setting is different than the previous setting, the new setting is put into effect.  Any other controls that have limits dependent on the setting must be marked to have their limits adjusted and setting rechecked. Additionally, all views must be updated that are dependent on the control setting.</font>
+</p>
+
+
+<p>
+  <a name="7296"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The momentary and meta controls are degenerate cases of this model as they have no associated setting. They do not have an adjustLimits routine nor a checkSetting routine.</font>
+</p>
+
+
+<h3>
+  <a name="5910"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-2.2  The control group</font>
+</h3>
+
+
+<h4>
+  <a name="5892"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">cohesion</font>
+</h4>
+
+
+<p>
+  <a name="5893"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="5900"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">dependencies</font>
+</h4>
+
+
+<p>
+  <a name="5901"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="5894"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">group methods</font>
+</h4>
+
+
+<p>
+  <a name="5902"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h2>
+  <a name="5886"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-3  The JediPlus control system design</font>
+</h2>
+
+
+<p>
+  <a name="5887"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h2>
+  <a name="5888"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-4  Design details and implementation features</font>
+</h2>
+
+
+<p>
+  <a name="5889"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="18992"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This is the basis of the control type and its class heirarchy. </font>
+</p>
+
+<a name="18993"> </a>FIGURE 21.&#32; Control class heirarchy<img src="images/controlsa.gif" height="729" width="621">
+
+<p>
+  <a name="18994"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h2>
+  <a name="7757"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5  JediPlus Control Groups</font>
+</h2>
+
+
+<p>
+  <a name="9095"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<a name="13004"> </a>FIGURE 22.&#32; Overview of control group interactions<img src="images/controls9.gif" height="742" width="600">
+
+<p>
+  <a name="12227"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The acquire groups are depicted in the following figure.</font>
+</p>
+
+<a name="14655"> </a>FIGURE 23.&#32; The Acquire groups in detail.<img src="images/controls10.gif" height="862" width="600">
+
+<h3>
+  <a name="14654"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.1  Group UserPreferences</font>
+</h3>
+
+
+<p>
+  <a name="12228"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The userPreferences group allows the user to set behavioral preferences for the instrument. At present, the only parameter that may be varied is the setting of the "expand mode" of the vertical scale. For development purposes, this group may be used to add various userInterface experiment switches.</font>
+</p>
+
+<a name="12229"> </a>FIGURE 24.&#32; UserPreferences group<img src="images/controls8.gif" height="542" width="564">
+
+<p>
+  <a name="14649"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12912"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">expandMode</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12916"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12918"> </a>Controls the user preference of y-axis scale behavior, expanding the signal about 0.0 or the magnitude at center screen.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12920"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12922"> </a>enum, {EXPAND_ABOUT_GND, EXPAND_ABOUT_CENTER}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12924"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12926"> </a>EXPAND_ABOUT_GND</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12928"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12930"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12932"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12934"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12936"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12938"> </a>none</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="23371"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="23375"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">helpBehavior</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23379"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23381"> </a>Selects behavior of help system on key release for normal action or latching. Latching help is a special mode (not available to customers) that permits the help screens to be printed for documentation.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23383"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23385"> </a>enum, {HELP_CLOSE_ON_RELEASE, HELP_LATCH_ON_RELEASE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23387"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23389"> </a>HELP_CLOSE_ON_RELEASE</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23391"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23393"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23395"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23397"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23399"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23401"> </a>none</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="23413"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="23452"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">screenSaverSelect</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23456"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23458"> </a>Selects the image used by the screen saver</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23460"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23462"> </a>enum, {}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23464"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23466"> </a>SCRN_SAVER_SEL_LOGO</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23468"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23470"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23472"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23474"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23476"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23478"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="23482"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="23486"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">screenSaverTimeout</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23490"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23492"> </a>Sets the time in minutes from user front panel entry until the screen saver is raised.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23494"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23496"> </a>int16</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23498"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23500"> </a>360 minutes</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23502"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23504"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23506"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23508"> </a>1...435 minutes</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23510"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23512"> </a>calls setScrnSvrTimeout() to post the timeout value</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="23516"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="23520"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">probeSenseOverride</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23524"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23526"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23528"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23530"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23532"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23534"> </a>FALSE</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23536"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23538"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23540"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23542"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23544"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="23546"> </a>none</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="23550"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong></strong></font>
+</p>
+
+
+<h3>
+  <a name="23366"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.2  Group Trigger</font>
+</h3>
+
+
+<p>
+  <a name="9101"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The trigger control group includes all of the controls that determine the trigger condition, except for those that control the analog signal conditioning such as trigger reject and level. The trigger group sets the basic mode of triggering, the source or pattern, the occurance, etc.</font>
+</p>
+
+
+<p>
+  <a name="16051"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<a name="11414"> </a>FIGURE 25.&#32; Trigger group - edge and glitch<img src="images/controls5.gif" height="766" width="576">
+
+<p>
+  <a name="16052"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="16053"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="16057"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">modeCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16061"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16063"> </a>sets the major trigger mode</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16065"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16067"> </a>enum, {TRIG_EDGE, TRIG_GLITCH, TRIG_PATTERN, TRIG_ADVANCED}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16069"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16071"> </a>TRIG_EDGE</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16073"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16075"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16077"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16079"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16081"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="16083"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="16085"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="16089"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16093"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16095"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16097"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16099"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16101"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16103"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16105"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16107"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16109"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16111"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16113"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="16115"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24314"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24318"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24322"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24324"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24326"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24328"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24330"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24332"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24334"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24336"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24338"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24340"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24342"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24344"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24348"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24352"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24356"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24358"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24360"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24362"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24364"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24366"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24368"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24370"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24372"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24374"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24376"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24378"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24382"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24386"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24390"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24392"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24394"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24396"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24398"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24400"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24402"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24404"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24406"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24408"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24410"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24412"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24416"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24420"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24424"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24426"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24428"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24430"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24432"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24434"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24436"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24438"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24440"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24442"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24444"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24446"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24450"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24454"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24458"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24460"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24462"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24464"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24466"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24468"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24470"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24472"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24474"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24476"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24478"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24480"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24484"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24488"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24492"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24494"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24496"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24498"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24500"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24502"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24504"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24506"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24508"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24510"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24512"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24514"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24522"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24526"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24530"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24532"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24534"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24536"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24538"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24540"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24542"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24544"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24546"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24548"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24550"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24552"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24556"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24560"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24564"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24566"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24568"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24570"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24572"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24574"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24576"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24578"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24580"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24582"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24584"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24586"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24590"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24594"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24598"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24600"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24602"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24604"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24606"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24608"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24610"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24612"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24614"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24616"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24618"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24620"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24624"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24628"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24632"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24634"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24636"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24638"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24640"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24642"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24644"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24646"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24648"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24650"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24652"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24654"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24662"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24666"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24670"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24672"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24674"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24676"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24678"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24680"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24682"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24684"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24686"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24688"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24690"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24692"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24696"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24700"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24704"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24706"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24708"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24710"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24712"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24714"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24716"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24718"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24720"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24722"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24724"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24726"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24872"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24845"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24849"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24851"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24853"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24855"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24857"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24859"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24861"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24863"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24865"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24867"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24869"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24871"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24936"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24875"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24879"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24881"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24883"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24885"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24887"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24889"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24891"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24893"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24895"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24897"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24899"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24901"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24937"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="24904"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sourceCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24908"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24910"> </a>sets the trigger source(s).  </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24912"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24914"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24916"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24918"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24920"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24922"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24924"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24926"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="24928"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="24930"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="24935"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="24932"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.3  Group Channel&lt;N&gt;</font>
+</h3>
+
+
+<p>
+  <a name="9103"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are four channel control groups, one for each potential analog channel. This control group specifies all of the parameters of input conditioning and y-axis scaling, including trigger conditioning and trigger threshold.</font>
+</p>
+
+
+<p>
+  <a name="18192"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In the case of an MSO product, an alternative digital channel control group is used to control a pod. This allows two control groups to manage the 16 individual logic channels.</font>
+</p>
+
+<a name="10862"> </a>FIGURE 26.&#32; The channel control group<img src="images/controls3.gif" height="861" width="572">
+
+<p>
+  <a name="10612"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12972"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">probeModeCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12976"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12978"> </a>chooses the mode of operation of the probeAttenCtrl, automatic sense or manual adjust.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12980"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12982"> </a>enum, {PROBE_SENSE_OFF, PROBE_SENSE_ON}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12984"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12986"> </a>PROBE_SENSE_ON</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12988"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12990"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12992"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12994"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12996"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="12998"> </a>if (probeMode == PROBE_SENSE_ON)
+{
+     set detected probe attenuation
+}
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="10326"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="10299"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">probeChgCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="10303"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="10305"> </a>responds to a detected probe change</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="10307"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="10309"> </a>meta</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="10311"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="10313"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="10315"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="10317"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="10319"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="10321"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="10323"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="13701"> </a>if (probeMode == PROBE_SENSE_ON)
+{
+     get the sensed attenuation value
+     set detected probe attenuation
+}
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="10327"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12296"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">probeAttenCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12300"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12302"> </a>sets the attenuation factor for the probe. <a name="13702"> </a>issue: should the channel scale factor change or hold constant on a probe attenuation change? What is phoenix behavior?</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12304"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12306"> </a>continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12308"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12310"> </a>1.0</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12312"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12314"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12316"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12318"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12320"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12322"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="10399"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12324"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">unitsCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12328"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12330"> </a>sets the units for the channel.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12332"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12334"> </a>enum, {VOLT, AMP}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12336"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12338"> </a>VOLT</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12340"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12342"> </a>nothing (possibly probe type in the future)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12344"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12346"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12348"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12350"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="10430"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12352"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">vernierCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12356"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12358"> </a>sets the step behavior for the channel scale control.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12360"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12362"> </a>enum, {TRUE, FALSE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12364"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12366"> </a>FALSE</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12368"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12370"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12372"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12374"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12376"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12378"> </a>none</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="10471"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12380"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">rangeCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12384"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12386"> </a>sets the channel full scale range.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12388"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12390"> </a>continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12392"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12394"> </a>N_DIV * channelScale</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12396"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12398"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12400"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12402"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12404"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12406"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="10504"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12408"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">scaleCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12412"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12414"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12416"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12418"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12420"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12422"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12424"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12426"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12428"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12430"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12432"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12434"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="10541"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12436"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">offsetCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12440"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12442"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12444"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12446"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12448"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12450"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12452"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12454"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12456"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12458"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12460"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12462"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="16298"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="16302"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">positionCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16306"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16308"> </a>the positionCtrl is used on the local userInterface to set the offset for a channel in terms of displacement of ground from center screen. Position = -offset.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16310"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16312"> </a>continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16314"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16316"> </a>0.0</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16318"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16320"> </a>scaleCtrl, rangeCtrl</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16322"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16324"> </a>tbd, hardware dependent</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16326"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16328"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="10574"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12464"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">bwLimitCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12468"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12470"> </a>sets the state of bandwidth limit.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12472"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12474"> </a>enum {}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12476"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12478"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12480"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12482"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12484"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12486"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12488"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12490"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="10607"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12492"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">couplingCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12496"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12498"> </a>sets the input coupling mode</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12500"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12502"> </a>enum {}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12504"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12506"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12508"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12510"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12512"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12514"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12516"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12518"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="10052"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="17617"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.4  Group Acquire</font>
+</h3>
+
+
+<p>
+  <a name="17618"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The acquire controls govern acquisition parameters other than timebase settings that pertain to all channels. In the JediPlus family, this is a small set of controls that includes the acquisition mode, average weighting factor and dither mode. </font>
+</p>
+
+
+<p>
+  <a name="17619"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Additional controls exist for selecting the number of acquired points and sample rate, however these are not settable via the userInterface. In each case, these controls are defaulted into the "auto" mode in which the sample rate and acquired points are determined automatically based upon timebase settings. The sampleRateCtrl and pointsCtrl are connected to the userInterface only for querying the selected settings.</font>
+</p>
+
+<a name="17708"> </a>FIGURE 27.&#32; Acquire group<img src="images/controls4.gif" height="693" width="572">
+
+<p>
+  <a name="17738"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="17711"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">modeCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17715"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17717"> </a>sets the acquisition mode</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17719"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17721"> </a>enum {ACQ_NORMAL, ACQ_AVERAGE, ACQ_PEAK}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17723"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17725"> </a>ACQ_NORMAL</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17727"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17729"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17731"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17733"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17735"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="17737"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="17739"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="17769"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="17742"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">ensembleCountCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17746"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17748"> </a>sets the count (weighting factor) for ensemble operations. Used to set the average count.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17750"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17752"> </a>continuous, {1, 4, 8, 16, 32, 64, 128, 256}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17754"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17756"> </a>16</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17758"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17760"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17762"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17764"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17766"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="17768"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="17799"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="17772"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">neededChanCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17776"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17778"> </a>computes the set of channels needed for acquisiton.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17780"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17782"> </a>meta</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17784"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17786"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17788"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17790"> </a>chan&lt;N&gt;StateCtrl, meas&lt;N&gt;SrcCtrl, func&lt;N&gt;SrcCtrl</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17792"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17794"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17796"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="17798"> </a>neededChanSet = onChanSet | measChanSet | funcChanSet;
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="17829"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="17802"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">ditherCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17806"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17808"> </a>sets whether acquired data may be dithered.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17810"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17812"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17814"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17816"> </a>TRUE</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17818"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17820"> </a>function1OpCtrl, function2OpCtrl</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17822"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17824"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17826"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="17828"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="17830"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="11395"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.5  Group Timebase</font>
+</h3>
+
+
+<p>
+  <a name="11393"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<a name="11422"> </a>FIGURE 28.&#32; Timebase group<img src="images/controls6.gif" height="754" width="600">
+
+<p>
+  <a name="11778"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12520"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">modeCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12524"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12526"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12528"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12530"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12532"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12534"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12536"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12538"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12540"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12542"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12544"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12546"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="16873"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12604"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">refCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12608"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12610"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12612"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12614"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12616"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12618"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12620"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12622"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12624"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12626"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12628"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12630"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="16875"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="16842"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">pointsCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16846"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16848"> </a>sets the number of points to be acquired in the (main) acq record. If autoPointsCtrl is TRUE, then the setting of pointsCtrl is updated with the number of points that is selected by the driver.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16850"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16852"> </a>continuous, int32</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16854"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16856"> </a>2000</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16858"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16860"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16862"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16864"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16866"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="16868"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="16980"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="16953"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">autoPointsCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16957"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16959"> </a>selects whether the number of acquired points is manually set via the pointsCtrl or derived from the sampleRate and main timebase settings.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16961"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16963"> </a>enum, {TRUE, FALSE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16965"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16967"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16969"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16971"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16973"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16975"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16977"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="16979"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="16914"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="16887"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">sampleRateCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16891"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16893"> </a>sets the desired sample rate</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16895"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16897"> </a>continuous, float64, table driven</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16899"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16901"> </a>200 Msa/s</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16903"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16905"> </a>autoSampleRate</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16907"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16909"> </a>must choose nearest value greater or equal to selection from table of available rates.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16911"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="16913"> </a>if (autoSampleRate == TRUE)
+{
+     set desired sample rate in acqTemplate;
+     
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="16944"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="16917"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">autoSampleRateCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16921"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16923"> </a>sets whether the sample rate is automatically derived from the points and sweep speed settings.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16925"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16927"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16929"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16931"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16933"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16935"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16937"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16939"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="16941"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="16943"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="16880"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="11907"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12632"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">calcPathSkewsCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12636"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12638"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12640"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12642"> </a>meta</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12644"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12646"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12648"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12650"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12652"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12654"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12656"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12658"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="11942"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12660"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">mainRangeCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12664"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12666"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12668"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12670"> </a>continuous, float64</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12672"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12674"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12676"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12678"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12680"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12682"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12684"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12686"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="11973"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12688"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">vernierCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12692"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12694"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12696"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12698"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12700"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12702"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12704"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12706"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12708"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12710"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12712"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12714"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="12018"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12716"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">mainScaleCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12720"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12722"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12724"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12726"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12728"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12730"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12732"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12734"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12736"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12738"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12740"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12742"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="12049"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12744"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">mainDelayCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12748"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12750"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12752"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12754"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12756"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12758"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12760"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12762"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12764"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12766"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12768"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12770"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="12088"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12772"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">calcMainCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12776"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12778"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12780"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12782"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12784"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12786"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12788"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12790"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12792"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12794"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12796"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12798"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="12121"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12800"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">delayedRangeCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12804"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12806"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12808"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12810"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12812"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12814"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12816"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12818"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12820"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12822"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12824"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12826"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="12152"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12828"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">delayedScaleCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12832"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12834"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12836"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12838"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12840"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12842"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12844"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12846"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12848"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12850"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12852"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12854"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="12183"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12856"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">delayedDelayCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12860"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12862"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12864"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12866"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12868"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12870"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12872"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12874"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12876"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12878"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12880"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12882"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="12218"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="12884"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">calcDelayedCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12888"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12890"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12892"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12894"> </a>meta</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12896"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12898"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12900"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12902"> </a><br></font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12904"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12906"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12908"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="12910"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="18015"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="17837"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.6  Group Display</font>
+</h3>
+
+
+<p>
+  <a name="17838"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<a name="17885"> </a>FIGURE 29.&#32; The display control group<img src="images/controls7.gif" height="609" width="572">
+
+<p>
+  <a name="17916"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="17889"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">vectorsCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17893"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17895"> </a>sets whether the sample rate is automatically derived from the points and sweep speed settings.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17897"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17899"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17901"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17903"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17905"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17907"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17909"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17911"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17913"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="17915"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="17946"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="17919"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">gridCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17923"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17925"> </a>sets whether the sample rate is automatically derived from the points and sweep speed settings.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17927"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17929"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17931"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17933"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17935"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17937"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17939"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17941"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17943"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="17945"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="17976"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="17949"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">intensityCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17953"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17955"> </a>sets whether the sample rate is automatically derived from the points and sweep speed settings.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17957"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17959"> </a>enum, {FALSE, TRUE}</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17961"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17963"> </a>TRUE (auto mode)</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17965"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17967"> </a>nothing</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17969"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17971"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17973"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="17975"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="18006"> </a><font face="Verdana, Arial, Helvetica, sans-serif">
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<h4>
+  <a name="17979"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">setDispConfigCtrl</font>
+</h4>
+
+</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17983"> </a>description:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17985"> </a>invokes setDispConfig when one of its parameters change.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17987"> </a>type:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17989"> </a>meta</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17991"> </a>default:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17993"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17995"> </a>depends on:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17997"> </a>intensityCtrl, vectorsCtrl</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="17999"> </a>limit rule:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="18001"> </a>none</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="18003"> </a>execute routine:</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><pre>
+<a name="18005"> </a>
+</pre>
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="18007"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="4692"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.7  Group Memory</font>
+</h3>
+
+
+<p>
+  <a name="11364"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This group is not currently used.</font>
+</p>
+
+
+<h3>
+  <a name="11365"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.8  Group Function</font>
+</h3>
+
+
+<p>
+  <a name="11366"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="11367"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.9  Group Measure</font>
+</h3>
+
+
+<p>
+  <a name="11368"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The measure group of controls selects and parameterizes scalar measures. They also provide persistant store of measurement results for display on the measurement line.</font>
+</p>
+
+<a name="16339"> </a>FIGURE 30.&#32; The measure control group<img src="images/controls11.gif" height="874" width="572">
+
+<h3>
+  <a name="11369"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.10  Group Marker</font>
+</h3>
+
+
+<p>
+  <a name="11370"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="11371"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.11  Group Hardcopy</font>
+</h3>
+
+
+<p>
+  <a name="11372"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="11373"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.12  Group Utility</font>
+</h3>
+
+
+<p>
+  <a name="11374"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="11375"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.13  Group Calibrate</font>
+</h3>
+
+
+<p>
+  <a name="11376"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="11377"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.14  Group Test</font>
+</h3>
+
+
+<p>
+  <a name="11378"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="11379"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.15  Group Proto</font>
+</h3>
+
+
+<p>
+  <a name="11380"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="11381"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.16  Group Developer</font>
+</h3>
+
+
+<p>
+  <a name="11382"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="11383"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.17  Group User Interface</font>
+</h3>
+
+
+<p>
+  <a name="11384"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="11385"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">12-5.18  Group System</font>
+</h3>
+
+
+<p>
+  <a name="11386"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="11387"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="localize.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="hal.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

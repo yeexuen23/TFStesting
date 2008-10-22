@@ -1,0 +1,493 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:23:26 2002">
+<title>CHAPTER 17 Time Driver</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="plotDriver.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="trigDriver.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="124832"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 17 	 Time Driver</font>
+</h1><hr>
+
+
+<h2>
+  <a name="130295"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">17-1  Overview</font>
+</h2>
+
+
+<p>
+  <a name="141214"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Time Driver is the software (SW) module that encapsulates the main and delayed sweep time windows in the JediPlus products. It presents an Application Interface (API) that unifies and standardizes control over the time (horizontal) axis for both waveform data produced by the Acquisition (Acq) system and consumed by the Plot system. A primary goal of this logical driver is to provide an abstract interface between the main and delayed sweep controls in the behavioral layer of the UI and the physical drivers for the Timebase HW blocks used to acquire and plot the signals.   This standard API  fascillitates quick development of the follow on JedfiPlus products since it isolates the SW changes needed to support different Timebase HW implementations, down in the Physical Acq and Plot Drivers. </font>
+</p>
+
+<a name="143160"> </a>FIGURE 42.&#32; <img src="images/timeDrivera.gif" height="325" width="621">
+ Time Driver Context Diagram
+<p>
+  <a name="144275"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Time Driver Context Diagram is a simplified view of the relationships between the Time Driver and the rest of the JediPlus SW System. Its shows the Time Driver providing part of the  lhardware  abstation layer (HAL), between the UI and the Physical Acq and Plot drivers. It presents a unified, standard  view of the main and delayed time window parameters used in configuring both the Waveform Acq and Plot HW Systems </font>
+</p>
+
+
+<h3>
+  <a name="144263"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">17-1.1  The Time Driver API</font>
+</h3>
+
+
+<p>
+  <a name="144613"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Time Driver in the JediPLus SW is composed of a set of data structures that describe the main and delayed sweep time windows and the set of functions that initialize, access and manipulate these structures. </font>
+</p>
+
+
+<p>
+  <a name="144647"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The UI presents two timebases, called main and delayed, to control the time axes for the waveforms displayed on screen. The user can scale and position the waveforms horizontally for viewing or making measurements by simply adjusting either the remote or local UI controls for the timebase of interest. These include Time/Div, Delay, Time Ref, etc. Associated control mechanisms in the behavioral layer of the UI distill the settings changes into the horizontal scale information stored in the Time Driver data structures called Sweep Settings Templates. </font>
+</p>
+
+
+<p>
+  <a name="144622"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Using this horizontal scale information from the UI in combination with other acquisition information, the Logical Time Driver is charged with providing the logical information needed by the Physical HW drivers to control the timebase HW that determines the X-axis for data acquired and displayed. </font>
+</p>
+
+
+<h4>
+  <a name="144632"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The SweepTemplate Structures </font>
+</h4>
+
+
+<p>
+  <a name="144354"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Sweep Settings Templates are made up of two sections. One section is called the  Sweep User Factors and the other is called the Sweep Driver Factors.  The User Factors, defined in the file jediPlus/include/dvrTime.h, are parameters set up by the UI controls that are consumed by the Logical Time Driver and other logical HW Drivers. The Driver Factors, defined in the file  /jediPlus/hwDvr/include/dvrTimeUtil.h, are produced by the Logical Time Driver for use by the other Logical HW Drivers and lower Physical HW Drivers.  The definitions are shown below:</font>
+</p>
+
+
+<p>
+  <a name="144408"> </a><font face="Verdana, Arial, Helvetica, sans-serif">/* MACRO defining the user factors for the horizontal sweep windows */</font>
+</p>
+
+<pre>
+<a name="144383"> </a>#define SWEEP_USER_FACTORS\
+<a name="144386"> </a>float64 range;      /* Seconds full screen */
+<a name="144389"> </a>float64 delay       /* Seconds from trigger at the delay reference*/
+<a name="144392"> </a>float64 refPosn;    /* Delay ref posn is a fraction of full screen */\
+<a name="144395"> </a>float64 leftEdge;   /* Seconds at left edge of screen */\
+<a name="144398"> </a>float64 rightEdge;  /* Seconds at right edge of screen */\
+<a name="144401"> </a>Units xUnits;       /* the units on the x axis */\
+<a name="144404"> </a>float64 scale       /* Seconds per division 
+</pre>
+
+<p>
+  <a name="144419"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="144420"> </a><font face="Verdana, Arial, Helvetica, sans-serif">/* SweepTemplate definition */</font>
+</p>
+
+<pre>
+<a name="144410"> </a>typedef struct
+<a name="144411"> </a>{
+<a name="144412"> </a>   SweepId sweepId;      /* Id for sweep */
+<a name="144413"> </a>   uint8 spare;
+<a name="144414"> </a>   Change change;        /* Bitset indicating changes in x-axis */
+<a name="144415"> </a>   SWEEP_USER_FACTORS;
+<a name="144417"> </a>}
+<a name="144429"> </a>SweepTemplate;
+</pre>
+
+<p>
+  <a name="144468"> </a><font face="Verdana, Arial, Helvetica, sans-serif">/* MACRO defining the x scaling factors for the horizontal display window */</font>
+</p>
+
+<pre>
+<a name="144437"> </a>#define SWEEP_DVR_FACTORS\
+<a name="144471"> </a>int64 timePerDiv;       /* Time per screen division in counts */\ 
+<a name="144477"> </a>int64 timeFullScale;    /* Time across screen in counts */\
+<a name="144440"> </a>int64 timeLeftEdge;     /* Time at left edge screen in counts */\
+<a name="144441"> </a>int64 timeRightEdge;    /* Time at right edge screen in counts */\
+<a name="144474"> </a>int64 timeDelayRef;     /* Time at the delay ref in counts */\
+<a name="144443"> </a>int64 timeDelayPix;     /* Time delay in counts (pixel resoln) */\
+<a name="144444"> </a>int64 timePerPix;       /* Time per pixel in counts */\
+<a name="144445"> </a>uint16 divsFullScale;   /* Number of divisions across screen */\
+<a name="144446"> </a>uint16 pixelsFullScale; /* Number of pixel columns across screen */\
+<a name="144728"> </a>uint16 refPixel;        /* Pixel column at the delay ref on screen */\
+<a name="144447"> </a>uint16 tpdIndex         /* Time per division index */
+</pre>
+
+<p>
+  <a name="144449"> </a><font face="Verdana, Arial, Helvetica, sans-serif">/* DvrSweepTemplate definition */</font>
+</p>
+
+<pre>
+<a name="144450"> </a>typedef struct
+<a name="144451"> </a>{
+<a name="144452"> </a>   SweepId sweepId;       /* Id for sweep */
+<a name="144453"> </a>   uint8 spare;
+<a name="144454"> </a>   Change change;         /* Bitset indicating changes in x-axis */
+<a name="144455"> </a>   SWEEP_USER_FACTORS;
+<a name="144456"> </a>   SWEEP_DVR_FACTORS;
+<a name="144457"> </a>}
+<a name="144458"> </a>DvrSweepTemplate;
+</pre>
+
+<p>
+  <a name="144459"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Four DvrSweepTemplates are instanciated in the JediPlus SW system, named the mainSweep, the dlydSweep, the xyAverageSweep and the xyNormalSweep. They have the same form since they are all are of like type, DvrSweepTemplate. Notice that a SweepTemplate makes up the top half of each DvrSweepTemplate.  Pointers are set up to the SweepTemplate portion of these structures to provide the UI access to the User Factors.  These pointers, named the mainPtr, dlydPtr, xyAveragePtr and the xyNormalPtr, are likewise passed as parameters to the Time Driver entry point functions described in the next section.  This scheme permits the UI to be knowledgeable about the User Factors in the SweepTemplate portion of the structures without being cognizant about the Driver Factors in the bottom of the DvrSweepTemplate.  This allows the Driver Factors in various products to be different where Hardware differences dictate, without effecting the UI or the API to the Logical Time Driver.  </font>
+</p>
+
+
+<p>
+  <a name="144700"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Many of the Sweep Driver Factors are internal representations of related Sweep User Factors. This means the conversions from doubles, representing seconds, to 64 bit integers, representing  2.5 picoseconds counts, only occur once when changes occur.   The results are saved and used in multiple places by other HW drivers. </font>
+</p>
+
+
+<h4>
+  <a name="144842"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Change Flag Usage</font>
+</h4>
+
+
+<p>
+  <a name="144843"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When UI control changes cause changes in the fields in the Sweep Templates, the appropriate change flags in the Change register for the templates must also be set TRUE.  Usually the UI does this when it changes Sweep User Factors via the mainPtr or dlydPtr, but sometimes Logical HW Driver functions must also set change flags when they change a field.  These flags are used by the Logical HW Drivers to determine which configuration functions must be executed to deal with a given change thereby improving efficiency. The table below shows the relationship between the fields and the change flags for each sweep template.
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<a name="144846"> </a><font  size="3" face="Verdana, Arial, Helvetica, sans-serif"><br></font>
+
+</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366">
+<p>
+  <a name="144850"> </a><font face="Verdana, Arial, Helvetica, sans-serif">FIELD CHANGED </font>
+</p>
+
+</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366">
+<p>
+  <a name="144852"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CHANGE FLAGS SET</font>
+</p>
+
+</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144854"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144856"> </a><font face="Verdana, Arial, Helvetica, sans-serif">otherChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144858"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144860"> </a><font face="Verdana, Arial, Helvetica, sans-serif">resetAcq</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144862"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144864"> </a><font face="Verdana, Arial, Helvetica, sans-serif">trigChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144866"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144868"> </a><font face="Verdana, Arial, Helvetica, sans-serif">skewChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144870"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144872"> </a><font face="Verdana, Arial, Helvetica, sans-serif">runModeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144874"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144876"> </a><font face="Verdana, Arial, Helvetica, sans-serif">timeModeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144878"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144880"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqCycleChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144882"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144884"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqModeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144886"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144888"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqSrcChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144890"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144892"> </a><font face="Verdana, Arial, Helvetica, sans-serif">funcChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144894"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144896"> </a><font face="Verdana, Arial, Helvetica, sans-serif">funcAutoScale</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144898"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144900"> </a><font face="Verdana, Arial, Helvetica, sans-serif">dispChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144902"> </a><font face="Verdana, Arial, Helvetica, sans-serif">range, scale, delay, refPosn, leftEdge, or rightEdge.  SEE NOTE 1 BELOW</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144904"> </a><font face="Verdana, Arial, Helvetica, sans-serif">xScaleChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144906"> </a><font face="Verdana, Arial, Helvetica, sans-serif">range, scale</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144908"> </a><font face="Verdana, Arial, Helvetica, sans-serif">xRangeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144910"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144912"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yAcqScaleChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144914"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144916"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yPlotScaleChange</font>
+</p>
+
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="144954"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Note 1.  The xScaleChange bit also needs to be set TRUE when the timeMode changes.  This bit basically get set when any change to the horizontal axis occurs. </font>
+</p>
+
+
+<h4>
+  <a name="144953"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Time Driver Initialization Function</font>
+</h4>
+
+<ul>
+  <li><a name="144933"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean initTimeDvr(boolean verbose, boolean diagnostics);</font>
+
+<p>
+  <a name="144934"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Initialization function for the time driver that initializes the time data structures and the necessary  timebase HW blocks in the acq and plot systems.</font>
+</p>
+
+</ul>
+
+<h4>
+  <a name="144801"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Logical Time Driver Entry Point Functions </font>
+</h4>
+
+
+<p>
+  <a name="144356"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These functions are called from the effector routines of Main/Delayed Sweep controls in the behavioral layer of the UI, to put a change that occurred into "effect".      </font>
+</p>
+
+<ul>
+  <li><a name="144748"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configSweep(SweepTemplate * const sweepPtr); </font>
+
+<p>
+  <a name="144784"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The entry point function for the time driver, located in the file /jediPlus/hwDvr/generic/dvrTime.c,  basically calculates the Driver Factors in the DvrSweepTemplate using the User Factors in the SweepTemplate section.  It also uses the number of pixels full scale horizontally across the graticule from the Display Setting Template.  A pointer to the sweep template containing the changes is passed in. This is called from the eCalcMain() and eCalcDlyd() effector routines found in the file /jediPlus/behavioral/grpTime.c. </font>
+</p>
+
+</ul>
+
+<h4>
+  <a name="144805"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Physical Time Driver Entry Point Functions </font>
+</h4>
+
+
+<p>
+  <a name="144818"> </a><font face="Verdana, Arial, Helvetica, sans-serif">No Physical Time Driver exists in the current JediPlus system.  The timebase functionality is handled by the Physical Acq and Plot Drivers as needed. The descriptions and APIs for the functions that connect into these Physical Drivers appear in the chapters on the Acq Driver and Plot Driver.  Functions in the Physical Drivers that deal with the timebase functionality are located in the physical driver for the individual HW components in the MUSKRAT and PUMA products. Refer to the  "COYOTE/WILEY Driver" chapter for MUSKRAT and the "MONGREL/ZEUM Driver" chapter for PUMA. </font>
+</p>
+
+
+<p>
+  <a name="143563"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="plotDriver.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="trigDriver.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

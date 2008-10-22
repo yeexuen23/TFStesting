@@ -1,0 +1,1563 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:27:47 2002">
+<title>CHAPTER 30 Build Environment and Tools</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="commonAbs.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="codingStandards.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="128983"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 30 	 Build Environment and Tools</font>
+</h1><hr>
+
+
+<h2>
+  <a name="128984"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-1  Introduction</font>
+</h2>
+
+
+<p>
+  <a name="128985"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This document will refer the jediPlus product family simply as jediPlus. jediPlus is intended to be highly partitioned and modulized. This requires a file system and build mechanism designed for this. This document details the physical structure and build mechanism for jediPlus. Currently, jediPlus consists of the Boot, Muskrat &amp; Puma projects and support components.</font>
+</p>
+
+
+<p>
+  <a name="997946"> </a><font face="Verdana, Arial, Helvetica, sans-serif">An important part of the jediPlus build system is the use of libraries. Each product will build its own series of libraries from a list defined. The product will use these libraries at the link stage of the build. Some libraries will not be built uniquely for each product, but this will not be the common use model. </font>
+</p>
+
+
+<h2>
+  <a name="997963"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-2  Down &amp; dirty - How to do simple things</font>
+</h2>
+
+
+<p>
+  <a name="997966"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The scope of this document provides excuciating details about the make files and directories. But most times, the user of this document just wants to know how to do simple things. This part of the document descibes how to:</font>
+</p>
+
+<ul>
+  <li><a name="998140"> </a><font face="Verdana, Arial, Helvetica, sans-serif">use make</font>
+  <li><a name="997970"> </a><font face="Verdana, Arial, Helvetica, sans-serif">use the history manager</font>
+  <li><a name="997971"> </a><font face="Verdana, Arial, Helvetica, sans-serif">create a leaf directory</font>
+</ul>
+
+<h3>
+  <a name="997973"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-2.1  How to use make</font>
+</h3>
+
+
+<p>
+  <a name="998116"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are several targets that can be made. The targets available are different whether you are in the project, i.e. muskrat direcory or in the component, i.e. frontPanel directory. But for the common targets, there is much overlap. </font>
+</p>
+
+
+<p>
+  <a name="998149"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For any of the below makes, the -s option will suppress much of the normal and usually uninteresting output.</font>
+</p>
+
+
+<h4>
+  <a name="998118"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Project</font>
+</h4>
+
+
+<p>
+  <a name="998119"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This section will assume that muskrat is being made and you are in the jediPlus/muskrat directory. Puma or boot will work similarly.</font>
+</p>
+
+<ul>
+  <li><a name="998117"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Default target. Type "make" - This rule updates the makefile dependicies. This will not remove existing libraries or the objects used to produce them. It verifies all libraries and local flies are current and makes those that are not.  Links and produces muskrat.x Produces latest version of muskrat.ld_map. This rule will pick up all your changes, but not those recently check-in by you coworkers. It is functionally equivalent to typing "make depend", then "make muskrat".</font>
+  <li><a name="998124"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Update and make default. Type "make update" then "make". The second make does that described above. The update rule will perform an fupdate on all directories needed to build muskrat, including the tools and bin directories. This  will pickup any changes checked-in by your coworkers.</font>
+  <li><a name="998141"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Hurt yourself. Type "make all". This rule will first make the update rule, as described above. Then it will remove all reconstructable targets (libraries) and the objects used to produce them. Then it will run the default rule, which since all targets are gone, will rebuild everything. Thank goodness for fast machines.</font>
+</ul>
+
+<h3>
+  <a name="998115"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-2.2  How to use the history manager</font>
+</h3>
+
+<ol type="1">
+  <li value="1"><a name="997974"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Read the man pages on fci , fco, fhist, futil, etc.</font>
+  <li value="2"><a name="998103"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Verify that /opt/softbench/bin is in your PATH variable.</font>
+  <li value="3"><a name="997975"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Install or verify the presence of a .fmrc file in your home directory. This file must contain at least two entries. The first tells which machine for the history manager to use. The second entry tells the history manager how to map local direcories to history manager directories. The history manager will assume a directory structure identical to it own fron this point down in the directory. The form of what the .fmrc file must contain is:</font>
+<pre>
+<a name="998003"> </a>usehost    &lt;host&gt;                     &lt;project_path&gt;
+<a name="998049"> </a>mapdir   &lt;local directory&gt;            &lt;history manager directory&gt;
+
+<p>
+  <a name="998050"> </a><font face="Verdana, Arial, Helvetica, sans-serif">What a .fmrc might contain is:</font>
+</p>
+
+<a name="998015"> </a>usehost hplsdpq                            /
+<a name="998041"> </a>mapdir /tmp/jediPlus                       /col/scopes/jediPlus
+<a name="998044"> </a>mapdir /home/spelelo/work                  /col/scopes
+
+<p>
+  <a name="998053"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This tells the history manager to use machine hplsdpq as the host machine. All projects are available. Then map the local directory /tmp/jediPlus to /col/scopes/jediPlus on the host machine. This mapping is neccessary for the metrics calculating make rule to work. The second mapping tells where the work directory is. Under the work directory are the jediPlus, muskrat, 546xx, etc directories. There is a one-to-one correspondence between these directories and those under /col/scopes on the history manager machine. You should map /col/scopes to the directory immmediately above your jediPlus development directory.</font>
+</p>
+
+</pre>
+  <li value="4"><a name="998070"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If you have not done so before, cd to your local jediPlus directory. (If it does not exist, create it.) Then type "fupdate -RM". This will create all the directories and files under jediPlus that are under the host machine's jediPlus directory. This will take awhile. Make sure this is what you want. A similar thing can be done for any of the directories, such as muskrat or 546xx.</font>
+</ol>
+
+<h3>
+  <a name="998081"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-2.3  Common history manager commands</font>
+</h3>
+
+
+<p>
+  <a name="998083"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These commands assumes you are in the direcory where the file(s) exists.</font>
+</p>
+
+<ul>
+  <li><a name="998082"> </a><font face="Verdana, Arial, Helvetica, sans-serif">file checkout - "fco -l &lt;filename&gt;"</font>
+  <li><a name="998088"> </a><font face="Verdana, Arial, Helvetica, sans-serif">initial file checkin - "fci -auto &lt;filename&gt;"</font>
+  <li><a name="998089"> </a><font face="Verdana, Arial, Helvetica, sans-serif">file checkin - "fci -u &lt;filename&gt;"</font>
+  <li><a name="998090"> </a><font face="Verdana, Arial, Helvetica, sans-serif">revision history - "fhist &lt;filename&gt;"</font>
+  <li><a name="998095"> </a><font face="Verdana, Arial, Helvetica, sans-serif">list history manager file info - "fls" or "fll" or "flsf"</font>
+  <li><a name="998105"> </a><font face="Verdana, Arial, Helvetica, sans-serif">verify the latest version of all files in the direcory - "fupdate"</font>
+  <li><a name="998112"> </a><font face="Verdana, Arial, Helvetica, sans-serif">directory creation (must be in directory immediately above) - "futil -M &lt;directory name&gt;"</font>
+</ul>
+
+<h3>
+  <a name="997950"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-2.4  How to set up a leaf directory.</font>
+</h3>
+
+
+<p>
+  <a name="997951"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This section describes how to use the build system, in particular the makefiles. The most common task will be to add a new component or leaf. The steps to do this are:</font>
+</p>
+
+<ol type="1">
+  <li value="1"><a name="997952"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Decide what files should be in the directory. This will be the hardest part. The files will be compiled into a library for use by products. They should all have the same purpose. The resultant library will probably need the services provided by other components in the system. It must be possible to provide a clean interface to the component. See item 2. If not already done, create the component directory and put the files there. If not already done, create the directory in HMS.</font>
+  <li value="2"><a name="997953"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Decide on the component's interface. There should be one or more files that presents the component's public interface. It should not include namespace internal to the component. If more than one view of the component is desired, then provide more than one interface file. Put this file(s) into the jediPlus/include directory.</font>
+  <li value="3"><a name="997954"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Copy the file jediPlus/tool/make.leaf to GNUmakefile in the component directory. Edit the file and follow the instructions in the file. The parts most likely to change are at the top of the file. This will mostly involve providing the library's name and any special include paths. Note: The library will be named lib&lt;libname&gt;.a. If the component directory is not directly under the jediPlus directory, modify the JP_ROOT macro.</font>
+  <li value="4"><a name="997955"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Update the bin directory. Change directory to jediPlus/bin and type fupdate.</font>
+  <li value="5"><a name="997956"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Return to the component directory and make the "depend" target by typing "make depend". It is a simple rule that will provide basic syntax checking of the makefile and verifies that the correct tool paths are present. Debug as necessary.</font>
+  <li value="6"><a name="997957"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The depend rule will fill the source and header macros in GNUmakefile. It will also build the dependency rules for all *.c files. If assembly files are part of this component, their dependencies must be added manually. Verify this has happened as expected; look closely at the header files dependencies.</font>
+  <li value="7"><a name="997958"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Make the default rule, i.e., type "make". This rule will attempt to compile all source files. Once the depend rule has ben run, individual files can be compiled by making &lt;file&gt;.o. Verify that the directories obj and lib are created and that the *.o output is placed in the obj directory and that the library, lib&lt;libname&gt;.a is in the lib directory. Also, the files Iface.list and Archive.list should be present.</font>
+  <li value="8"><a name="997959"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Once a preliminary group of files for the component is set, check them into the history manager. Also check-in the GNUmakefile.Go to the jediPlus/include directory and check-in the new interface file(s) .</font>
+  <li value="9"><a name="997960"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All this is the local build. Once this works correctly, go to the product's directory and add the library to the product's makefile, which is also named GNUmakefile. There are two parts to adding the library. The first is to add the component's directory path to the macro SUBDIR. The second is to add the library's name to the macro LIBS. The full library name must be used. Follow the example of the components already there.</font>
+</ol>
+
+<h2>
+  <a name="997947"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-3  Directory structure (Physical structure)</font>
+</h2>
+
+
+<p>
+  <a name="132910"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The jediPlus sw development environment is a modified root and leaf design. The root is the product (project) directory. Current products are boot, muskrat and puma. The leaves are the components directories, such as the psos, utils and front panel. It is called modified because the root directory is not necessarily located above the leaves in the directory tree. In a sense, a root is a special leaf. The leaves are used to produce libraries.</font>
+</p>
+
+
+<h3>
+  <a name="129002"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-3.1  jediPlus directory</font>
+</h3>
+
+
+<p>
+  <a name="129138"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All files specific to jediPlus are located under the jediPlus directory. Files that are not specific to jediPlus, such as LDS code should go elsewhere. The jediPlus directory is located next to the 546xx directory. This puts the jediPlus family of products at the same level in the directory structure as the previous Jedi family of projects, such as moab, logic bud and solo. This is misleading because jediPlus retains the 546xx naming convention. But jediPlus will port any 546xx into the new environment vs. using the existing 546xx code as is.</font>
+</p>
+
+
+<p>
+  <a name="130386"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There should be no files at this level in the directory tree, only subdirectories.</font>
+</p>
+
+
+<h3>
+  <a name="129025"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-3.2  Subdirectories</font>
+</h3>
+
+
+<p>
+  <a name="129034"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The subdirectories under jediPlus fall into one of several categories:</font>
+</p>
+
+<ol type="1">
+  <li value="1"><a name="132929"> </a><font face="Verdana, Arial, Helvetica, sans-serif">root - Individual products such as boot, muskrat or puma. These directories build themselves and any required leaf components. See section 8-2.3 for more information.</font>
+  <li value="2"><a name="132937"> </a><font face="Verdana, Arial, Helvetica, sans-serif">leaf - Components that are shared across the product family, such as utils, frontPanel and psos. Components have well defined interfaces and are intended to be built into libraries. These directories can build themselves as well as be built by a root. See section 8-2.4 for more information.</font>
+  <li value="3"><a name="133018"> </a><font face="Verdana, Arial, Helvetica, sans-serif">subsystem - A group of leaves or subsystems that share a common purpose, such as ioDvr. While there is no limit on how deep subsystems may be nested, a practical limit should be one layer, i.e. a subsystem under the jediPlus directory could have subsystems under it, but these subsystems should have only leaves under them. </font>
+  <li value="4"><a name="132942"> </a><font face="Verdana, Arial, Helvetica, sans-serif">misc. - General software development such as tools, doc and bin</font>
+  <li value="5"><a name="132930"> </a><font face="Verdana, Arial, Helvetica, sans-serif">repository - Hold targets that can be taken without rebuilding. Currently, there are no components that meet this criteria.</font>
+</ol>
+
+<p>
+  <a name="129098"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Root and leaf directories are buildable. Builds occur at the lower levels of the subsystems. The tools and executables in bin and tool will not be built as part of normal code development. It is likely that they will be built as part of a QA or release build. The same is true of any code in a repository.</font>
+</p>
+
+
+<p>
+  <a name="133066"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Hybrids of the leaf and subsystem will occur. For example, the ioDvr directory may contain code that defines general I/O operations. This code is sharable and would have a well-defined interface; it is a component. But also under the ioDvr directory are the rs232, hpib, etc. subdirectories, each of them being a leaf directory.</font>
+</p>
+
+
+<p>
+  <a name="132963"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Files that are unique to a particular product should be placed under that product's subdirectory. A component that is unique to the product should be put in a leaf subdirectory under the product. Files associated with a software and/or hardware component should be placed in a leaf directory.</font>
+</p>
+
+
+<p>
+  <a name="132999"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If there are files that are needed to bind a product and a component, these could be handled in one of two ways. </font>
+</p>
+
+<ol type="1">
+  <li value="1"><a name="129413"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Put them in a subdirectory under the product subdirectory, i.e., a unique file needed to do a risetime measurement on Muskrat would reside in jediPlus/muskrat/m_foo.c. This approach reduces reuse and increases the complexity of code maintenance across products in the family. But it puts all the variations of the product with the product and doesn't require unique build features.</font>
+  <li value="2"><a name="133004"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Put them in a subdirectory under the component subdirectory, i.e., a unique file needed to do a risetime measurement on Muskrat would reside in jediPlus/analysis/muskrat/m_foo.c. This approach puts all the variations of the measurement component in the analysis subdirectory and this simplifies comparison of these variations. But this leads to fragmentation of the leaves and it is not a good match for the build system.</font>
+</ol>
+
+<p>
+  <a name="133000"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Early prototypes indicates that the first method will be used.</font>
+</p>
+
+<a name="129467"> </a>FIGURE 73.&#32; jediPlus directory<img src="images/buildEnva.gif" height="481" width="624">
+
+<p>
+  <a name="129657"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The list of current jediPlus subdirectories is given below.</font>
+</p>
+
+
+<p>
+  <a name="130418"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>analysis </strong>- Leaf directory that defines the measurement architecture.</font>
+</p>
+
+
+<p>
+  <a name="130420"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>bin </strong>- Repository directory for executables. They may be needed to build projects or libraries or be useful for code development and/or debug.</font>
+</p>
+
+
+<p>
+  <a name="130428"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>boot </strong>- Product directory that contains files used to build the boot section of the flash. This section contains enough code to allow an instrument to power up and 1) jump to the normal operating system, or 2) load the operating system from the disk or hpib. This is a stand-alone product, similar to muskrat.</font>
+</p>
+
+
+<p>
+  <a name="130435"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>controls </strong>- need info</font>
+</p>
+
+
+<p>
+  <a name="130431"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>doc </strong>- Contains Framemaker documents used to produce the jediPlus ERS, including this file. This is a suitable location to store any jediPlus documentation. Also under this directory is the templates directory, which contains standard include and C file headers templates.</font>
+</p>
+
+
+<p>
+  <a name="996918"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>emul </strong>- Repository directory for scripts, configuration files and other stuff for the emulator<strong>.</strong></font>
+</p>
+
+
+<p>
+  <a name="130449"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>fileSystem </strong>- Leaf directory defines the file system interface<strong>.</strong></font>
+</p>
+
+
+<p>
+  <a name="996920"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>fonts </strong>- Repository directory contains the font used in jediPlus<strong>.</strong></font>
+</p>
+
+
+<p>
+  <a name="130461"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>frontPanel </strong>- Leaf directory for the front panel component.</font>
+</p>
+
+
+<p>
+  <a name="130473"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>hal </strong>- need info</font>
+</p>
+
+
+<p>
+  <a name="130439"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>hpsl </strong>- Component directory for the parser language.</font>
+</p>
+
+
+<p>
+  <a name="130445"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>hwDvr </strong>- Hybrid directory containing files and components that are used to control the various HW blocks. Likely subdirectories are scorpion, rattler, cactus, coyote, rtc, etc. </font>
+</p>
+
+
+<p>
+  <a name="130477"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>include </strong>- Directory to hold all the public interfaces of the various components. Also contains jediPlus system include files such as types.h</font>
+</p>
+
+
+<p>
+  <a name="130453"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>ioDvr </strong>- Hybrid directory containing files and components that define the jediPlus communication paths. Likely subdirectories are: rs232, hpib, parallel and lan.</font>
+</p>
+
+
+<p>
+  <a name="130481"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>lds </strong>- Any misc. pieces of LDS code.</font>
+</p>
+
+
+<p>
+  <a name="130510"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>lib </strong>- Repository directory for libraries that are not rebuilt for each product. </font>
+</p>
+
+
+<p>
+  <a name="130485"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>man </strong>- Repository directory of man pages for jediPlus.</font>
+</p>
+
+
+<p>
+  <a name="129618"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>muskrat, puma, etc. </strong>- The files and components unique to the product. They are not used by other products. That could include files that define operating limits, behaviors, features and look &amp; feel. </font>
+</p>
+
+
+<p>
+  <a name="130489"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>pflop </strong>- Leaf directory containing the component that defines the floppy disk drive interface.</font>
+</p>
+
+
+<p>
+  <a name="130491"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>proto </strong>- need info</font>
+</p>
+
+
+<p>
+  <a name="130493"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>psos </strong>- Leaf directory containing the psos OS implementation component.</font>
+</p>
+
+
+<p>
+  <a name="130469"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>pv </strong>- Files and subdirectories containing the power up self tests, the code that defines general pv behavior and code that binds together the individual self tests. Actual self tests for the individual components should be in their respective subdirectories. </font>
+</p>
+
+
+<p>
+  <a name="130501"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>remote </strong>- Leaf directory for the remote process component. See the Process Model.</font>
+</p>
+
+
+<p>
+  <a name="996974"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>sigPath </strong>- Leaf directory for the sigPath process component. See the Process Model.</font>
+</p>
+
+
+<p>
+  <a name="996990"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>spool </strong>- Leaf directory for the spooler process component. See the Process Model.</font>
+</p>
+
+
+<p>
+  <a name="130465"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>sys </strong>- Leaf directory for the files that define the jediPlus frame and its behavior. This would include files that glue together the various components, such as I/O drivers, the front panel, etc. into a viable system.</font>
+</p>
+
+
+<p>
+  <a name="130503"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>text </strong>- need info</font>
+</p>
+
+
+<p>
+  <a name="132407"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>tool </strong>- This directory holds files, scripts, templates, etc that are useful for the build process.</font>
+</p>
+
+
+<p>
+  <a name="130058"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>util </strong>- Leaf directory containing various groups of system functions such as list and special long math. </font>
+</p>
+
+
+<h3>
+  <a name="129617"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-3.3  Product or root directories (muskrat, puma, boot, etc.)</font>
+</h3>
+
+
+<p>
+  <a name="129476"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each product directory will have a similar form and build mechanism. The structure for muskrat is given to demonstrate the basic form. These example files and subdirectories are located under jediPlus/muskrat/</font>
+</p>
+
+
+<p>
+  <a name="130120"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>GNUmakefile</strong> - The master makefile for this product. It may invoke other makefiles. If the file is labeled GNUmakefile, gnumake must be used. This does not imply that the rest of the gnu toolset must be used to compile, link, etc. The makefile will normally include two template files for the tool chain and make rules. If the standard tool chain or make rules are not adequate, special versions of either file can be put here. Any special rules should be added to GNUmakefile.</font>
+</p>
+
+
+<p>
+  <a name="130246"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>features</strong> - File defines symbols indicating the presence of various hardware/software features in this product. Careful design may render this file unnecessary. For more info, see the section on makefiles.</font>
+</p>
+
+
+<p>
+  <a name="130257"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>muskrat.x</strong> - The emulator target; it is the loadable code.</font>
+</p>
+
+
+<p>
+  <a name="129715"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>lib</strong> - The repository for the libraries, the *.a's produced by the product's build process. This allows the same component library to be built differently for different products. For example, muskrat could build the analysis library using one set of compiler directives, while puma could build it using a different set.</font>
+</p>
+
+
+<p>
+  <a name="129724"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>obj</strong> - This is a repository for the build process. It will contain the ".o" files for all the files built for this product, including those derived from component libraries such as psos or analysis.</font>
+</p>
+
+
+<p>
+  <a name="996749"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>memtest.s</strong> - This file is the start-up file for the muskrat system. It also starts up the operating system and sets the VBR register to the correct location of the vector page. This reference to the vector page causes the sys library to be loaded, which ripples out and causes all the necessary libraries to be loaded. </font>
+</p>
+
+
+<p>
+  <a name="996751"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>linkcom.k</strong> - This is the linker command file. It tells the linker where to locate all the pieces of code. Currently, all libraries available to be loaded are defined via the makefile. None are made available using this file.</font>
+</p>
+
+
+<p>
+  <a name="130118"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>frontPanel.h, etc</strong> - These files are needed to bind a feature to the product.</font>
+</p>
+
+
+<p>
+  <a name="996745"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Also, any Muskrat unique components will be found here. The resultant library will be stored in the muskrat lib directory. There are none at this time.</font>
+</p>
+
+
+<h3>
+  <a name="129749"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-3.4  Component or leaf subdirectory (util, psos, etc.)</font>
+</h3>
+
+
+<p>
+  <a name="130269"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each component will have its own directory. Additionally, some components will have other components nested under them. For example, the hwDvr directory will have subdirectories for each chip that requires a library. These directories will have the same form as the component directory. The actual files and subdirectories under a component directory will vary, but these will be found in most leaves.</font>
+</p>
+
+
+<p>
+  <a name="130276"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>GNUmakefile</strong> - The makefile for the component, it is usually invoked by a product's makefile. It also provides default rules when the component is built locally. If the file is labeled GNUmakefile, gnumake must be used. This does not imply that the rest of the gnu toolset must be used to compile, link, etc. The makefile will normally include two template files for the tool chain and make rules. These are not the same templates used for the product makefile. If the standard tool chain or make rules are not adequate, special version of either file can be put here. Any special rules may be added to GNUmakefile.</font>
+</p>
+
+
+<p>
+  <a name="130296"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>*.c, *.h</strong> - The source code for the component. </font>
+</p>
+
+
+<p>
+  <a name="132421"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>lib</strong> - Whenever the library is built locally, i.e., not by a product, the archive output, *.a, will be stored here.</font>
+</p>
+
+
+<p>
+  <a name="130303"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>obj</strong> - Whenever the library is built locally, i.e., not by a product, the *.o output from the build will be stored here.</font>
+</p>
+
+
+<p>
+  <a name="997057"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Also, the interface file for this component will be found in the jediPlus/include directory.</font>
+</p>
+
+
+<h2>
+  <a name="128989"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-4  Makefiles</font>
+</h2>
+
+
+<p>
+  <a name="130140"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each product will have its own makefile. This makefile will invoke the appropriate makefiles for any needed libraries, compile any local source code and link the results to produce the output target. In general, a product's makefile will work its way up its directory and out into the component libraries. A product should not go into another product's directory for source code, libraries or anything else.</font>
+</p>
+
+
+<h3>
+  <a name="131194"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-4.1  Product and component makefile requirements</font>
+</h3>
+
+<ul>
+  <li><a name="131259"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There should be one simple makefile for each component of the system. Each component can make itself independently and any component can be made from a product.</font>
+  <li><a name="131202"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each component has a similar pattern. Common makefile subsections are loaded from a common directory.</font>
+  <li><a name="131203"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A makefile should only compile files in its own directory. The default condition should be to compile all *.[csS] files in the directory, but a mechanism should be provided to specify which files to compile.</font>
+  <li><a name="131204"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each component will supply its own include path except for tool chain specific paths.</font>
+  <li><a name="131205"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There should be a mechanism for passing project specific compiler directives to each component. These directives will control the compilation base on tool chain and hardware/software features.</font>
+  <li><a name="131206"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each library component will have at least one interface file in the main include directory. This interface file(s) will define any services available from the component.</font>
+  <li><a name="132437"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Makefiles that require GNU make should be named with a name indicating this.</font>
+</ul>
+
+<h3>
+  <a name="131212"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-4.2  Down &amp; dirty - How to set up a leaf directory.</font>
+</h3>
+
+
+<p>
+  <a name="996775"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This section describes how to use the build system, in particular the makefiles. The most common task will be to add a new component or leaf. The steps to do this are:</font>
+</p>
+
+<ol type="1">
+  <li value="1"><a name="996776"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Decide what files should be in the directory. This will be the hardest part. The files will be compiled into a library for use by products. They should all have the same purpose. The resultant library will probably need the services provided by other components in the system. It must be possible to provide a clean interface to the component. See item 2. If not already done, create the component directory and put the files there.</font>
+  <li value="2"><a name="996783"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Decide on the component's interface. There should be one or more files that presents the component's public interface. It should not include namespace internal to the component. If more than one view of the component is desired, then provide more than one interface file. Put this file(s) into the jediPlus/include directory.</font>
+  <li value="3"><a name="996786"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Copy the file jediPlus/tool/make.leaf to GNUmakefile in the component directory. Edit the file and follow the instructions in the file. The parts most likely to change are at the top of the file. This will mostly involve providing the library's name and any special include paths. Note: The library will be named lib&lt;libname&gt;.a</font>
+  <li value="4"><a name="996793"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Update the bin directory. Change directory to jediPlus/bin and type fupdate.</font>
+  <li value="5"><a name="996802"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Return to the component directory an make the "depend" target. It is a simple rule that will provide basic syntax checking of the makefile and verifies that the correct tool paths are present. Debug as necessary.</font>
+  <li value="6"><a name="996809"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The depend rule will fill the source and header macros in GNUmakefile. It will also build the dependency rules for all *.c files. If assembly files are part of this component, their dependencies must be added manually. Verify this has happened as expected; look closely at the header files dependencies.</font>
+  <li value="7"><a name="996824"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Make the default rule, i.e., type make. This rule will attempt to compile all source files. Once the depend rule has ben run, individual files can be compiled by making &lt;file&gt;.o. Verify that the directories obj and lib are created and that the *.o output is placed in the obj directory and that the library, lib&lt;libname&gt;.a is in the lib directory. Also, the files Iface.list and Archive.list should be present.</font>
+  <li value="8"><a name="996825"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Once a preliminary group of files for the component is set, check them into the history manager. Also check-in GNUmakefile and the interface file(s) in the include directory.</font>
+  <li value="9"><a name="996836"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All this is the local build. Once this works correctly, go to the product's directory and add the library to the product's makefile, which is also named GNUmakefile. There are two parts to adding the library. The first is to add the component's directory path to the macro SUBDIR. The second is to add the library's name to the macro LIBS. The full library name must be used. </font>
+</ol>
+
+<h3>
+  <a name="997340"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-4.3  Standard makefiles in jediPlus/tools</font>
+</h3>
+
+
+<p>
+  <a name="997346"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A series of makefile templates and includes are available under the tools directory. There are currently two flavors of templates and two corresponding include files. The first template is for the product's make and is called make.root. It will include the file make.root.inc. The second template is for a library's make and is called make.root. It will include make.root.inc. There is another file in the tools directory, make.std_toolset, that defines the standard tools used in make, such as CC, etc. It is included by both flavors of make files. A more detailed description of these files follows.</font>
+</p>
+
+
+<h4>
+  <a name="997347"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">make.std_toolset </font>
+</h4>
+
+
+<p>
+  <a name="997348"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file defines the standard compiler tool chain for a given tool. Macros set in this file are not normally overridden by the depend rule's mkmf command, since they are defined in this file and included in the makefile.</font>
+</p>
+
+
+<p>
+  <a name="997448"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Points of interest are:</font>
+</p>
+
+<ul>
+  <li><a name="997395"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file defines the appropriate system header search path, TOOL_INC and concatenates it with the externally defined GEN_INC to define INCLUDES.</font>
+  <li><a name="997396"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CLAGS is defined as equaling COPTS + FEATURES + INCLUDES. FEATURES is defined externally.</font>
+</ul>
+
+<h4>
+  <a name="997397"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif"> make.root</font>
+</h4>
+
+
+<p>
+  <a name="997398"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file serves as a template for the project makefiles. The user should copy this file to the product directory, modify it accordingly and rename it GNUmakefile. Its purpose is to define product specific macros, but general make macros are also defined here for consistency.</font>
+</p>
+
+
+<p>
+  <a name="997451"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The only macros that normally require modification are PROJECT, OBSOLETE, SUBDIR and LIBS. PROJECT is the product's name. i.e., muskrat. SUBDIR defines which directories should be built as part of the product build. LIBS defines the libraries that will be linked into the build. The current method produces a 1-to-1 correspondence between the subdir and libs macros because every library has in its own directory. OBSOLETE provides a method to remove files that were once part of the build, but are no longer used. See the clobber rule.</font>
+</p>
+
+
+<p>
+  <a name="997441"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Points of interest are:</font>
+</p>
+
+<ul>
+  <li><a name="997442"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The variables HDRS, EXTHDRS, SRCS, OBJS are defined as empty. They are filled in by the mkmf command in the depend rule. The depend rules fills in these variables using all the source files found in the current directory. The variable SRC_LIST controls which files are actually built. The default case is to set SRC_LIST = SRCS and build all source files in the directory. If this is not the desired result, then SRC_LIST can be specified explicitly or manipulated by some other method.</font>
+  <li><a name="997443"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The depend rule will add targets and dependencies for all the files listed in OBJS. This will be at the end of the file. Assembly files dependencies must be added manually.</font>
+  <li><a name="997444"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file includes the files features, make.std_toolset, make.root.inc. The FEATURES variable is defined in the local file features. Tool chain variables are defined in make.std_toolset. Make rules are defined in make.root.inc.</font>
+  <li><a name="997445"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The depend rule must be invoked separately from the build rule. If the command "make depend build" is given, the effects of the depend rule will not be used in the build. This is true only for the local files and any libraries built will be correct.</font>
+</ul>
+
+<h4>
+  <a name="997925"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">This file includes the files make.std_toolset and make.root.inc.</font>
+</h4>
+
+
+<h4>
+  <a name="997466"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">make.root.inc</font>
+</h4>
+
+
+<p>
+  <a name="997467"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file contains the common make rules for a product. It is not a template and is intended to be included by the product's makefile. It can be cloned if a special version is needed, but it is recommended that it still be included by vs. inserted into the product makefile. </font>
+</p>
+
+
+<p>
+  <a name="997591"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Important targets are:</font>
+</p>
+
+
+<p>
+  <a name="997578"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>default</strong> - Typing make cause the default target to be invoked. The default rule is to make the depend and PROJECT targets. They are made separately, not together. This causes the effects of the depend make to be seen by the PROJECT make. See the depend and PROJECT targets.</font>
+</p>
+
+
+<p>
+  <a name="997579"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>all</strong> - The all target makes the clobber, update, depend and PROJECT targets. They are made separately, not together. See default above. This causes everything to build, so caution should be used.</font>
+</p>
+
+
+<p>
+  <a name="997580"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>clobber</strong> - Making the clobber target removes all reproducible files in the local directory. It removes the obj and lib directories as well as any other directories produced by the build. It makes the clobber target for each of the directories listed in SUBDIR. When done, all that should be left are the files and directories found in scms. Note: Clobber's rule removes only those files that are specified as part of the build. Any obsolete or misc. user files will remain. To remove any such file, add it to the OBSOLETE macro.</font>
+</p>
+
+
+<p>
+  <a name="997581"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>update</strong> - Making the update target will update the product from the history manager. It will also make the update target for each directory in SUBDIR. If a directory does not exist, it will be created and updated.</font>
+</p>
+
+
+<p>
+  <a name="997582"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>depend</strong> - The depend rule runs mkmf on the local make file. It also makes the depend target for each directory in SUBDIR. This rule modifies GNUmakefile, but the changes are not seen in the current make. This means that "make depend; make muskrat" may produce different results than "make depend muskrat". In the later case, any changes in which files are built or the include file dependencies will not be seen when muskrat is built.</font>
+</p>
+
+
+<p>
+  <a name="997583"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>PROJECT</strong> - The PROJECT macro equals the products name, i.e., muskrat. Making the project will build any local files and all directories in SUBDIR. Then it will link the project, using the libraries specified in LIBS.</font>
+</p>
+
+
+<p>
+  <a name="997584"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>PROJECT.x</strong> - PROJECT is a macro equal to the products name, i.e., muskrat. Making muskrat.x builds any local files, but does not build SUBDIR's directories. The link is same as for the project target.</font>
+</p>
+
+
+<h4>
+  <a name="997609"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">make.leaf</font>
+</h4>
+
+
+<p>
+  <a name="997610"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file is intended as a template for component (library) makefiles. It should be copied into the component directory, modified accordingly and renamed GNUmakefile. It defines component specific macros that are used no matter where the make is invoked. This file provides default values for variables that normally are overwritten by the product make file, but are used if the make is done locally. </font>
+</p>
+
+
+<p>
+  <a name="997770"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The only macros that normally need modification are LIBNAME and OBSOLETE. LIBNAME defines the name of the library produced. The library name will always be prefixed with "lib". If LIBNAME is psos, than the library name will be libpsos.a. OBSOLETE provides a method to remove files that were once part of the build, but are no longer used. See the clobber target.</font>
+</p>
+
+
+<p>
+  <a name="997655"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Points of interest are:</font>
+</p>
+
+<ul>
+  <li><a name="997656"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The macros HDRS, EXTHDRS, SRCS, OBJS are defined as empty. They are filled in by the mkmf command in the depend rule. The depend rules fills in these macros using all the source files found in the current directory. The macro SRC_LIST controls which files are actually built. The default case is to set SRC_LIST = SRCS and build all source files in the directory. If this is not the desired result, then SRC_LIST can be specified explicitly or manipulated by some other method.</font>
+  <li><a name="997657"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The depend rule will add targets and dependencies for all the files listed in OBJS. This will be at the end of the file.</font>
+  <li><a name="997658"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The depend rule must be invoked separately from the build rule. If the command "make depend build" is given, the effects of the depend will not be used in the build.</font>
+</ul>
+
+<h4>
+  <a name="997659"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">This file includes the files make.std_toolset and make.root.inc.</font>
+</h4>
+
+
+<h4>
+  <a name="997660"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">make.leaf.inc</font>
+</h4>
+
+
+<p>
+  <a name="997661"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file contains the common make rules for a component (library). It is not a template and is intended to be included by the component's makefile. It can be cloned if a special version is needed, but it is recommended that it still be included by vs. inserted into the component's makefile.</font>
+</p>
+
+
+<p>
+  <a name="997756"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Important targets are:</font>
+</p>
+
+
+<p>
+  <a name="997757"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>default</strong> - Typing make cause the default target to be made. The default is to make the depend and LIBNAME targets. They are made separately, not together. This cause the effects of the depend target to be seen by the LIBNAME target. See the depend and LIBNAME targets.</font>
+</p>
+
+
+<p>
+  <a name="997758"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>all</strong> - The all target makes the clobber, update, depend and LIBNAME targets. They are made separately, not together. See default above. This causes everything to build, so caution should be used.</font>
+</p>
+
+
+<p>
+  <a name="997759"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>clobber</strong> - The clobber target removes all reproducible files in the local directory. It removes the obj and lib directories as well as any other directories produced by the build. If an interface file is specified by LIBIFACE, it will be removed from the include directory. When done, all that should be left are the files and directories found in scms. Note: The clobber rule removes only those files that are specified as part of the build. Any misc. user files will remain. Also see the OBSOLETE macro.</font>
+</p>
+
+
+<p>
+  <a name="997760"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>update</strong> - The update target will update the directory from the history manager.</font>
+</p>
+
+
+<p>
+  <a name="997761"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>depend</strong> - The depend rule runs mkmf on the local make file. This rule modifies GNUmakefile, but the changes are not seen in the current make. This means that "make depend; make psos" may produce different results than "make depend psos". In the later case, any changes in which files are built or the include file dependencies will not be seen when psos is built.</font>
+</p>
+
+
+<p>
+  <a name="997762"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>build or LIBNAME</strong> - The LIBNAME macro equals the library's name, i.e., psos. The build and libname targets are the same. Building the libname will build any local files and archive them in a library.</font>
+</p>
+
+
+<h2>
+  <a name="997343"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-5  Makefile Details</font>
+</h2>
+
+
+<p>
+  <a name="997457"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This section gives the goring details of the makefiles and is provided as a reference. Another source of information is Wind River (tm) GNU Toolkit User's Guide.</font>
+</p>
+
+
+<h4>
+  <a name="997454"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">make.std_toolset </font>
+</h4>
+
+
+<p>
+  <a name="131264"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file defines the standard compiler tool chain for a given tool. It assumes the tool (TOOL) is AXLS and then modifies the tool chain if it is GNU or WIND. Macros set in this file are not normally overridden by the mkmf command in the depend rule, since they are defined in this file and included in the makefile. Macros set by this file are:
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131334"> </a>TOOL_PATH</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131336"> </a>CC, COPTS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131338"> </a>LD, LDOPTS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131340"> </a>INCLUDES</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131342"> </a>TOOL_TYPE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131344"> </a>AS, ASFLAGS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131346"> </a>OBJCOPY</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131348"> </a>CFLAGS</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131350"> </a>TOOL_INC</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131407"> </a>AR, ARFLAGS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131354"> </a>ARGEN</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131356"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="131216"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Macros needed by this file:
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131427"> </a>TOOL</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131429"> </a>CPU</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131431"> </a>FEATURES</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131433"> </a>GEN_INC</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="132474"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Environmental variables needed by this file:
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132459"> </a>GNU_BASE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132461"> </a>WIND_BASE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132463"> </a>WIND_HOST_TYPE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132465"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h4>
+  <a name="131221"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif"> make.root</font>
+</h4>
+
+
+<p>
+  <a name="131302"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file serves as a template for the project makefiles. Its purpose is to define product specific macros, but general make macros are also defined here for consistency. Macros set by this file are:
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131599"> </a>SHELL</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131601"> </a>JP_ROOT</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131603"> </a>SUBDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131605"> </a>HDRS</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131607"> </a>MAKEFILE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131609"> </a>LIBDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131611"> </a>LIBS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131613"> </a>EXTHDRS</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131630"> </a>ROOT</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131632"> </a>OBJDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131634"> </a>CPU</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131636"> </a>SRCS</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131638"> </a>INDENT</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131640"> </a>VPATH</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131642"> </a>TOOL</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131644"> </a>OBJS</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131615"> </a>PROJECT</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131617"> </a>REUSE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131619"> </a>GEN_INC</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131621"> </a>SRC_LIST</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h4>
+  <a name="131229"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">make.root.inc</font>
+</h4>
+
+
+<p>
+  <a name="131287"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file contains the common make rules for a project. It is not a template and is intended to be included by the product's makefile. The macros defined here make the make rules easier to write. These macros are:
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131491"> </a>TARGET</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131493"> </a>C_SRCS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131495"> </a>ASM_SRCS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131497"> </a>ALL_OBJS</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131499"> </a>LD_MAP</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131501"> </a>C_OBJS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131503"> </a>ASM_OBJS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131505"> </a>OBJ_LIST</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131507"> </a>LIB_LIST</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131509"> </a><br></font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131511"> </a><br></font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131513"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="131231"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These variables must be defined elsewhere:
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131715"> </a>PROJECT</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131717"> </a>CC, COPTS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131719"> </a>LIBDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131721"> </a>MAKEFILE</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131723"> </a>SRC_LIST</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131725"> </a>LD, LDOPTS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131727"> </a>OBJDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131729"> </a>INDENT</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131731"> </a>LIBS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131733"> </a>AS, ASFLAGS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131735"> </a>SUBDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131737"> </a>PWD</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131781"> </a>TOOL_INC</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131783"> </a>AR, ARFLAGS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131785"> </a>REUSE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131787"> </a>ROOT</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131773"> </a>FEATURES</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131775"> </a>CFLAGS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131807"> </a><br></font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131779"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="997088"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These targets are explicitly defined:
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131879"> </a>all</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131881"> </a>PROJECT</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131883"> </a>objfiles</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131885"> </a>TARGET</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131887"> </a>build</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131889"> </a>depend</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131891"> </a>tags</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131893"> </a>clean_local</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132777"> </a>clean_subs</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131897"> </a>clean</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131899"> </a>clobber</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131901"> </a>update_local</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131903"> </a>update_all</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131905"> </a>update</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131907"> </a>metrics</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131909"> </a>FORCE</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131968"> </a>OBJDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131970"> </a>LIBDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131972"> </a>C_OBJS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="131974"> </a>ASM_OBJS</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h4>
+  <a name="997816"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">make.leaf</font>
+</h4>
+
+
+<p>
+  <a name="997817"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file is intended as a template for component (library) makefiles. It defines component specific macros that are used no matter where the make is invoked. The macros defined in this file are:
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="997820"> </a>VPATH</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="997822"> </a>LIBNAME</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="997824"> </a>LIBIFACE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="997826"> </a>GEN_INC</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="997828"> </a>SHELL</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="997830"> </a>MAKEFILE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="997832"> </a>JP_ROOT</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="997834"> </a>HDRS</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="997836"> </a>EXTHDRS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="997838"> </a>SRCS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="997840"> </a>OBJS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="997842"> </a>SRC_LIST</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="132103"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file provides default values for variables that normally are overwritten by the project make file, but are used if the make is done locally. The largest group of these variables is the compiler tool chain and is provided by including make.std_toolset, the same as in make.root. Other default macros defined are:
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132106"> </a>ROOT</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132108"> </a>PWD</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132110"> </a>OBJDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132112"> </a>LIBDIR</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132114"> </a>TOOL</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132116"> </a>FEATURES</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132118"> </a>INDENT</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132120"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h4>
+  <a name="132137"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">This file includes the files make.std_toolset and make.root.inc. The FEATURES macro is defined as empty as the default and will be overwritten by the product's FEATURES macro during an actual build. Default tool chain variables are defined in make.std_toolset. Make rules are defined in make.leaf.inc.</font>
+</h4>
+
+
+<h4>
+  <a name="132259"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">make.root.inc</font>
+</h4>
+
+
+<p>
+  <a name="132138"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This file contains the common make rules for a component (library). These macro make writing the make rules easier. These macros are:
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132141"> </a>LIBRARY</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132143"> </a>AR_LIST</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132145"> </a>IFACEDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132147"> </a>IFACE_LIST</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132149"> </a>C_SRCS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132151"> </a>ASM_SRCS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132153"> </a>C_OBJS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132155"> </a>ASM_OBJS</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132157"> </a>ALL_OBJS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132159"> </a>OBJ_LIST</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132161"> </a><br></font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132163"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="132205"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These variables must be defined elsewhere:
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132166"> </a>LIBNAME</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132168"> </a>CC, COPTS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132170"> </a>LIBDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132172"> </a>MAKEFILE</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132174"> </a>SRC_LIST</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132176"> </a>AR, ARFLAGS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132178"> </a>OBJDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132180"> </a>INDENT</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132182"> </a>LIBIFACE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132184"> </a>CFLAGS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132186"> </a>HDRS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132188"> </a>PWD</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132190"> </a>TOOL_TYPE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132192"> </a>FEATURES</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132194"> </a>JP_ROOT</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132196"> </a>INCLUDES</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="132255"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These targets are explicitly defined:	 
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132208"> </a>all</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132210"> </a>LIBNAME</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132212"> </a>objfiles</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132214"> </a>OBJDIR</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132216"> </a>LIBDIR</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132218"> </a>IFACE_LIST</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132220"> </a>LIBRARY</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132222"> </a>depend</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132224"> </a>tags</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132226"> </a>clean</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132228"> </a>clobber</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132230"> </a>update</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132232"> </a>metrics</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132234"> </a>FORCE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132236"> </a>C_OBJS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="132238"> </a>ASM_OBJS</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h3>
+  <a name="131196"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-5.1  Common makefile macros</font>
+</h3>
+
+
+<p>
+  <a name="130551"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There a many macros (variables) that are defined and used in the make system. This is a glossary of these macros:</font>
+</p>
+
+
+<p>
+  <a name="130929"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>ALL_OBJS</strong> - A list of all object files derived from local files that are to be built and loaded. This macro is the concatenation of the macros C_OBJS and ASM_OBJS.</font>
+</p>
+
+
+<p>
+  <a name="130853"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>AR, ARFLAGS</strong> - Assembler directive and corresponding flags. This is normally switched based on the macro TOOL.</font>
+</p>
+
+
+<p>
+  <a name="130854"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>AR_LIST</strong> - File containing a list of modules added or updated when the archive was built. Usually the file name is Archive.list.</font>
+</p>
+
+
+<p>
+  <a name="132519"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>AS, ASFLAGS</strong> - Archiver directive and corresponding flags. This is normally switched based on the macro TOOL.</font>
+</p>
+
+
+<p>
+  <a name="130883"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>ASM_OBJS</strong> - A list of object files derived from the assembly source list macro, ASM_SRCS. It is a target used to specify the rule to build local assembly source files.</font>
+</p>
+
+
+<p>
+  <a name="130855"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>ASM_SRCS</strong> - A list of local assembly source files (*.s). This macro is derived from the macro SRC_LIST.</font>
+</p>
+
+
+<p>
+  <a name="130567"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>CC</strong> - Compiler command. Possible choices are cc68k, gcc, cc68020, etc. It is normally switched based on the macro TOOL.</font>
+</p>
+
+
+<p>
+  <a name="130785"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>CFLAGS</strong> - The concatenation of the macros COPTS, FEATURES and CFLAGS. It is the complete specification of the include paths, compiler directives and options.</font>
+</p>
+
+
+<p>
+  <a name="130777"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>COPTS</strong> - A list of compiler directives and options. It is normally switched based on the macro TOOL. </font>
+</p>
+
+
+<p>
+  <a name="130789"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>CPU</strong> - Used to form compiler directives. It defines the target cpu. Currently it is 68020.</font>
+</p>
+
+
+<p>
+  <a name="130779"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>C_OBJS</strong> - A list of object files derived from the c source list macro, C_SRCS. It is a target used to specify the rule to build local C source files.</font>
+</p>
+
+
+<p>
+  <a name="130778"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>C_SRCS</strong> - A list of local C source files (*.c). This macro is derived from the macro SRC_LIST.</font>
+</p>
+
+
+<p>
+  <a name="130799"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>EXTHDRS</strong> - A list of include files listed in the source file list, SRCS, that are not found in the current directory. These are usually the system include files. It is modified by the mkmf command in the depend rule.</font>
+</p>
+
+
+<p>
+  <a name="130580"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>FEATURES</strong> - A list of compiler directives to control the build based on hardware and software features available in the product. It is defined in the file features. See text.</font>
+</p>
+
+
+<p>
+  <a name="130803"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>GEN_INC</strong> - The include search path, excluding the tool chain include path, TOOL_INC. It is concatenated with TOOL_INC to form INCLUDES.</font>
+</p>
+
+
+<p>
+  <a name="130815"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>HDRS</strong> - A list of include files listed in the source file list, SRCS, that are found in the current directory. This macro is modified by the mkmf command in the depend rule</font>
+</p>
+
+
+<p>
+  <a name="132531"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>IFACEDIR</strong> - Directory in which to store the component's inteface file(s). This is usually jediPlus/include.</font>
+</p>
+
+
+<p>
+  <a name="132535"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>IFACE_LIST</strong> - A file used to determine if the local interface file is newer than the copy in IFACEDIR. The file name is usually Iface.list. </font>
+</p>
+
+
+<p>
+  <a name="130826"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>INCLUDES</strong> - The complete include search path. It is the concatenation of TOOL_INC and GEN_INC.</font>
+</p>
+
+
+<p>
+  <a name="130865"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>INDENT</strong> - A formatting macro used to make the make output look somewhat organized. The indenting will be different depending where the build originates.</font>
+</p>
+
+
+<p>
+  <a name="130818"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>JP_ROOT</strong> - The path to the root of the local jediPlus directory tree.</font>
+</p>
+
+
+<p>
+  <a name="130592"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>LD, LDOPTS</strong> - Loader directive and corresponding flags. This is normally switched based on the macro TOOL.</font>
+</p>
+
+
+<p>
+  <a name="130830"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>LIBDIR</strong> - Destination of all libraries. A default value, ./lib is used for local builds. For a product build, this will be a common directory, usually named lib, under the product directory.</font>
+</p>
+
+
+<p>
+  <a name="132539"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>LIBIFACE</strong> - A list of the interface files for the component. This list usually has one file, LIBNAME.h.</font>
+</p>
+
+
+<p>
+  <a name="132541"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>LIBNAME</strong> - Name of the component, i.e., library.</font>
+</p>
+
+
+<p>
+  <a name="132543"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>LIBRARY</strong> - Full name of the archive file, including the directory path. It is usually LIBDIR/LIBNAME.a</font>
+</p>
+
+
+<p>
+  <a name="130919"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>LIBS</strong> - A list of libraries to be built for the product.</font>
+</p>
+
+
+<p>
+  <a name="130744"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>LIB_LIST</strong> - The product's library list, LIBS, with the LIBDIR path prefix added to each library name. This macro is used to simplify the product's make rules. </font>
+</p>
+
+
+<p>
+  <a name="130811"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>LD_MAP</strong> - File name of the output from the load operation. It gives a global summary and individual summary of each module loaded.</font>
+</p>
+
+
+<p>
+  <a name="132529"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>MAKEFILE</strong> - The name of the makefile. It is usually GNUmakefile.</font>
+</p>
+
+
+<p>
+  <a name="130834"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>OBJCOPY</strong> - The name of the program used to convert object files from one format to another.</font>
+</p>
+
+
+<p>
+  <a name="132614"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>OBJDIR</strong> - Destination of the intermediate object files from the build. These files will be used to determine is the source file is newer and must be rebuilt. A default value, ./obj is used for local builds. For a product build, this will be a common directory, usually named obj, under the product directory.</font>
+</p>
+
+
+<p>
+  <a name="130660"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>OBJS</strong> - A list of all object files from the local source files. It is modified by the mkmf command in the depend rule.</font>
+</p>
+
+
+<p>
+  <a name="130842"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>OBJ_LIST</strong> - A list of all object files to be used to build a library. Each file name contains its complete path. This macro is built from the macros ASM_OBJS, C_OBJS and OBJDIR.</font>
+</p>
+
+
+<p>
+  <a name="130943"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>PROJECT</strong> - Product's name, i.e. muskrat, puma.</font>
+</p>
+
+
+<p>
+  <a name="132545"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>PWD</strong> - Present working directory</font>
+</p>
+
+
+<p>
+  <a name="132547"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>REUSE</strong> - A list of directories whose results can be taken without rebuilding.</font>
+</p>
+
+
+<p>
+  <a name="130698"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>ROOT</strong> - The path to the product directory. This is where the product build is started.</font>
+</p>
+
+
+<p>
+  <a name="130704"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>SHELL</strong> - The shell used to execute all make commands. It is usually /bin/sh.</font>
+</p>
+
+
+<p>
+  <a name="130846"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>SRCS</strong> - A list of local source files. It is usually used to build SRC_LIST </font>
+</p>
+
+
+<p>
+  <a name="130923"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>SRCS_LIST</strong> - A list of local source files to build. By default, it is set to SRCS and all local files are built. But it can be customize to build only selected files. It is used to build the macros ASM_SRCS and C_SRCS.</font>
+</p>
+
+
+<p>
+  <a name="132549"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>SUBDIR</strong> - A list of directories that need to be made and the results stored locally. See OBJDIR &amp; LIBDIR.</font>
+</p>
+
+
+<p>
+  <a name="130838"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>TARGET</strong> - The name of the product's executable. Default is $(PROJECT).x.</font>
+</p>
+
+
+<p>
+  <a name="130793"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>TOOL</strong> - Defines the tool chain to use for the build. Current choices are AXLS, GNU &amp; WIND.</font>
+</p>
+
+
+<p>
+  <a name="132551"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>TOOL_PATH</strong> - Path for tool chain dependent executables, such as cc and ld. It is normally switched based on the macro TOOL.</font>
+</p>
+
+
+<p>
+  <a name="132633"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>TOOL_TYPE</strong> - Used as a build directive in the form -D$(TOOL_TYPE). It is used during compilation to switch code dependent on the compiler in use. This is normally switched based on the macro TOOL.</font>
+</p>
+
+
+<p>
+  <a name="130795"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>TOOL_INC</strong> - Include path for the system header files. It is normally switched based on the macro TOOL. It is usually concatenated with the macro GEN_INC to form the macro INCLUDES.</font>
+</p>
+
+
+<p>
+  <a name="132554"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>VPATH</strong> - Search path for make rule dependencies. It is usually set to OBJDIR if in component's subdirectory or OBJDIR &amp; LIBDIR if in the product's subdirectory.</font>
+</p>
+
+
+<p>
+  <a name="132595"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="132602"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These are environmental variables that need to be set if the GNU or WindRiver tool sets are used.</font>
+</p>
+
+
+<p>
+  <a name="132556"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>GNU_BASE</strong> - Root of the GNU tool chain. It is typically /usr/progressive.</font>
+</p>
+
+
+<p>
+  <a name="132558"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>WIND_BASE</strong> - Root of the WindRiver tool chain. It is typically /usr/wind</font>
+</p>
+
+
+<p>
+  <a name="132560"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>WIND_HOST_TYPE</strong> - Describes the host platform. It is used to set TOOL_PATH when using the WindRiver tool chain. It is used by the WindRiver tools to determine which host software to use. It is usually parisc-hpux9 or parisc-hpux10.</font>
+</p>
+
+
+<p>
+  <a name="132640"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><strong>WIND_REGISTRY</strong> - I think this tells the WindRiver tools where to find the license server. I have it set to my machine, which is where my license server is located.</font>
+</p>
+
+
+<h3>
+  <a name="130956"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-5.2  Features</font>
+</h3>
+
+
+<p>
+  <a name="130561"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It is possible that we will use conditional code to control the compilation process. To help with this, the macro FEATURE will be added to the makefiles. FEATURES defines symbols indicating the presence of various hardware/software features in different jediPlus products. This should be easier than tying conditional code to product name, i.e. MUSKRAT, PUMA, etc. To simplify the makefile and to clarify what is defined and undefined for the product, it's useful to move this macro definition to a separate file, features. This file is included in the makefile. The following is the text that might appear in muskrat/features:</font>
+</p>
+
+
+<p>
+  <a name="130358"> </a><font face="Verdana, Arial, Helvetica, sans-serif">/*</font>
+</p>
+
+
+<p>
+  <a name="130367"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** Symbol               M P             Description</font>
+</p>
+
+
+<p>
+  <a name="130341"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** ------               -----------     -----------</font>
+</p>
+
+
+<p>
+  <a name="130342"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** CENTRONICS           Y Y             Centronics parallel port present.</font>
+</p>
+
+
+<p>
+  <a name="130343"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** BI_CENTRONICS        _ Y             Centronics port bi-directional.</font>
+</p>
+
+
+<p>
+  <a name="130344"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** COLOR_DISP           _ _             Display is color, not grayscale.</font>
+</p>
+
+
+<p>
+  <a name="130345"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** HPIB_OPTIOANAL       Y Y             Hpib hardware is an option</font>
+</p>
+
+
+<p>
+  <a name="130346"> </a><font face="Verdana, Arial, Helvetica, sans-serif">**                                      rather than always present.</font>
+</p>
+
+
+<p>
+  <a name="130347"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** USB                  _ _             Product supports USB</font>
+</p>
+
+
+<p>
+  <a name="130348"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** LAN                  _ _             Product supports LAN</font>
+</p>
+
+
+<p>
+  <a name="130349"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** COYOTE               Y _             Product uses the Coyote acq. chip.</font>
+</p>
+
+
+<p>
+  <a name="130350"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** ZEUM                 _ _             Product uses the Zeum acq. chip.</font>
+</p>
+
+
+<p>
+  <a name="130351"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** BUGFIX1              _ Y             Bugs fixed in Puma and later code.</font>
+</p>
+
+
+<p>
+  <a name="130352"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** RTC                  Y Y             Real time clock is present.</font>
+</p>
+
+
+<p>
+  <a name="130353"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** WORDIO               Y Y             Most I/O registers on word boundaries</font>
+</p>
+
+
+<p>
+  <a name="130354"> </a><font face="Verdana, Arial, Helvetica, sans-serif">** PC_FLOPPY            Y Y             PC style floppy; no density or ready</font>
+</p>
+
+
+<p>
+  <a name="130355"> </a><font face="Verdana, Arial, Helvetica, sans-serif">*/</font>
+</p>
+
+
+<p>
+  <a name="130356"> </a><font face="Verdana, Arial, Helvetica, sans-serif">FEATURES = -DCENTRONICS -DHPIB_OPTIONAL -DCOYOTE -DRTC -DWORDIO -DPC_FLOPPY</font>
+</p>
+
+
+<p>
+  <a name="130515"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h2>
+  <a name="130516"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">30-6  Makefile Details</font>
+</h2>
+
+
+<p>
+  <a name="130517"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="commonAbs.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="codingStandards.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

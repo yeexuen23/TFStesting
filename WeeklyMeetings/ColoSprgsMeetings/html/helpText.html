@@ -1,0 +1,214 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:21:30 2002">
+<title>CHAPTER 10 Quick-Help</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="userInterface.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="localize.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="999227"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 10 	 Quick-Help</font>
+</h1><hr>
+
+
+<h2>
+  <a name="999228"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">10-1  Overview</font>
+</h2>
+
+
+<p>
+  <a name="999237"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><br>Quick-Help is a context sensitive help system that allows the customer to access one page of text for any hardkey or softkey on the front panel of Muskrat/Puma.  The firmware design that allows this is fairly simple.  The database that contains a pointer to the control for a button will essentially contain a pointer to an array of characters that describes the behavior.  When a button is held down for some "dwell" time, the keypad scanning engine decides to send the key processing engine a "help" token instead of a "key" token.  The key processing engine then dispatches a help text pointer to a generic help text display mechanism.</font>
+</p>
+
+
+<p>
+  <a name="999251"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are several problems involved in this feature, all of which stem from our desire to offer local language versions of this text.  First, we would like all of the supported languages to be linked separately from the system firmware link.  This allows us to fix defects in the help text without going through the firmware release process.  Obviously, it also allows us to add new language support after the instrument is in the field.  Next, local languages often require a unique font that supports that language.  We must create a method for including the fonts with the language if necessary.  Also,  Asian fonts essentially require a 16 bit character set.  Therefore, our text handling mechanism must support 16 bit fonts.  Another problem is that these fonts can be huge and it is impractical to contemplate loading all of the glyphs in some of the Asian language fonts.  Therefore, we must come up with a methodology for compressing the font set to only the required glyphs.</font>
+</p>
+
+
+<p>
+  <a name="999242"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The current localization strategy involves a phased approach in which the first phase is to only localize the help text.  This is a discussion of how the software will deal with multiple languages and fonts.</font>
+</p>
+
+
+<p>
+  <a name="999238"> </a><font face="Verdana, Arial, Helvetica, sans-serif">	 	 It has been decided that this system will be designed to simply allow the loading of as many help text languages as the available flash memory will hold.  Initially, English was to be linked with the system software.  However,  I see no reason not to have the English help system downloadable, just like the other languages. </font>
+</p>
+
+
+<h2>
+  <a name="999258"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">10-2  How fonts and text are handled</font>
+</h2>
+
+
+<p>
+  <a name="999240"> </a><font face="Verdana, Arial, Helvetica, sans-serif">JediPlus will use a font handling mechanism that is derived from the system that Brian Kerr designed for Spectre.  The version of "xfed" found in the Jedi bin directory is capable of converting a "BDF" font to a "C" code compressed version that his system utilizes.  The generic font description data structures can be found in "./jediPlus/text/c_font.h"  Each font has a datastructure of type "CompFont" which describes the font and supplies a pointer to the first glyph in the font.  The text handling refers to the "CompFont" data structure to determine font wide parameters, then refers to the individual glyph descriptions and bitmaps to render each glyph.  The encoding value for each character in a string that is to be printed serves as the index into the "CharInfo" array which contains the individual glyph descriptions</font>
+</p>
+
+
+<h2>
+  <a name="999264"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">10-3  Current font strategy</font>
+</h2>
+
+
+<p>
+  <a name="999265"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are fonts loaded on the workstations that will suffice for most of our localization needs.  Use "xlsfonts" to determine which fonts are loaded.  For example, if we use "xlsfonts | grep jis" we can find the X11 fonts that are loaded that are JIS encoded fonts.  Finding an appropriate font for our Japanese translation is a simple matter of determine which of the JIS fonts are the correct size for our needs.  Many of the European languages may be handled with the ISO-8859 fonts that can be found on our Unix systems.  Once a font has been chosen, it can be converted to "BDF" format using the tool "getbdf" in the tools directory  Finally, "xfed" may be used as a filter to convert BDF to BKF (Brian Kerr Format).</font>
+</p>
+
+
+<p>
+  <a name="999266"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The only problem we haven't addressed is that of very large 16 bit fonts.  Our strategy relies on the assumption that for our Asian language content, only a subset of an Asian language font will be utilized.  A filter will be written to examine the translation output and only load the utilized glyphs from the fonts.  Then, the filter will modify the encoding used in the content to utilize a contiguous memory space for the glyphs.  For example, if a language only had the following text:</font>
+</p>
+
+
+<p>
+  <a name="999267"> </a><font face="Verdana, Arial, Helvetica, sans-serif">	   "All work and no play makes Jack a dull boy"</font>
+</p>
+
+
+<p>
+  <a name="999268"> </a><font face="Verdana, Arial, Helvetica, sans-serif">then the tool would simply pack the bitmaps for "Al workandpymesJcub" into contiguous address space, then change the encoding on the sentence accordingly.  The result is a font that matches no standard encoding method, but only contains the required glyphs.</font>
+</p>
+
+
+<p>
+  <a name="999284"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="999285"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="999286"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="999287"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="999288"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="999289"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h2>
+  <a name="999386"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">10-4  Language and font database</font>
+</h2>
+
+
+<p>
+  <a name="999434"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Please refer to the following address illustration:<img src="images/helpTexta.gif" height="588" width="576">
+ </font>
+</p>
+
+<a name="999435"> </a>FIGURE 19.&#32; Basic Help Database Map
+<h3>
+  <a name="999439"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">10-4.1  Loading an additional language</font>
+</h3>
+
+
+<p>
+  <a name="999375"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The language loader will first acess the "first available ptr" to find the first location at which new language data can be loaded.  If the user has indicated that he'd like to "add" a language, then the loader must determine whether or not there is room utilizing this pointer.  Next, the loader can install the text and the font beginning at the "first available ptr" address, add the new data size to this pointer, then install the text and font pointers in the text and font pointer array.</font>
+</p>
+
+
+<h3>
+  <a name="999376"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">10-4.2  Replacing languages </font>
+</h3>
+
+
+<p>
+  <a name="999468"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The system will support replacing languages that have already been installed for the purpose of updating the text to new revisions.  The flash rom reprogramming code will be designed to "make room" for the new text in the event that it is larger than the existing text and the subsequent language database has been loaded in adjacent memory.  Since the flash rom must be erased in 128 kbyte sections before it is reprogrammed, this will take some careful design.  Since the design of this system resides in the flash system architecture, here I will only describe the behavior as observed by the customer who is upgrading a language in his Muskrat. </font>
+</p>
+
+
+<p>
+  <a name="999469"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The user downloads a new version of English from the web.  He then places this file onto a floppy which happens to have several different language databases loaded on it.  The user installs this floppy in the disk drive on his Muskrat and enters the software update menu.  After navigating through the menu structure, the customer encounters a location in which he chooses which language he would like to update.  Once he's chosen, the system confirms, then attempts to upgrade the language database.  If their is enough room left in flash to install the new database after removing the old database, no further interaction is required from the user.  However, if the new database is large enough to overflow the flash rom space available, the system will prompt the user to utilize the "delete" feature to go delete one or more of the currently loaded language databases to make room for the new one.</font>
+</p>
+
+
+<h3>
+  <a name="999457"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">10-4.3  Graphics</font>
+</h3>
+
+
+<p>
+  <a name="999491"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The help text handling routines must handle graphics.  There are many explanations that may benefit from the inclusion of a diagram or figure.  We would like to support a means of handling graphics that is supported by the content development platform which will be PC based.  At this point I know that the storage format for bitmaps is .bmp files.  The text will contain a reference to the bitmap and the bitmap will be stored at some location outside of the help text that includes it.  Obviously, there are many issues involved in making this work correctly...</font>
+</p>
+
+
+<h2>
+  <a name="999492"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">10-5  Embedded system dependent text</font>
+</h2>
+
+
+<p>
+  <a name="999478"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are several situations in which it will be advantageous to embed system dependent text into the help text content.  We would like to avoid having duplicate pages of help for every page that mentions a product model number simply because that page is used in all Muskrat/Puma model numbers.  Therefore, the system will have system recognizable keywords that will be replaced with the appropriate string.  In order to implement this, the system help text processing code must have a parser that recognizes these keywords.  </font>
+</p>
+
+
+<h2>
+  <a name="999477"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">10-6  Issues not dealt with in this documentation yet.</font>
+</h2>
+
+<ul>
+  <li><a name="999451"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Number of languages currently installed</font>
+  <li><a name="999452"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Language Description Text</font>
+  <li><a name="999444"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Help text pointer tables</font>
+  <li><a name="999445"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Individual text database revision numbers</font>
+</ul>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="userInterface.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="localize.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

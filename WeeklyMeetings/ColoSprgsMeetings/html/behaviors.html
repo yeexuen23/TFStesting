@@ -1,0 +1,367 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:19:31 2002">
+<title>CHAPTER 2 Behavioral Requirements</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="frntpnl.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="arch.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="996747"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 2 	 Behavioral Requirements</font>
+</h1><hr>
+
+
+<h2>
+  <a name="999254"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-1  Outline</font>
+</h2>
+
+
+<p>
+  <a name="999305"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This document is intended to be <strong>the </strong>location for documenting those behaviors of the Muskrat/Puma family of oscilloscopes that are open to interpretation by indivuals.  Since many of these behaviors have been defined in past oscilloscope offerings from Hewlett-Packard and in fact from our competitors, we will attempt to head off the majority of the time consuming discussions often associated with solidifying behaviors like these.  Also, this will serve as the file folder for decisions that we make regarding operational behavior as we progress through product development.  This document <strong>is not</strong> intended to be comprehensive.  The author (Stu Hall) will, however, field inputs and suggestions as to the content of this document.  Also, one can assume that the definitions herein are not set in stone, but will asymptotically approach that state the closer we get to intro date.  In other words, get your inputs in early.</font>
+</p>
+
+
+<h2>
+  <a name="999255"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-2  Responsiveness </font>
+</h2>
+
+
+<p>
+  <a name="999256"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The goal should always be to achieve "instantaneous" response to control changes.  Obviously, this is impossible with some controls, and with others, not that important.  However, it should be stressed that for primary oscilloscope controls, instantaneous response is a must, it is not a want. The product simply will not ship until the team is satisfied that these controls have acceptable responsiveness.  So, unlike other product families in which you live with what you get, this family will be designed from the start to achieve these goals.     </font>
+</p>
+
+
+<p>
+  <a name="999258"> </a><font face="Verdana, Arial, Helvetica, sans-serif">So, what is instantaneous?  Our display updates itself once every 16ms. Any change that can be achieved in 16milliseconds is instantaneous.  However, this is the rate below which human perception allows the detection of "flicker".  I would say that this is the lower end of what is arguably "instantaneous".  The upper end is a little harder to nail down and really depends on the control in question.   There are three regions of performance for a control-</font>
+</p>
+
+
+<p>
+  <a name="999540"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="999541"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="999354"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-2.1  Control performance regions *</font>
+</h3>
+
+<ol type="1">
+  <li value="1"><a name="999319"> </a><font face="Verdana, Arial, Helvetica, sans-serif">t &lt;= 16ms</font>
+  <li value="2"><a name="999318"> </a><font face="Verdana, Arial, Helvetica, sans-serif">16ms &lt;= t &lt;= 40ms</font>
+  <li value="3"><a name="999316"> </a><font face="Verdana, Arial, Helvetica, sans-serif">40ms &lt;= t &lt;= 100ms </font>
+</ol>
+
+<p>
+  <a name="999355"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="999325"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The first region describes that performance for which further improvements would yield diminishing returns.  Basically, you cannot tell if a change is occurring faster than this.  The middle region is the minimum acceptable performance for primary controls.  If a control falls in this region and optimization has reached the point of diminishing returns, then it may be deemed acceptable.  The third region is the last performance region that can be considered acceptable for the remainder of controls with only a very few exceptions.  When it becomes clear that a control change will exceed this criteria, discussion should be initiated amongst team members to come to agreement on the acceptability.</font>
+</p>
+
+
+<p>
+  <a name="999259"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For continuously variable knob adjustments, we should achieve a design that creates the illusion that the knobs are hard connected to an analog offset control.  There should be no lag, and no blinking of the wavform, when the horizontal delay or the vertical position controls are adjusted.  We will always redisplay existing data before turning on acquisitions looking for new data.  This keeps the responsiveness from changing dramatically in the trigger rate limited case.  These are the most difficult control changes to make "instantaneous", but they're also some of the most important controls. Note that as you slew a knob, there is benefit in drawing intermediate values between the desired setting and the target setting.  The more of these intermediate values that are drawn, the smoother the slew appears to be. These intermediate trace displays enhance the feedback to the user that he is making the desired change correctly.     </font>
+</p>
+
+
+<p>
+  <a name="999260"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are other controls that cause "range" changes that should be nearly as instantaneous.  The vertical sensitivity and the horizontal sweep speed controls are the most obvious examples.  Again, these will be implemented to redraw existing data at the new scales, then acquire new data.  This is how we achieve our seemless pan and zoom as well as fast response in trigger rate limited cases.</font>
+</p>
+
+
+<h2>
+  <a name="999228"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-3  Feedback prioritization</font>
+</h2>
+
+
+<p>
+  <a name="999257"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This family of oscilloscopes should always present feedback to the user with waveforms as highest priority.  In other words, when possible get the waveform data moved and re-acquiring first, then make screen updates.  The user's attention is focused in the waveform area of the screen, and waveforms are the primary feedback mechanism.  Therefore, if a slow screen update must take place at some point in a control change, the waveform should be updated first, then the screen change.  There are exceptions to this however.  For example, if we change from main to delayed sweep, then redrawing the waveforms looks funny when drawn in the existing main sweep graticule.  We will use the following prioritization for on-screen object updates-</font>
+</p>
+
+
+<p>
+  <a name="999364"> </a><font face="Verdana, Arial, Helvetica, sans-serif">* Agreed upon at 10/10/97 meeting with Dana Johnson, Mike Beyers, Dennis Dosch &amp; Stu Hall in attendance.</font>
+</p>
+
+
+<h3>
+  <a name="999333"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-3.1  Screen object update order*</font>
+</h3>
+
+
+<p>
+  <a name="999511"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Update on-screen objects in the following order:</font>
+</p>
+
+<ol type="1">
+  <li value="1"><a name="999334"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Waveform Data</font>
+  <li value="2"><a name="999335"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Ground indicators</font>
+  <li value="3"><a name="999336"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Trigger Indicators</font>
+  <li value="4"><a name="999337"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Control Readout</font>
+  <li value="5"><a name="999338"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Markers</font>
+  <li value="6"><a name="999339"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Functions</font>
+  <li value="7"><a name="999350"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Measurements</font>
+</ol>
+
+<h2>
+  <a name="999229"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-4  Waveform location and movement</font>
+</h2>
+
+
+<p>
+  <a name="999265"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Analog waveforms and logic waveforms will have locations on the display exactly like those used in Moab.  Analog waveforms will always be in the top half of the waveform area.  In delayed sweep, the analog waveforms will be in the first and third quarters.  The logic waveforms are displayed in the lower half or quarters.  Also, logic waveforms will have discrete locations on the screen, exactly as in Moab.  There has been some discussion that the logic waveform positions should be continuously variable.  However, we've seen little to no pull for this and in fact it adds no capability.  It simply places the burden of separating the waveforms in the user's hands.  The logic waveforms can be repositioned between discrete locations as in Moab.  This is not the same issue as whether or not Muskrat will have logic waveform "bussing".  That issue is discussed in the next section.</font>
+</p>
+
+
+<p>
+  <a name="999545"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We are looking at ways to elegantly include a delayed sweep only mode in the horizontal menu.  Weve heard quite a bit of pull for this feature.  Since the feature basically boils down to having a softkey that serves as a macro to switch the whole screen display to a different sweep speed, it is trivial to add.  Therefore we must simply decide if there is enough pull for the feature and if we've got a free softkey in the horizontal mode menu to implement it.</font>
+</p>
+
+
+<h2>
+  <a name="999552"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-5  Logic channel bussing</font>
+</h2>
+
+
+<p>
+  <a name="999555"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There has been much discussion over whether or not Muskrat will support channel "bussing".  The hardware is designed to support this feature and the software will be as well.</font>
+</p>
+
+
+<h2>
+  <a name="999230"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-6  Random repetitive pan &amp; zoom</font>
+</h2>
+
+
+<p>
+  <a name="999473"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Muskrat/Puma will behave exactly as does Moab &amp; Badger.  The system will be designed to Pan &amp; Zoom on the last trigger's data at equivalent time sweep speeds.  Though it is arguable that the expected behavior would be panning and zooming on the multiple trigger data whenever possible, there are also strong arguments to use the last trigger.  Given that the arguments are for the most part equal on both sides, we'll continue to use the Moab &amp; Badger behavior.  This solution also provides the user with the most acquired time, which we've determined to be a benefit for the mixed signal designer.</font>
+</p>
+
+
+<h2>
+  <a name="999469"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-7  Vertically clipped data </font>
+</h2>
+
+
+<p>
+  <a name="999266"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Vertically clipped data will be panned and zoomed onto the screen exactly as if it were real sampled data.  There has been some discussion about how to clarify to the user that this data was clipped when it was sampled, but no better solution has been proposed.</font>
+</p>
+
+
+<h2>
+  <a name="999409"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-8  Post processing acquired data</font>
+</h2>
+
+
+<p>
+  <a name="999410"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In the HP54645A/D project, few early decisions were made on the issue of how to treat the data captured in acquisition memory upon control changes.  The philosophies that will be adhered to on Muskrat/Puma are documented here. *</font>
+</p>
+
+
+<p>
+  <a name="999267"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The waveform data should always be treated as sacred and redisplayed whenever possible.  We should always attempt to apply any control change to the data until it becomes impractical.  At this point, there should be some indication that the data does not reflect the current settings.  For example, when the horizontal mode control is changed from main to delayed, existing waveform data should be redisplayed in both windows at the appropriate sweep speed settings.  A more difficult example to achieve would be to switch from main to XY.  If possible, we should be able to go back and forth between these to modes with existing data.  However, in many cases we might be able to characterize this behavior as "delighter" behavior, and therefore it is not imperative.  It will be very important in the course of this project to put the appropriate weight on this issue because it has the potential to create so much work for the development team.</font>
+</p>
+
+
+<p>
+  <a name="999483"> </a><font face="Verdana, Arial, Helvetica, sans-serif">* Agreed upon at 10/10/97 meeting with Dana Johnson, Mike Beyers, Dennis Dosch &amp; Stu Hall in attendance.</font>
+</p>
+
+
+<h3>
+  <a name="999447"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-8.1  Post processing musts</font>
+</h3>
+
+
+<p>
+  <a name="999525"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following actions must yield a similar result on existing data as they would with live data:</font>
+</p>
+
+<ul>
+  <li><a name="999448"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Change Vertical or Horizontal scale or position</font>
+  <li><a name="999452"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Change between Main &amp; Delayed horizontal modes</font>
+  <li><a name="999449"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Turn off a channel and then turn same channel back on</font>
+  <li><a name="999450"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Turn on a channel math function</font>
+</ul>
+
+<h3>
+  <a name="999413"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-8.2  Deleting acquired data</font>
+</h3>
+
+
+<p>
+  <a name="999530"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following actions are the <strong>only</strong> actions that will explicitly delete acquisition ram data.  Note that no distinction is made between the running and stopped cases.  No other user actions will result in an explicit erase of acquisition ram data.</font>
+</p>
+
+<ul>
+  <li><a name="999416"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Single</font>
+  <li><a name="999428"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Run</font>
+  <li><a name="999417"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Clear Display</font>
+  <li><a name="999418"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Autoscale</font>
+  <li><a name="999423"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Default Setup</font>
+</ul>
+
+<h3>
+  <a name="999457"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-8.3  Displayed configuration information</font>
+</h3>
+
+
+<p>
+  <a name="999533"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The configuration information displayed on the screen and using front panel LED indicators shall always describe the system configuration, not the data.</font>
+</p>
+
+
+<h3>
+  <a name="999431"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-8.4  Post processing WIBNIs</font>
+</h3>
+
+
+<p>
+  <a name="999534"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following actions will not result in changes to existing data in Muskrat.  Arguably in the future the implied transform should be applied to the data:</font>
+</p>
+
+<ul>
+  <li><a name="999439"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel coupling change between AC &amp; DC</font>
+  <li><a name="999440"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Bandwidth limit turned on or off</font>
+  <li><a name="999441"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel invert toggled on or off</font>
+  <li><a name="999446"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel coupling changed to ground</font>
+</ul>
+
+<h2>
+  <a name="999391"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-9  Autoscale</font>
+</h2>
+
+
+<p>
+  <a name="999271"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There is a Jedi-Knight tradition that Autoscale shall be virtually instantaneous.   Its probably important enough to note here that Matt Holcomb is the current owner of the autoscale secrets.  Unless a really good reason comes along, he'll be writing that code.  I think Matt would say that you'd have to pry that code out of his cold, dead hands for somebody other than him to write it.</font>
+</p>
+
+
+<h2>
+  <a name="999490"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-10  Infinite persistence behavior</font>
+</h2>
+
+
+<p>
+  <a name="999491"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The current thinking here is that we try to avoid erasing this data unless <strong>Clear Display</strong> is pressed.  However, there are many other cases that should probably produce an erase.</font>
+</p>
+
+<ul>
+  <li><a name="999501"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Vertical sensitivity change</font>
+  <li><a name="999502"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Horizontal sweep speed change</font>
+  <li><a name="999503"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Horizontal mode change</font>
+  <li><a name="999504"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Acquisition mode change</font>
+  <li><a name="999508"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Others???</font>
+</ul>
+
+<h2>
+  <a name="999492"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-11  Save/Recall to/from floppy or memory</font>
+</h2>
+
+
+<p>
+  <a name="999462"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are three important behaviors to document here, and they're both simply philisophical in nature. </font>
+</p>
+
+<ul>
+  <li><a name="999463"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Saves &amp; Recalls should get the scope back to normal operation as soon as possible.   In other words, we should eradicate locking out the front panel as much as possible.  </font>
+  <li><a name="999464"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Primary behavior should yield ubiquitous data formats.  Therefore, it should be easiest for the customer to save a<strong> tiff</strong>,<strong> gif</strong> or <strong>csv</strong> format file to the floppy.</font>
+  <li><a name="999468"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Data storage should be "WYSIWYG" (What you see is what you get) in as many cases as possible.</font>
+</ul>
+
+<h2>
+  <a name="999235"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-12  Quick-Meas automatic measurement system</font>
+</h2>
+
+
+<p>
+  <a name="999285"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Quick-Meas automatic measurement system allows the user to access his favorite measurements with one key press.  When the system is in its default configuration and the "Quick-Meas" key is pressed, three default measurements will be selected.  These will most likely be Frequency, Period and Peak to Peak voltage.  The user can then change the measurements displayed on the Measurement line by simply selecting a different measurement.  The leftmost displayed measurement will be deleted and the new measurement will be added on the right side of the measurement line.  If the user would like fewer than three measurements displayed, he can press "Clear Meas", followed by the one or two measurements he's interested in.  The user may selected a measurement source using one of the softkeys and the "Entry" knob.  If no digital channels are displayed, then the measurement sources available will only be the scope channels.</font>
+</p>
+
+
+<h2>
+  <a name="999286"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-13  Waveform Math</font>
+</h2>
+
+
+<p>
+  <a name="999287"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Customers often indicate that the expected behavior of inverting a scope channel is that if you invert oscilloscope channel 2 and display the sum of channel 1 and channel 2, the waveform should be identical to the waveform viewed when the difference of the two channels is displayed.  This may seem intuitively obvious, but I recall quite a few discussions of how invert should work and I'm not sure these discussions ever included this requirement.  Consider this a reminder that many customers view this use model as the only reason for having channel invert, therefore lets make it work correctly.</font>
+</p>
+
+
+<h2>
+  <a name="999288"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-14  Permanent trigger level indicators</font>
+</h2>
+
+
+<p>
+  <a name="999289"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We've had significant feedback that a permanent trigger level indicator would constitute an Ease of Use improvement in our scopes.  So, it appears that this will happen.  Tektronix uses an arrow on the right side of and inside of the graticule pointing left as a permanent trigger level indicator.  This indicator has no "T" associated with it.  Infinium utilizes a similar indicator on the right side of and outside of the graticule, but it has a "T" associated with it.   If we want to place our permanent trigger level indicator in the same location as does Tek (&amp; Infinium), then we must place it inside the graticule.  There is not enough room to place it outside the graticule on the right side of the screen.  If we place it inside the graticule, then I would alleviate the "T" associated with it in order to minimize clutter inside the graticule.  Therefore, I propose that we adopt a technique that is exactly like Tektronix uses with a left arrow icon.  Also, in multi-channel trigger modes, there should only be one of these indicators and it should be displayed on the channel that the trigger level knob is currently slaved to.  Jedi utilizes a transient trigger level marker that spans the screen during trigger level adjustments.  JediPlus will retain this feature.<img src="images/behaviorsa.gif" height="362" width="612">
+</font>
+</p>
+
+
+<h2>
+  <a name="999542"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-15  Roll mode and Scroll mode behaviors</font>
+</h2>
+
+
+<h2>
+  <a name="999543"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">2-16  Measurement reference point</font>
+</h2>
+
+
+<p>
+  <a name="999544"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Mike Beyers pointed out that we should design the measurement algorithms to find the data that matches the measurement criteria that are closes to the horizontal reference point.  This will allow the user to expand about the measured data.  Angus has consulted the IEEE specifications for the measurement algorithms he intends to use.  It turns out that measuring the first occurence from the left edge of the screen is not in the specification.  Angus will design the measurement system to support measuring near the reference point and we will experiment with the method that Mike has proposed.</font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="frntpnl.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="arch.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

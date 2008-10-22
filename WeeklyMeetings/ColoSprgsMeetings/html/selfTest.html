@@ -1,0 +1,560 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:27:32 2002">
+<title>CHAPTER 25 instrument self tests</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="analysis.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="bootrom.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="10346"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 25 	 instrument self tests</font>
+</h1><hr>
+
+
+<h2>
+  <a name="417927"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">25-1  elements of self-tests</font>
+</h2>
+
+
+<p>
+  <a name="420644"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For historical reasons, self-test in JediPlus is really a combination of 3 somewhat unrelated things:</font>
+</p>
+
+
+<h4>
+  <a name="420645"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">power on self tests (POST)</font>
+</h4>
+
+
+<p>
+  <a name="420646"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These are done every time the box lights up.  They may be done in a suite, or mixed in with other things done on power-up.  Normally, we give a single pass-fail status to these tests, so if they do fail, it is perceived as catastrophic, like</font>
+</p>
+
+<dl>
+  <dt> <a name="420648"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Panic -- Coyote not present</font>
+</dl>
+
+<p>
+  <a name="420649"> </a><font face="Verdana, Arial, Helvetica, sans-serif">But we can also have softer failures, like</font>
+</p>
+
+<dl>
+  <dt> <a name="420650"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel 3 doesn't work, but your other channels do</font>
+</dl>
+
+<p>
+  <a name="420651"> </a><font face="Verdana, Arial, Helvetica, sans-serif">or</font>
+</p>
+
+<dl>
+  <dt> <a name="420652"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The calibration factors have been defaulted</font>
+</dl>
+
+<p>
+  <a name="420653"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These may give only a transient message, and the user may be able to use the box anyway.</font>
+</p>
+
+
+<p>
+  <a name="420654"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We should be careful about having POST stop the box entirely, since in repairing the box it might be useful to have it run crippled.  I don't want to introduce a crippled mode to other systems, but if we give a plain (non-verbose) message and we're in diagnostic mode, we could run on until we do die.</font>
+</p>
+
+
+<p>
+  <a name="420655"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The POSTs are short versions of tests available to the user self tests.</font>
+</p>
+
+
+<p>
+  <a name="420660"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Part of the UI for the self-tests is to provide bus access to these messages, on the screen or over the bus.</font>
+</p>
+
+
+<h4>
+  <a name="420661"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">user self tests (UST)</font>
+</h4>
+
+
+<p>
+  <a name="420662"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These are done on purpose when the user wants to, and they are more comprehensive and more time consuming than the POST.</font>
+</p>
+
+
+<p>
+  <a name="420663"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It could be that the production line wants to run a complete set of tests while it is waiting for the box to come up to temperature, or it could be that the end user suspects something is broken.</font>
+</p>
+
+
+<p>
+  <a name="420664"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Part of the UI is to provide bus access to these tests and their results, on the screen, over the bus, or in some kind of file.</font>
+</p>
+
+
+<h4>
+  <a name="420665"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">bus access to unusual data</font>
+</h4>
+
+
+<p>
+  <a name="420666"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Many technicians have asked for the start-up sequence to be more visible than in past instruments.  They mentioned the possibility that the screen may not function.  Therefore, the UI should provide a verbose mode of the power-on sequence whose output goes to the screen or out a bus.</font>
+</p>
+
+
+<p>
+  <a name="420667"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We've had some requests to see whether the cal is still valid, or whether a new cal would result in a big difference to measurement results.  I don't think we can do that without doing the cal over again, so it amounts to testing the cal factors for a big change during calibration.  And in general, it is a tricky business to decide just how big a change is alarming.  So I would just give some information about the cal, such as status, last cal date, temperature.  I think we should not provide a command to output the cal factors.</font>
+</p>
+
+
+<h2>
+  <a name="420647"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">25-2  list of self-test customers</font>
+</h2>
+
+
+<h4>
+  <a name="420668"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">end customer in routine use</font>
+</h4>
+
+
+<p>
+  <a name="420669"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The customer will do the POST without knowing about it, and it will always pass by hypothesis (if it fails, the use is no longer routine).  So POST should be unobtrusive.  We haven't determined the time budget for it yet, but we do note that it takes about 5 seconds for the CRT to come on.</font>
+</p>
+
+
+<h4>
+  <a name="420670"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">unhappy end customer calling repair</font>
+</h4>
+
+
+<p>
+  <a name="420671"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It should be easy to describe over the phone both how to do these tests and how to interpret their results.  Ideally, we should be able to tell the customer right there whether to send the product in for repair.  This could use a diagnostic or verbose start-up mode.</font>
+</p>
+
+
+<h4>
+  <a name="420672"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">field service center doing routine tests</font>
+</h4>
+
+
+<p>
+  <a name="420673"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We need to give the field service organization better notice than in the past about what they are getting, to work with them to coordinate the field PV with the manufacturing PV.  Assuming this improved communication has taken place, we can let the needs of manufacturing PV represent the needs of routine field testing.</font>
+</p>
+
+
+<h4>
+  <a name="420677"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">field service center doing repairs</font>
+</h4>
+
+
+<p>
+  <a name="420678"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There is some interest in making better user tests than previously.  Alfred says the field will be doing component-level repair on recycled boards, and any way we can make it cheaper for them will increase our profits and responsiveness.</font>
+</p>
+
+
+<h4>
+  <a name="420683"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">hardware engineers during proto turn-on</font>
+</h4>
+
+
+<p>
+  <a name="420684"> </a><font face="Verdana, Arial, Helvetica, sans-serif">I'm inclined to ignore this customer.  What they really need is a comprehensive development menu that articulates the asics, something the SW team may or may not be able to give them, and we could take it on, but it is not part of self-tests.  Traditionally, test coverage was very small and self-tests weren't even available until late in the project, so expectations are small.  Also, HW engineers are ingenious and usually make their own tools long before the SW team supports them.  We could steal their tools if they serve some of our other customers.</font>
+</p>
+
+
+<h4>
+  <a name="420685"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">manufacturing engineers writing instrument tests</font>
+</h4>
+
+
+<p>
+  <a name="420686"> </a><font face="Verdana, Arial, Helvetica, sans-serif">They heed to know the coverage of the self-tests, and how to invoke them.  There is no need to replace mfg PV with internal tests.  They also need bus access to some arcane info like clock and cal data, cal protect switch.  See the list of bus commands, later.  </font>
+</p>
+
+
+<p>
+  <a name="420802"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Roach assures us that there is no need to measure the cal dac output.  His argument is that it doesn't contribute to instrument tracability, and if we don't measure it in the recommended PV then the field won't need access to it.</font>
+</p>
+
+
+<h4>
+  <a name="420694"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">technicians with bad boxes</font>
+</h4>
+
+
+<p>
+  <a name="420695"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Anything that is easier to do in the CPU than from the UI, such as a memory checkerboard, is a candidate for the user self-test.  We can test coarse functionality of the various scope systems, but we can't begin to give component-level diagnostics.  They would like to be able to exercise various circuits in loops.</font>
+</p>
+
+
+<h4>
+  <a name="420702"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">the software routines themselves</font>
+</h4>
+
+
+<p>
+  <a name="420703"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Any software routine has entry conditions, and in a scope part of those conditions are that the hardware and data structures are intact.  Failures are rare in these hypotheses, so they aren't often tested.  But such a failure probably needs some user notification or intervention.  It is convenient to lump the first use of these hardware and software structures in a checking module which coordinates these notifications.  Then later users of these resources can assume they were working a minute ago.</font>
+</p>
+
+
+<h2>
+  <a name="420707"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">25-3  behavior of the self-tests</font>
+</h2>
+
+
+<p>
+  <a name="420712"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There is a verbose mode activated by a special key sequence, that causes power-up messages to go to stdout, which is probably the screen or one of the serial, parallel, or HPIB busses.  These are messages from init routines all over the box, not just the self-tests.  Since the user is doing this on purpose, it is OK to send data out the busses.</font>
+</p>
+
+
+<p>
+  <a name="420713"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There is also a diagnostic mode.  I think diagnostic mode would cause deeper tests to be run, and you might want verbosity along with it.  So with neither mode, POST gives a pass-fail, with verbose on, it gives a running description of what it's doing, and with diagnostic on, it does more.  But I'm inclined not to have POST do anything more, so diagnostic mode will be more relevant to the user self-tests.</font>
+</p>
+
+
+<p>
+  <a name="420714"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We may need to queue up some of this data for later display, since some of it is generated before the screen can be used.  We can assume the CRT is lit, since the user may have cycled power with a warm tube, but for those tests run before the screen process is running, we will queue any verbose messages in some RAM.</font>
+</p>
+
+
+<p>
+  <a name="420715"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Cal status, cal date, cal temperature, compare to present date and temperature to give a cal-now recommendation -- these should be on a screen available from the cal menu.</font>
+</p>
+
+
+<p>
+  <a name="420716"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Behavior on verbose mode depends on how stdout is implemented.  In emulation, it goes to some simio process, but for a stand-alone box it is not yet defined.  So here are some opinions from a self-test point of view.  If we can send data blindly out the ports, we should do that.  But if the ports need to be initialized first, we should send data out only those that we think are working.  Steve says we can send data out only one bus, so we will initialize them in order until we find one that works.  What you mean "we" kimo-sabe?  Stdout will do this.  It has been suggested that if none of the ports work we should blink an LED sequence, but I would like to minimize LED output.  Steve is using LED's as output during the boot-up procedure, and if there is any more such use we need to set some kind of LED strategy.</font>
+</p>
+
+
+<p>
+  <a name="420717"> </a><font face="Verdana, Arial, Helvetica, sans-serif">I think we could limit the use of spool files on disk to the user tests, ie they are not an option during POST.  So one option of the user test is wither (besides the screen) to send the output, and it could be on a disk file, out the command port (if it's being called by the parser), or out any of the printer ports.</font>
+</p>
+
+
+<p>
+  <a name="420718"> </a><font face="Verdana, Arial, Helvetica, sans-serif">During development, I expect low-priority support from the message system, but stdout and printf are available, so we can start with that.  We could even ship with English messages in the verbose mode.  Calibration has the same opportunity.</font>
+</p>
+
+
+<p>
+  <a name="420719"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For tests run over the bus, we could return cryptic codes, English strings, or localized strings.  Let's start with the cryptic codes.</font>
+</p>
+
+
+<h2>
+  <a name="420724"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">25-4  requirements for the UI</font>
+</h2>
+
+
+<h4>
+  <a name="420725"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">POST non-verbose</font>
+</h4>
+
+
+<p>
+  <a name="420726"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The POST routines are called and they return statuses.  It is up to the caller to decide what to do with the status.  So a rom checksum error might be displayed, and a Coyote-not-found error might halt the system.  If it is halted before we can use the screen, we should provide some indication, like a blinking LED.</font>
+</p>
+
+
+<h4>
+  <a name="420727"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">POST verbose mode</font>
+</h4>
+
+
+<p>
+  <a name="420728"> </a><font face="Verdana, Arial, Helvetica, sans-serif">During power-up in verbose mode there is a lot of screen output.  Since other routines are also running verbosely, the POST output is interleaved with their output.  The routines called before the screen is available will queue their output for the screen, or send it out the bus real time.   When the screen becomes available, the queue goes to the screen also.  We should let the screen scroll itself, showing always the most recent 20 lines, simply because developing better scrolling for such a use is a waste of memory and development resources.  Presumably the last lines are of the most interest, and if the entire output is desired it can be captured from the bus.</font>
+</p>
+
+
+<h4>
+  <a name="420759"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">POST diagnostic mode</font>
+</h4>
+
+
+<p>
+  <a name="420760"> </a><font face="Verdana, Arial, Helvetica, sans-serif">I would recommend against a diagnostic mode for the POST.  It should be minimal and it should run every time.  If the user wants more, he can do the user self-test.</font>
+</p>
+
+
+<h4>
+  <a name="420729"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">UST non-verbose</font>
+</h4>
+
+
+<p>
+  <a name="420730"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There is a key to do any or all of these tests, described later:</font>
+</p>
+
+<ul>
+  <li><a name="420731"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Memory</font>
+  <li><a name="420732"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Asics</font>
+  <li><a name="420736"> </a><font face="Verdana, Arial, Helvetica, sans-serif">IO</font>
+  <li><a name="420737"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Acquisition</font>
+</ul>
+
+<p>
+  <a name="420738"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Screen output is managed so it is always readable and it is left with a 1-screen summary.</font>
+</p>
+
+
+<p>
+  <a name="420739"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There is also a way to go to verbose mode without cycling power.</font>
+</p>
+
+
+<h4>
+  <a name="420740"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">UST verbose</font>
+</h4>
+
+
+<p>
+  <a name="420741"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There is also a key for directing the output.  Screen output is assumed, and it will scroll, but in addition, </font>
+</p>
+
+<ul>
+  <li><a name="420742"> </a><font face="Verdana, Arial, Helvetica, sans-serif">serial printer</font>
+  <li><a name="420747"> </a><font face="Verdana, Arial, Helvetica, sans-serif">parallel printer</font>
+  <li><a name="420748"> </a><font face="Verdana, Arial, Helvetica, sans-serif">HPIB printer</font>
+  <li><a name="420749"> </a><font face="Verdana, Arial, Helvetica, sans-serif">disk file</font>
+</ul>
+
+<p>
+  <a name="420750"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There is also the capability of choosing an individual test, and of looping on it until interrupted.</font>
+</p>
+
+
+<p>
+  <a name="420751"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In verbose mode it may not be possible to leave the screen always readable, but we should still end with a 1-page summary.  The bus output can be stored for later analysis.</font>
+</p>
+
+
+<h4>
+  <a name="420752"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">UST diagnostic</font>
+</h4>
+
+
+<p>
+  <a name="420753"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The same menu is augmented with a key for additional tests, and the tests that are on there may be done in a more complete manner.  Should the diagnostic mode imply verbose mode?  No.  The additional menu includes these front-panel tests:</font>
+</p>
+
+<ul>
+  <li><a name="420754"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CRT test</font>
+  <li><a name="420755"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Keyboard test</font>
+  <li><a name="420756"> </a><font face="Verdana, Arial, Helvetica, sans-serif">LED test</font>
+</ul>
+
+<h4>
+  <a name="420758"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">list of bus commands needed for the self-test system</font>
+</h4>
+
+<ul>
+  <li><a name="420804"> </a><font face="Verdana, Arial, Helvetica, sans-serif">set and get the real-time clock</font>
+  <li><a name="420805"> </a><font face="Verdana, Arial, Helvetica, sans-serif">set and get the serial number</font>
+  <li><a name="420806"> </a><font face="Verdana, Arial, Helvetica, sans-serif">set and get the board number</font>
+  <li><a name="420807"> </a><font face="Verdana, Arial, Helvetica, sans-serif">get cal protect switch position</font>
+  <li><a name="420808"> </a><font face="Verdana, Arial, Helvetica, sans-serif">get cal date and temperature</font>
+  <li><a name="420809"> </a><font face="Verdana, Arial, Helvetica, sans-serif">get current box temperature</font>
+  <li><a name="420813"> </a><font face="Verdana, Arial, Helvetica, sans-serif">get the results from the power-on sequence</font>
+  <li><a name="420818"> </a><font face="Verdana, Arial, Helvetica, sans-serif">set the verbose and diagnostic modes</font>
+  <li><a name="420819"> </a><font face="Verdana, Arial, Helvetica, sans-serif">run any or all of the user self-tests, and get their results</font>
+  <li><a name="420977"> </a><font face="Verdana, Arial, Helvetica, sans-serif">instigate the self-cal, and get its result</font>
+</ul>
+
+<h2>
+  <a name="420757"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">25-5  list of the user self-tests and what they do</font>
+</h2>
+
+
+<h3>
+  <a name="420761"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">25-5.1  memory tests:</font>
+</h3>
+
+<ul>
+  <li><a name="420557"> </a><font face="Verdana, Arial, Helvetica, sans-serif">system ram</font>
+  <li><a name="420560"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acq ram</font>
+  <li><a name="420563"> </a><font face="Verdana, Arial, Helvetica, sans-serif">display ram</font>
+  <li><a name="420569"> </a><font face="Verdana, Arial, Helvetica, sans-serif">rom checksum</font>
+</ul>
+
+<p>
+  <a name="417959"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If testing all the memory takes too much time, we may use two flavors of ram coverage: a quick self test and an extended self-test.  The quick one should test enough ram to make sure all the address and data lines are toggling, the extended test should checkerboard every cell.</font>
+</p>
+
+
+<h3>
+  <a name="417964"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">25-5.2  SuperIO</font>
+</h3>
+
+
+<p>
+  <a name="420891"> </a><font face="Verdana, Arial, Helvetica, sans-serif">ID register</font>
+</p>
+
+
+<p>
+  <a name="420892"> </a><font face="Verdana, Arial, Helvetica, sans-serif">FDC VERSION</font>
+</p>
+
+
+<p>
+  <a name="420893"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Serial Communication ID register, loopback test</font>
+</p>
+
+
+<p>
+  <a name="420894"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Parallel Port, latch, fifo</font>
+</p>
+
+
+<p>
+  <a name="420895"> </a><font face="Verdana, Arial, Helvetica, sans-serif">HPIB or other modules</font>
+</p>
+
+
+<p>
+  <a name="420948"> </a><font face="Verdana, Arial, Helvetica, sans-serif">disk drive test with a blank diskette</font>
+</p>
+
+
+<h3>
+  <a name="420890"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">25-5.3  self-test the asics</font>
+</h3>
+
+
+<h4>
+  <a name="417966"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Cactus</font>
+</h4>
+
+
+<p>
+  <a name="420911"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Count frequency on 100 MHz, 14.318 MHz, and 32.768 kHz clocks.  Multiplex these signals into Cactus' internal counter to test Cactus and check the oscillators against each other.  We can pinpoint one bad oscillator, but not two.</font>
+</p>
+
+
+<h4>
+  <a name="420912"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Scorpion (two or four channels)</font>
+</h4>
+
+
+<p>
+  <a name="420913"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Select a calibration signal and make sure the scope triggers on the edge of the signal</font>
+</p>
+
+
+<h4>
+  <a name="420914"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Coyote and Wily</font>
+</h4>
+
+
+<p>
+  <a name="420915"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Write and read to some of the registers to test the address and data lines, and make sure the chips are present.</font>
+</p>
+
+
+<h4>
+  <a name="420928"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Mongrel</font>
+</h4>
+
+
+<p>
+  <a name="420932"> </a><font face="Verdana, Arial, Helvetica, sans-serif">tbd</font>
+</p>
+
+
+<h4>
+  <a name="420931"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Rattler</font>
+</h4>
+
+
+<p>
+  <a name="420933"> </a><font face="Verdana, Arial, Helvetica, sans-serif">tbd</font>
+</p>
+
+
+<h3>
+  <a name="420854"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">25-5.4  Acquisition</font>
+</h3>
+
+
+<p>
+  <a name="420934"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Channel bandwidth is programmable in Scorpion.  Measure the rise time with the bandwidth at its upper limit and again at its lower limit, and make sure that the upper limit rise time is much smaller than at the lower limit.  Remember the box may not be cal'd when this is done.</font>
+</p>
+
+
+<p>
+  <a name="420941"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Sweep offset level on the analog channels using DC coupling and make sure the trace moves.</font>
+</p>
+
+
+<p>
+  <a name="420942"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Sweep threshold level on the logic channels and make sure there is activity.</font>
+</p>
+
+
+<h3>
+  <a name="420855"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">25-5.5  Front panel</font>
+</h3>
+
+<ul>
+  <li><a name="420945"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CRT</font>
+  <li><a name="420946"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Keyboard</font>
+  <li><a name="420947"> </a><font face="Verdana, Arial, Helvetica, sans-serif">LED</font>
+</ul>
+
+<h2>
+  <a name="420949"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">25-6  which of these tests are in the power-on sequence</font>
+</h2>
+
+
+<h2>
+  <a name="420940"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">25-7  where in jediPlus to find this stuff</font>
+</h2>
+
+
+<p>
+  <a name="420976"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="analysis.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="bootrom.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

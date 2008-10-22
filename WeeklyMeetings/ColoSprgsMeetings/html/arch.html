@@ -1,0 +1,390 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:19:36 2002">
+<title>CHAPTER 3 Architectural Model of the JediPlus Oscilloscope Family</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="behaviors.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="processModel.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="105693"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 3 	 Architectural Model of the JediPlus Oscilloscope Family</font>
+</h1><hr>
+
+
+<h2>
+  <a name="108037"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">3-1  Objectives</font>
+</h2>
+
+
+<p>
+  <a name="119167"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The JediPlus Oscilloscope Family is an evolutionary development of the Jedi family. Many of the customer needs and product values are still the same as they were for the original Jedi design. However, the design of the product needs to be updated to improve our effectiveness in product development, production and maintenance. The ultimate goal is to have a reusable platform for the family that enables us to minimize the effort required for design of subsequent products. Also, we want to be able to update existing products in the family with new features without incurring a large effort for re-engineering and qualification test. </font>
+</p>
+
+
+<h2>
+  <a name="108038"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">3-2  Design context for the oscilloscope</font>
+</h2>
+
+
+<p>
+  <a name="119199"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The context of the oscilloscope design is fairly simple. The oscilloscope observes input signals from the device under test (DUT) and responds to the user's requests with data or images describing these inputs. The instrument also provides operational status information to the user. </font>
+</p>
+
+<a name="119239"> </a>FIGURE 2.&#32; Context diagram for an oscilloscope <img src="images/archa.gif" height="289" width="624">
+
+<p>
+  <a name="121355"> </a><font face="Verdana, Arial, Helvetica, sans-serif">As is the convention in context diagrams, the system is represented with a circle. Circles denote processes or transforms. Things in the system's environment are called terminals; they are represented with rectangles. </font>
+</p>
+
+
+<h2>
+  <a name="108041"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">3-3  Data flow view of the oscilloscope</font>
+</h2>
+
+
+<p>
+  <a name="121342"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The most natural way to decompose the oscilloscope design is by following the flow of the<em> inputSignals</em> through the instrument to the user. In the following figure, the signal processing task is divided into four steps: Conditioning, Acquiring, Analyzing and Displaying. Similarly, userRequests is factored into four constituent flows: <em>conditioningRequests</em>, <em>acquisitionRequests</em>, <em>analysisRequests</em>, and <em>displayRequests</em>. Note that this model does not differentiate between hardware and software. Rather, it is depicting the overall transform of the oscilloscope. Because the model depicts the primary function of the design without being colored with implementation details, it is known as the <em>essential model</em>.</font>
+</p>
+
+<a name="108043"> </a>FIGURE 3.&#32; Data flow diagram depicting the essential model of an oscilloscope<img src="images/arch2.gif" height="497" width="624">
+
+<p>
+  <a name="119178"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each of the transforms in the data flow model has two types of operations to perform: Signal processing paced by the applied inputSignals, and processing of userRequests. These flows, inputSignals and userRequests, are substantially different in the rate of which they occur. While the oscilloscope might process thousands or hundreds of thousands of inputSignals per second, twenty five to one hundred userRequests per second is sufficient to give a responsive feel to the user. The two flows are also very different in subject matter. The user interface of the instrument presents an abstract model of the underlying signal processing system. These facts lead to a different view of the top level decomposition of the instrument that is more practical from the implementation standpoint.</font>
+</p>
+
+
+<h2>
+  <a name="121362"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">3-4  An implementation model - the top level</font>
+</h2>
+
+
+<p>
+  <a name="121363"> </a><font face="Verdana, Arial, Helvetica, sans-serif">By grouping the instrument's operations by the time or frequency at which they occur, a different model results. Figure 3 shows all the signal processing operations grouped as the SignalPath process and all the userRequest processing as the UserInterface process. (In this case, the data flow term "process" is used synonymously with the operating system concept of "task".) While there are more processes in the complete design, these are the primary ones. This view of the system is useful because the synchronization and communication between the SignalPath and the UserInterface is both a complex and proprietary design.</font>
+</p>
+
+<a name="119183"> </a>FIGURE 4.&#32; Signal path / User interface view of the oscilloscope<img src="images/arch3.gif" height="478" width="622">
+
+<p>
+  <a name="120400"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The figure shows three stores that form a critical section between the SignalPath and the UserInterface: signalPathHardware, signalPathConfig, and measurementResults. (These are not necessarily monolithic structures, but may be aggregations of stores.) The UserInterface configures the initial state and static portions of the signalPathHardware. It configures the software state machine of the SignalPath via the signalPathConfig data store. In accordance with its configurations, the SignalPath may modify hardware settings as it runs and may supply measurementResults back to the UserInterface.</font>
+</p>
+
+
+<h2>
+  <a name="121448"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">3-5  Required behaviors at the top level of the design</font>
+</h2>
+
+
+<p>
+  <a name="123160"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Before considering details of the design, it is important to review what the design needs to achieve. From the standpoint of performance, there are three main objectives:</font>
+</p>
+
+
+<h3>
+  <a name="122854"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">3-5.1  Maximize SignalPath bandwidth</font>
+</h3>
+
+
+<p>
+  <a name="122861"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The foremost requirement of the system is to maximize both the amount of time the SignalPath is active and its processing bandwidth. The SignalPath is the primary transform of the instrument that provides the user with the perception of real-time observation of the inputSignals.</font>
+</p>
+
+
+<p>
+  <a name="122855"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In order to achieve the first system requirement, virtually all of the SignalPath processing is implemented in hardware for the most common use modes. Typically, software is required in the SignalPath only to provide the abstract interface between the UserInterface and the processing hardware. In less commonly used modes, such as when signal measurements are being performed, the hardware state machine is extended with software that is running synchronously, though perhaps at a sub-harmonic, of the hardware's run rate. Asynchronous operation of the hardware is a degenerate case, as it is only synchronized at the beginning and end of a run of acquisitions.</font>
+</p>
+
+
+<p>
+  <a name="122856"> </a><font face="Verdana, Arial, Helvetica, sans-serif">To improve the performance of the software part of the SignalPath, the key strategy is to take all the computations possible out of the inner loops. Ultimately this might suggest compiling the inner loops on the fly. Short of this, a very practical approach is to use a mix of precomputation, reducing expressions, writing tuned inner loops and using a modest amount of interpretive coding. </font>
+</p>
+
+
+<p>
+  <a name="122857"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The vision in the longer term is that there is a somewhat fluid trade-off between whether a given SignalPath operation is implemented in hardware or software. One must anticipate that over time, more functions will be implemented in hardware. So this might influence the structure and granularity of the software. For example, it is possible that a future system may use "hardware subroutines" (co-processor instructions?) to perform operations like scanning a waveform for a feature such as an edge.</font>
+</p>
+
+
+<h3>
+  <a name="122868"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">3-5.2  Provide responsive userRequest processing</font>
+</h3>
+
+
+<p>
+  <a name="122875"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The second requirement is to process userRequests fast enough to satisfy the needs of the user's task. Expressed generally, this is a loose goal because the requirement varies greatly with the actual task being performed. The shortest response time required may be in response to a knob change of a continuously variable parameter that is set by observing waveform images on screen. For example, slewing channel offset. In contrast, printing a screen image on a hardcopy device may take seconds. In this case, the response time of the hardcopy device can be the limiting factor and it sets the user's expectation of responsiveness. Characterizing the needed response time may help us refine the feel of the user interface, however, this is an example where being "just like Jedi" is a good benchmark - it is not obvious that improving on Jedi's responsiveness would have much marginal value in most cases.</font>
+</p>
+
+
+<p>
+  <a name="122879"> </a><font face="Verdana, Arial, Helvetica, sans-serif">To achieve Jedi or better userRequest processing, the JediPlus frame has the benefit of much greater than 2 times the processor performance of a Jedi. Not only is there a faster system clock, the processor's cache and instruction pipeline can provide substantial performance improvements. So the design can tolerate some software infrastructure overhead. But throughout the design, consideration must be given to execution speed because it is too easy to squander computing performance unwittingly.</font>
+</p>
+
+
+<p>
+  <a name="122876"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Since most userRequests affect the SignalPath's operation, the interface between it and the UserInterface must be made efficient. This includes the method of synchronization, the amount of data transferred, and the number of transforms the data undergoes.</font>
+</p>
+
+
+<h3>
+  <a name="122884"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">3-5.3  Provide consistent and effective feedback to userRequests</font>
+</h3>
+
+
+<p>
+  <a name="121483"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A third requirement is to always give the user high quality feedback in response to userRequests. This is especially true when a parameter is varied that affects screen images, because the user is typically focused on the image and adjusting it rather than a numerical parameter. This suggests that for every configuration change that is asserted, an image should be generated that represents that change. Also, a series of changes, such as occurs when a knob is slewed, must be smoothly animated. This dictates two basic changes to the Jedi design: pan and zoom on previously acquired data and, if math operations are on, rescaling or recomputing function signals. If the trigger rate is too low, rescaling the previously acquired data is the best approximation that can be made of the effect of the settings change. Regarding the math waveforms, if the user has one displayed, it could well be his focus while changing a setting. Therefore, math waveforms have the same animation needs as channel waveforms to provide user feedback.</font>
+</p>
+
+
+<h2>
+  <a name="123163"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">3-6  Synchronization between UserInterface and SignalPath</font>
+</h2>
+
+
+<p>
+  <a name="123168"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following proposal is based on the design used in Denali. Figure 4 shows the SignalPath/UserInterface model again with the addition of the synchronization mechanism.</font>
+</p>
+
+<a name="123529"> </a>FIGURE 5.&#32; The synchronization mechanism between the SignalPath and UserInterface<img src="images/arch4.gif" height="466" width="624">
+
+<p>
+  <a name="123528"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The SignalPath is designated to run at a lower process priority than the UserInterface. In effect, the SignalPath is a background process and it may be preempted at any time by the UserInterface to allow userRequests to be serviced. For the SignalPath to leave its idle state, it must receive the signalPathEnable signal. Out of the idle state, the SignalPath may access any of the shared resources in the critical section. The UserInterface may immediately respond to a userRequest independent of SignalPath operation. If the request entails modifying items in the critical section, the SignalPath must be disabled first. This is done by setting the signalPathEnable flag to FALSE and blocking on an acknowledge message, signalPathDisabled. The SignalPath must poll the signalPathEnable flag while it is running. When the flag is FALSE, the SignalPath must:</font>
+</p>
+
+<ol type="1">
+  <li value="1"><a name="123169"> </a><font face="Verdana, Arial, Helvetica, sans-serif">finish what it is currently doing</font>
+  <li value="2"><a name="123170"> </a><font face="Verdana, Arial, Helvetica, sans-serif">complete the display of any changed signals that haven't been displayed yet</font>
+  <li value="3"><a name="123171"> </a><font face="Verdana, Arial, Helvetica, sans-serif">go to idle state</font>
+  <li value="4"><a name="123172"> </a><font face="Verdana, Arial, Helvetica, sans-serif">send the signalPathDisabled message to indicate that it is disabled</font>
+  <li value="5"><a name="123173"> </a><font face="Verdana, Arial, Helvetica, sans-serif">block until signalPathEnable is signaled</font>
+</ol>
+
+<p>
+  <a name="123696"> </a><font face="Verdana, Arial, Helvetica, sans-serif">One thing to emphasize: This is a process model of the oscilloscope in which the criteria to factor processes is the characteristic of time. This is referred to as temporal cohesion. For a given element of functionality in the instrument, for example, waveform measurements, there needs to be a UserInterface portion and a SignalPath portion. The design of these portions depends on another attribute of the functionality, its modularity.</font>
+</p>
+
+
+<h2>
+  <a name="108054"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">3-7  JediPlus Modularity Requirements</font>
+</h2>
+
+
+<p>
+  <a name="123180"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The product's use and the development plan for the product family form another set of requirements for how the design is partitioned. Features may need to be designed as modular components so they can be replaced by the customer or in the factory. This need for modularity forces a well defined interface (API) to be created and maintained for the components.</font>
+</p>
+
+
+<p>
+  <a name="123785"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In the following table, some of the product features that need to be modular are identified. The column labeled "binding time" indicates when the feature needs to be connected with the rest of the instrument. Three different times are identified:</font>
+</p>
+
+<ol type="1">
+  <li value="1"><a name="123187"> </a><font face="Verdana, Arial, Helvetica, sans-serif">build - either at compile or link time, done in the factory.</font>
+  <li value="2"><a name="123188"> </a><font face="Verdana, Arial, Helvetica, sans-serif">pon - power-on, done at startup of the oscilloscope. Requires power cycling to take effect.</font>
+  <li value="3"><a name="123192"> </a><font face="Verdana, Arial, Helvetica, sans-serif">run - the feature must be "hot-plugable". For example, probes can be changed and if they have the readout feature, the instrument will detect and register the change.</font>
+</ol>
+
+<p>
+  <a name="123681"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Of these, run time binding is the most difficult to design and is likely to have the most impact on the system. Because of this, the features that require it need to be considered early in the design of the platform.</font>
+</p>
+
+
+<p>
+  <a name="123729"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The priority column expresses the need or timeframe in which the design must be done based upon the current development plan for the family. Low priority items can be stubbed off initially and developed more fully later. By taking this approach, it is possible to reduce the amount of future rework while avoiding investing too much work in a feature that is not exposed to the user. 
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="124895"> </a>TABLE 1.  Candidate modular components</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="119030"> </a>product feature</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="119062"> </a>binding time</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="121394"> </a>priority</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="119064"> </a>comments</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119032"> </a>help system localizations</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119066"> </a>run</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121396"> </a>high</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119068"> </a>This is planned for first product of the family.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="123506"> </a>front panel localizations</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="123508"> </a>run</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="123510"> </a>low</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="123512"> </a>Perhaps localization will be extended to other elements of the local user interface. It is not a planned feature, but some design consideration now would facilitate the capability.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119034"> </a>probe type and factors</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119070"> </a>run</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121398"> </a>high</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119072"> </a>Initial plans are for 10x id probes. Differential and active probes (and current probes?) may be supported sometime in the future. Need to allow for ID scheme with enough codes, the software side of the design is relatively easy (and well known). Addition of "units" support would be desireable.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119036"> </a>vertical input systems</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119074"> </a>build</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121400"> </a>high</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119076"> </a>Two different systems are in development now. Likely more will follow because of the cost - performance trade-offs entailed in input system design.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119038"> </a>acquisition systems</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119078"> </a>build</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121402"> </a>high</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119080"> </a>Other acquisition systems are under design.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="124953"> </a>trigger systems</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="124955"> </a>build</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="124957"> </a>high</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="124959"> </a>Other trigger systems are under design.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119040"> </a>display systems</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119082"> </a>build</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121404"> </a>medium</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119084"> </a>It is inevitable that changes will occur in instrument display, resolution may change to VGA for example. A color system is possible. Any display change will have a major hardware impact.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119044"> </a>printer drivers</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119090"> </a>run/build</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121408"> </a>low/high</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119092"> </a>Would be nice to support a pc model of installing printer drivers, but this is not required.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121386"> </a>instrument setups</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121388"> </a>run</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121412"> </a>high</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121390"> </a>Need to be able to share setups between family members. This is a family behavior that needs to be established for the first products. (Even for the same product, there has been an issue about code revs causing incompatibility.) Compactness and execution speed are not the primary design factors for the design of the instrument setup data structure. A non-binary format may be desirable since it could be read and modified by the user.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119050"> </a>file types</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119102"> </a>build</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121414"> </a>medium</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119104"> </a>Interchange formats will change, we need to be compatible with popular office applications and standards.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119052"> </a>measurements</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119106"> </a>run</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121416"> </a>medium</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119108"> </a>User defined measurements can benefit user tasks by specializing the user interface. They would allow us to ship lower complexity interfaces because the user can add less general purpose measurements if needed. So the standard interface could perhaps be trimmed back to just the top 4-6 measurements, any others could be added by the user. The additional measurements could be specified based on measurement primitives:<a name="124950"> </a>  setup = time(eventA) - time(eventB)<a name="124951"> </a>The biggest issue near term is whether the front panel interface could allow extensibility (look and feel issues), actual implementation can be delayed until later versions or products.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119294"> </a>functions</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119296"> </a>pon</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121418"> </a>low</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119298"> </a>Extensible math support may help competitive product responses. Futures such as serial data translators have been proposed as the result of task analysis and could be implemented as a function. Also, if functions are extensible, it would allow us to trim back the initial feature set with the recourse of being able to add some features back as extra cost options, or just market research incentives ("... just give us your demographics and application and you can download ...").</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121374"> </a>physical I/O interfaces</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121376"> </a>pon</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121420"> </a>high</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119286"> </a>Future interfaces might include USB, ethernet and firewire. A standards based approach to I/O drivers will minimize system impact and permit us to postpone additional software development work until later. Existing Jedi HP-IB and RS232 computer interface drivers are written this way. Printer I/O drivers are not.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121378"> </a>remote interface protocols</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121380"> </a>pon</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121422"> </a>high</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119280"> </a>Likely protocols: tcp/ip, ppp &amp; slip, ftp, telnet, nfs, http. Nfs is especially interesting because it allows file sharing (and therefore a bigger "drive" than the floppy). The easiest file sharing to implement would be mounting the scope to your pc as a drive because little or no user interface would be needed on the scope. Ppp is interesting because it allows tcp/ip (and nfs) over rs232. That lets us explore networking without investing in an ethernet interface. <a name="124930"> </a>All these protocols are standards based and available as a compile time options in Vxworks. Required design work is at the interface of the top of the network stack to the instrument. For this, we should leverage work done by  internet initiative team and COL (16500's).<a name="124931"> </a>Near term, the important issue is whether we have enough ram/rom for implementation and to design the UserInterface to support more than one remote thread.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121382"> </a>remote command languages</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121384"> </a>run</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="121424"> </a>low</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="119274"> </a>Alternate languages would allow replacing legacy instruments. Because the Jedi parser design already supports language switching, further design is not needed until this becomes a clear market opportunity.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="123562"> </a>bootrom</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="123564"> </a>pon/run</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="123566"> </a>high</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="123568"> </a>The LDS bootrom provides all the functionality needed for the family so this design is nearly done.</font></td>
+  </tr>
+</table>
+
+
+
+ </font>
+</p>
+
+
+<p>
+  <a name="124850"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Figure 5 depicts the modular components graphically. Adjacency of the boxes is used to suggest the degree to which the objects are related. Boxes that touch share an interface. The space between boxes is glue logic supplied by other elements of the JediPlus frame.</font>
+</p>
+
+
+<p>
+  <a name="124854"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The vertical input systems, acquisition systems, and display systems provide much of the functionality of the SignalPath and all are likely to change. These components differ from the others because they straddle the SignalPath/UserInterface boundary and they are highly interrelated. The portion of the components that lie on the SignalPath side need to be highly optimized for performance. This portion is mostly implemented in hardware. The UserInterface portion of these systems take the form of a "driver" that provides an abstract interface to the underlying capability. In terms of software investment, the preponderance for these components is on the UserInterface side because of the diversity of control limits and rules for configuration (and calibration).</font>
+</p>
+
+<a name="123732"> </a>FIGURE 6.&#32; Required modular components of the JediPlus architecture.<img src="images/arch5.gif" height="505" width="624">
+
+<p>
+  <a name="123546"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The measurements and functions also need to be high performance. But in contrast to the vertical, acquisition and display systems, measurements and functions represent a rather large volume of design and code in the SignalPath and relatively less in the UserInterface. So for these, the need is to provide the abstraction layer in the SignalPath such that the impact of changing acquisition or display systems can be minimized. In the UserInterface the consequence of modularity is that a dynamic list of measurements or functions must be presented.</font>
+</p>
+
+
+<h2>
+  <a name="123757"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">3-8  Abstraction layers in the UserInterface</font>
+</h2>
+
+
+<p>
+  <a name="123792"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If the SignalPath is configured with data at its native abstraction level, the UserInterface must transcend many levels as it transforms userRequests and produces responses. At the surface there are the raw key presses, knob motions and data streams applied to the instrument. These are translated to semantic elements and evaluated. The evaluated requests are then translated to hardware and SignalPath configurations. These layers are depicted in the following figure.</font>
+</p>
+
+<a name="124820"> </a>FIGURE 7.&#32; The basic layers of the UserInterface.<img src="images/arch6.gif" height="316" width="528">
+ 
+<p>
+  <a name="124824"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These layers do map well against the modularity requirements for the JediPlus family. The <strong><u><a href="hal.html#124832">Hardware Abstraction Layer</a></u></strong> encompasses the drivers for the elements of the SignalPath. These drivers collectively encapsulate the SignalPath and shield the rest of the system from product variations. The <strong><u><a href="controls.html#57">Behavioral Model Layer</a></u></strong> provides the basic user model of the instrument. It manages control settings, limits and dependencies and their presentation in menus, files and other userResponses. This layer enforces the consistency rules within the instrument's functions. Because it can be reused across the product family, this layer also provides the behavioral consistency between family members. The I/O Protocol Layer includes the network stacks, parsers, and I/O drivers for the various remote interfaces. file systems and for the front panel. As with the SignalPath drivers, this layer hides the variations in I/O channels. This layer might be quite thin, as is possible for front panel communications. In other cases it may be quite thick, as is required for services such as http or ftp on top of a full network stack. A notable attribute is that this layer is standards oriented. Buying or reusing components in this layer should be encouraged because it is not our core competency and also it is subject to change because of external factors. For example, if USB emerges as a popular desktop standard, we will be compelled to support it.</font>
+</p>
+
+
+<h2>
+  <a name="127458"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">3-9  Functional partioning - encapsulating the SignalPath</font>
+</h2>
+
+
+<p>
+  <a name="127463"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The process view of the system is useful because it builds awareness of the dynamic behaviour of the instrument, particularily the "mixing" of signal paced processing and user driven events. A more complete model is described in the <strong><u><a href="processModel.html#996747">Process Model chapter</a></u></strong>. However, a functional view that partitions by type of information is also very helpful because it is more aligned with the modularity of the design. So for this reason, the primary partition of the system should be along the interface of the Hardware Abstraction Layer and the Behavioral Layer. </font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="behaviors.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="processModel.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

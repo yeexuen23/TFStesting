@@ -1,0 +1,584 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:20:24 2002">
+<title>CHAPTER 6 System Scheduling and Timer Interrupt</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="memory.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="scan.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="996747"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 6 	 System Scheduling and Timer Interrupt</font>
+</h1><hr>
+
+
+<h2>
+  <a name="999225"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-1  Introduction</font>
+</h2>
+
+
+<p>
+  <a name="1000761"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This document describes the features, the API and the design of the JediPlus system scheduler.  The system scheduler provides a service to the entire JediPlus software system that is designed to alert a client when a pre-defined period of time has elapsed.  The Scheduler derives its timing from an interrupt that occurs every 2 milliseconds which we refer to as the Timer Interrupt.  The system scheduler is called from the Timer Interrupt Service Routine (Timer ISR).  The client of the  Scheduler service "registers" events, which we will call <em>scheduled events, </em>to occur either periodically, on a one time only basis, or until the client tells the Scheduler to stop the occurrences.  Scheduled events take the form of a function that the user provides to the scheduler.  Some examples of these events are periodic hardware calibrations, periodic updates of the screen, or removal of a pop up menu after a timeout.</font>
+</p>
+
+
+<h2>
+  <a name="1000193"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-2  Scheduler requirements</font>
+</h2>
+
+
+<h3>
+  <a name="1000811"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-2.1  External requirements</font>
+</h3>
+
+
+<p>
+  <a name="1000920"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are a multitude of tasks in Jedi Plus that must be executed periodically.  In previous HP546xx family products, and in Jedi Plus, these tasks derive their timing from a 2 millisecond interrupt.  The fundamental time is driven by the requirement that the knob encoders be scanned at 2 ms intervals to observe all (or most) encoding values.  The system scheduler will support two distinct types of scheduled events.  The <strong>fast scheduled event</strong> system is designed to execute scheduled events that must occur more often than every 20 milliseconds.  The <strong>normal scheduled event</strong> system handles those events which occur every 20 milliseconds or less often.   This system is the primary mechanism for timing system events since most scheduled events should occur less often than every 20 milliseconds.</font>
+</p>
+
+
+<p>
+  <a name="1000813"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The fast scheduled event system must handle at least 2 scheduled events (key scan &amp; knob scan).    The normal scheduled event system should be robust enough to handle 20 or more scheduled events gracefully.  This system must be designed to only execute one scheduled event per Timer ISR to preclude stacking of scheduled events which could result in an inordinately long interrupt service routine.  The period of the  fast scheduled events should be programmable to a resolution of 2 milliseconds and a minimum setting of 2 milliseconds.  The period of the normal scheduled events should be programmable to a resolution of 20 milliseconds and a minimum of 20 milliseconds.</font>
+</p>
+
+
+<p>
+  <a name="1001097"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The system scheduler should be a robust design when used in its intended application.  It is expected to support 20 normal scheduled events and to be optimized for about 12 continuous normal scheduled events.  It is also expected that most of the scheduled events will be slower than 20 milliseconds and ideally, staggered in their periods.  The schedule should gracefully handle a heavier scheduled event load than this, but some performance degredation is allowable under these conditions(more on performance requirements below).</font>
+</p>
+
+
+<h3>
+  <a name="1000921"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-2.2  Internal requirements</font>
+</h3>
+
+
+<p>
+  <a name="1000923"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It is important to note that the system scheduler interface routines described below for creating, deleting, replacing and resetting scheduled events represent critical sections.  The scheduler will be designed to only allow operating system user processes and the scheduler itself to modify the scheduled event database.  The routines below may only be invoked from user process and not from ISRs.  Since only user processes will call these routines, thus producing into the scheduled event database, and the Timer ISR will consume from this database, Timer interrupts will be disabled within these routines.  This will allow all operating system processes to safely call through the scheduler interface.</font>
+</p>
+
+
+<p>
+  <a name="1001094"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The system scheduler design requires very few system resources.  First, it is required that the scheduler be called periodically and for JediPlus, this period must be 2 milliseconds.  Second, there must be enough memory in the system for the scheduler to allocate space for an array of 3 scheduled events (fast), as well as a list and a queue, each capable of holding 20 scheduled events (normal).</font>
+</p>
+
+
+<h3>
+  <a name="1000812"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-2.3  Scheduler features</font>
+</h3>
+
+
+<p>
+  <a name="1000632"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The system scheduler will offer the following features:</font>
+</p>
+
+<ul>
+  <li><a name="1000636"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Programmable system scheduled events</font>
+  <li><a name="1000640"> </a><font face="Verdana, Arial, Helvetica, sans-serif">One time scheduled events</font>
+  <li><a name="1001088"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Continuous scheduled events</font>
+  <li><a name="1001089"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Scheduled events that repeat until client returns discontinue code</font>
+  <li><a name="1000641"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Scheduled event deletion</font>
+  <li><a name="1000642"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Scheduled event tagging to allow easy replacement</font>
+  <li><a name="1000643"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Scheduled event replacement</font>
+  <li><a name="1000769"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Scheduled event reset to restart a scheduled event's timer</font>
+  <li><a name="1001364"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Supply an "absolute time" value for use in time tagging throughout system</font>
+</ul>
+
+<p>
+  <a name="1000644"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This feature set provides the right mix of features for the user of the service.  The deep stop timeout event is a good example of a single occurrence scheduled event.  The interpolator calibration is an example of a scheduled event for which we may want to slow the period as the instrument warms up.  Finally, in Muskrat, the display intensity programming executed on a specific Timer ISR may require that it can tell the scheduler to discontinue the events when it finds that it has received that specific interrupt.</font>
+</p>
+
+
+<p>
+  <a name="1000727"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The system scheduler will not support explicit prioritization among the scheduled events in its queue.  If any prioritization is deemed necessary, only the priority implied by the order in which events are registered will be supported.  This priority simply means that if two events count down at the same time, the event that was registered first is executed first.</font>
+</p>
+
+
+<h3>
+  <a name="1000199"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-2.4  Interrupt Service Routine performance</font>
+</h3>
+
+
+<p>
+  <a name="1000200"> </a><font face="Verdana, Arial, Helvetica, sans-serif">One of the design requirements for the Timer ISR is that it executes quickly.  In Jedi, the Timer ISR normally absorbs about 9%-10% of the CPUs time.  For Jedi Plus, we would like to improve upon this number, but it is not imperative.  Since the CPU will be significantly faster in JediPlus we will gain a performance improvement for CPU-based operations even if the CPU is spending the same fraction of its time in the Timer ISR.  The performance requirements of the Timer ISR are also driven by the need to mask as few Timer interrupts as possible.  Since we have the potential to miss knob or keyboard changes when the Timer ISR is running, the tasks handled in the Timer ISR, plus the system scheduler overhead, should rarely, if ever, exceed 2ms in execution time.  </font>
+</p>
+
+
+<p>
+  <a name="1000204"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Given the requirements sited above, the Timer ISR will be designed to execute as quickly as possible.   Also, as stated earlier, the normal system scheduler will be designed to only execute one of its tasks per interrupt.  In order to improve readability, we would like to have this software written in "C".  We consider improved readability and maintainability of this code to be higher priorities than improving the Timer ISR duty cycle load discussed earlier.</font>
+</p>
+
+
+<p>
+  <a name="1000432"> </a><font face="Verdana, Arial, Helvetica, sans-serif">NOTE: It is important to emphasize the point that the normal scheduler will be designed to only execute one of the scheduled events per interrupt.  If the system is not designed to do this, then the events could synch up and cause long Timer ISRs.</font>
+</p>
+
+
+<h3>
+  <a name="1000207"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-2.5  Scheduled event examples 
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001111"> </a>TABLE 8.   Scheduler tasks</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1001117"> </a>Task</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1001119"> </a>Period</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1001121"> </a>Continuous or Single</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001123"> </a>Scan front panel knobs</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001125"> </a>2ms</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001127"> </a>Continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001129"> </a>Scan front panel keys</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001131"> </a>16ms</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001133"> </a>Continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001135"> </a>Scan probe sense</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001137"> </a>260ms</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001139"> </a>Continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001141"> </a>Clock trigger timer state machine</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001143"> </a>Variable</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001145"> </a>Continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001147"> </a>Tick screen manager</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001149"> </a>100ms</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001151"> </a>Continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001153"> </a>Scan front panel dual keypress</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001155"> </a>100ms</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001157"> </a>Continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001159"> </a>Calibrate time interpolator</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001161"> </a>Variable</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001163"> </a>Continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001165"> </a>Calibrate vertical hardware</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001167"> </a>Variable</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001169"> </a>Continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001171"> </a>Deep Stop Timeout</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001173"> </a>160ms</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001175"> </a>Single</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001177"> </a>Tick OS (if needed)</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001179"> </a>100ms</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001181"> </a>Continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001183"> </a>Scan intensity knob</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001185"> </a>100ms</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001187"> </a>Continuous</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001189"> </a>Modify intensity table</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001191"> </a>2ms</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1001193"> </a>Repeat until stopped</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</h3>
+
+
+<h2>
+  <a name="1000505"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-3  System Scheduler API</font>
+</h2>
+
+
+<h3>
+  <a name="1000887"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-3.1  Include file</font>
+</h3>
+
+
+<p>
+  <a name="1000888"> </a><font face="Verdana, Arial, Helvetica, sans-serif">#include "schedule.h"</font>
+</p>
+
+
+<h3>
+  <a name="1001197"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-3.2  Scheduled event configuration status</font>
+</h3>
+
+
+<p>
+  <a name="1001198"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The scheduled event setup functions  described below will return the following error indications, which comprise the <em>ScheduledEventStatus</em> enumeration:</font>
+</p>
+
+<ul>
+  <li><a name="1001199"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SCHED_ACTION_SUCCESSFUL - returned when setup function executed normally</font>
+  <li><a name="1001200"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SCHED_ALREADY_SCHEDULED - returned when event is already in the list</font>
+  <li><a name="1001201"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SCHED_PERIOD_TOO_FAST - returned when period asked for is too fast</font>
+  <li><a name="1001298"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SCHED_PERIOD_TOO_SLOW - returned when period asked for is too slow</font>
+  <li><a name="1001202"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SCHED_TOO_MANY_EVENTS - returned when the system has requested too many events</font>
+  <li><a name="1001203"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SCHED_NOT_SCHEDULED - returned when user attempts to modify an event that is not <br>                                                        in the list</font>
+  <li><a name="1001350"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SCHED_NO_SINGLE_IN_FAST - returned when the client attempts to schedule a one time <br>                                                               scheduled event that falls in the fast system</font>
+</ul>
+
+<h3>
+  <a name="1001229"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-3.3  Scheduled event return value</font>
+</h3>
+
+
+<p>
+  <a name="1001319"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The value returned from a scheduled event will be an instance of the following structure:</font>
+</p>
+
+<pre>
+<a name="1001333"> </a>
+typedef struct
+{
+    boolean delete;
+    boolean runOtherEvents;
+}ScheduledEventResults;
+</pre>
+
+<p>
+  <a name="1001312"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="1001352"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>delete</em> member is used by the client to tell the scheduler to remove the scheduled event from the database.  This is used in the special situation in which the client does not know how many times the event needs to execute before it is no longer needed.  The <em>runOtherEvents</em> member may be used by the client to tell the scheduled not to run any more fast events once this event returns.  The knob scanning  event is the best example of the use of this return variable.  If the knob scan detects and sends a knob token to the message exchange, it may tell the scheduler to ignore all other scheduled events on this Timer ISR and return.  Since the fast scheduled event system normally executes all of the events in its array,  this will defer the remaining fast events until the next Timer ISR.  The other effect of setting this value to true is that normal scheduled events will be held off until the next Timer ISR as well.</font>
+</p>
+
+
+<h4>
+  <a name="1001362"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Recommended return values:</font>
+</h4>
+
+
+<p>
+  <a name="1001363"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Unless a scheduled event requires the specific behaviors described above, <em>delete</em> should be set to FALSE and <em>runOtherEvents</em> should be set to TRUE.</font>
+</p>
+
+
+<h3>
+  <a name="1001036"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-3.4  Scheduled events typedef</font>
+</h3>
+
+
+<p>
+  <a name="1001038"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The functions called by the scheduler take the following form:</font>
+</p>
+
+<pre>
+<a name="1001037"> </a>typedef ScheduledEventResults (*ScheduledEventFuncPtr) (void);
+</pre>
+
+<h3>
+  <a name="1000665"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-3.5  Installing scheduled events</font>
+</h3>
+
+
+<p>
+  <a name="1001030"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All users of the system scheduler must register the events that they would like scheduled.  A user-defined scheduled event may be requested using the following interface:</font>
+</p>
+
+<pre>
+<a name="1000667"> </a>ScheduledEventStatus createScheduledEvent(ScheduledEventPtr event, 
+                                                                          uint16 milliseconds, 
+                                                                          const char *yourTag,
+                                                                           boolean continuous)
+</pre>
+
+<p>
+  <a name="1001035"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When times &lt; 20ms are requested, the fast scheduled event system will be used.  When times &gt;= 20ms are requested, the normal scheduled event system will be used.    The return status will be SCHED_TOO_MANY_EVENTS based on how many events are allowed in the system (fast or normal) that the requested time would put the new event into.  Note that the fast scheduled event system does not support one time scheduled events.  If continuous is FALSE  on a fast event, an error will be returned and the event will not be installed.</font>
+</p>
+
+
+<p>
+  <a name="1001343"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The resolution of normal scheduled events is 20ms.  The passed milliseconds will be truncated to the next lower integer multiple of 20ms.  Also, the string chosen for yourTag must be a unique string.  Though "NULL" may be passed, any other client that chooses to pass "NULL" will be considered to have passed the same tag.  To the scheduler, this means its the same event and it will not be added.</font>
+</p>
+
+
+<h3>
+  <a name="1000673"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-3.6  Deleting scheduled events</font>
+</h3>
+
+
+<p>
+  <a name="1000674"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The tag assigned to a scheduled event at its creation may be used to delete the scheduled event from the list.  Deleting is accomplished using the following function call:</font>
+</p>
+
+<pre>
+<a name="1000675"> </a>ScheduledEventStatus deleteScheduledEvent(const char *yourTag);
+</pre>
+
+<h3>
+  <a name="1000677"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-3.7  Changing scheduled event period</font>
+</h3>
+
+
+<p>
+  <a name="1000678"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The tag assigned to a scheduled event at its creation may be used to change the period of the scheduled event.  This might be used to slow down a periodic calibration as the temperature of the hardware stabilizes.  This is accomplished using the following function call:</font>
+</p>
+
+<pre>
+<a name="1000797"> </a>ScheduledEventStatus replaceScheduledEvent(const char *yourTag, uint16 milliseconds)
+<a name="1001349"> </a>
+</pre>
+
+<p>
+  <a name="1001348"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It is important to remember that the scheduler has already chosen which system (fast or normal) that this event will reside.  The new milliseconds value should correspond to the timing restrictions of that system.  For example, if the client installed this event with a timing value of 100 milliseconds and attempts to change the value to 16 milliseconds using this call, the change will not take effect and an error will be returned.  This is because the scheduler originally installed the event in the normal scheduler, which can run no faster than 20 milliseconds.  The system scheduler does not support automatically changing between the two systems when this call is made.</font>
+</p>
+
+
+<h3>
+  <a name="1000589"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-3.8  Resetting scheduled events</font>
+</h3>
+
+
+<p>
+  <a name="1000771"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The scheduled event tag may be used to reset the scheduled event to its <em>repeatTicks</em>.  This might be used to remove a pop up menu after no inputs have occured for a certain amount of time.  The event would be reset every time a new input is observed.  The following call may be used to do this:</font>
+</p>
+
+<pre>
+<a name="1000776"> </a>ScheduledEventStatus resetScheduledEvent(const char *yourTag);
+</pre>
+
+<h3>
+  <a name="1000736"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-3.9  Getting absolute time</font>
+</h3>
+
+
+<p>
+  <a name="1001366"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The scheduler keeps a variable for use by its clients in time tagging data that they generate.  For example, the knob scanner might use this to time tag knob tokens as they are decoded.  Use:</font>
+</p>
+
+<pre>
+<a name="1001367"> </a>uint32 getSchedulerAbsoluteTime(void);
+</pre>
+
+<h2>
+  <a name="1001365"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-4  System scheduler design</font>
+</h2>
+
+
+<h3>
+  <a name="1000821"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-4.1  Scheduled event data structure</font>
+</h3>
+
+
+<p>
+  <a name="1000822"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A scheduled event takes on the following form:</font>
+</p>
+
+<pre>
+<a name="1000823"> </a>typedef struct
+{    
+    ScheduledEventFuncPtr event;
+    uint32 currentTicks;
+    uint32 repeatTicks;
+    boolean continuous;
+    const char *tag;
+}ScheduledEventStruct;
+</pre>
+
+<h3>
+  <a name="1000737"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-4.2  Linked list design</font>
+</h3>
+
+
+<p>
+  <a name="1000753"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The system scheduler will utilize the list data structure and software developed for the Denali project.  Each registered event will yield another item in the list.  Every Timer ISR will yield a traversing of the list, with each <em>currentTicks</em> member being decremented until in reaches 0.</font>
+</p>
+
+
+<h3>
+  <a name="1000754"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-4.3  Scheduler execution</font>
+</h3>
+
+
+<p>
+  <a name="1000755"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The design provides a function that is called on every 2 millisecond Timer ISR called <em>runScheduler</em>.  This function executes the fast portion of the scheduler by looping through an array of <em>ScheduledEventStruct</em> elements and decrementing <em>currentTicks</em> in each of these.  This loop executes all fast events that have counted down.  The function then calls <em>runNormalScheduler</em> to clock the normal system.  This function counts its invocations (every 2ms), and every 20 milliseconds it marches through a linked list of <em>ScheduledEventStruct</em> elements decrimenting the counters.  This algorithm will also execute the first scheduled of these events that has a terminated counter.  It places the 2nd thru Nth events that are ready to run in a queue data structure to defer to the subsequent interrupts.  Again, <em>runNormalScheduler</em> is being invoked every 2ms, but is traversing the events list every 20 milliseconds.  On every invokation the deferred events queue is checked.  If it has any events in it, then the first of these is dequeued and executed.  This continues on every invocation until the queue is empty.  The deferred queue can accept as many events as the schedule list.  If there are deferred events waiting when we're ready to count down the scheduled events counters again, we put that off and perform one deferred event every 2 milliseconds until the queue is empty.  This is a scenario that should occur rarely, and should be reflected in a metric that is discussed below. </font>
+</p>
+
+
+<h2>
+  <a name="1000785"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-5  Performance</font>
+</h2>
+
+
+<h3>
+  <a name="1000867"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-5.1  User supplied events</font>
+</h3>
+
+
+<p>
+  <a name="1000886"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The functions that are supplied by the users of the scheduler must execute very quickly.  Every effort should be made to offload functions that take more than ~1.5 ms to user processes.  Ideally, users' scheduled event execution times plus overhead will not exceed ~1.5 ms combined.  The average time spend in the timer interrupt service routine must not exceed ~250Us.  For a point of comparison it should be noted that the key scanning algorithm (in "C") takes ~14Us and the knob scanning algorithm (in "C") takes ~38Us to execute.</font>
+</p>
+
+
+<h3>
+  <a name="1000881"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-5.2  Moab  metrics</font>
+</h3>
+
+
+<p>
+  <a name="1000873"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Moab spends an average of 283 Us in the timer interrupt service routine.  The maximum time Moab spends in the Timer ISR is 2.6 ms.  </font>
+</p>
+
+
+<h3>
+  <a name="1000868"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-5.3  JediPlus scheduler overhead</font>
+</h3>
+
+
+<p>
+  <a name="1000874"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Early benchmarking (System Scheduler overhead + key and knob scanning) shows this system taking an average of from 79 Us - 100 Us (0 - 19 normal scheduled events in the list).  The peak overhead with 19 normal scheduled events is ~ 400 Us.</font>
+</p>
+
+
+<h3>
+  <a name="1000877"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-5.4  Further metrics</font>
+</h3>
+
+
+<p>
+  <a name="1000878"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The measurements resulting in the overhead data seen above must be run again once the scheduler is actually connected to the system and executing scheduled events.</font>
+</p>
+
+
+<p>
+  <a name="1000924"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Also, at some point the deviation between the requested period of a scheduled event and the actual period must be measured and documented.  So, this discussion will be replaced with that number and the standard deviation of that metric as soon as possible.
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000927"> </a>TABLE 9.   System scheduler overhead</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1000933"> </a>Number of scheduled events</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1000935"> </a>Average execution time</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1000937"> </a>Maximum execution time</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000939"> </a>0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000941"> </a>74 Us</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000943"> </a>93 Us</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000945"> </a>4</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000947"> </a>78 Us</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000949"> </a>175 Us</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000951"> </a>6</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000953"> </a>80 Us</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000955"> </a>220 Us</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000957"> </a>8</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000959"> </a>83 Us</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000961"> </a>265 Us</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000963"> </a>10</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000965"> </a>85 Us</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000967"> </a>280 Us</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000969"> </a>12</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000971"> </a>89 Us</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000973"> </a>315 Us</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000975"> </a>14</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000977"> </a>91 Us</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000979"> </a>358 Us</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000981"> </a>16</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000983"> </a>93 Us</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000985"> </a>372 Us</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000987"> </a>18</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000989"> </a>95 Us</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000991"> </a>418 Us</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000993"> </a>20</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000995"> </a>96 Us</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000997"> </a>464 Us</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h3>
+  <a name="1001012"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">6-5.5  Tuning suggestions</font>
+</h3>
+
+
+<p>
+  <a name="1001013"> </a><font face="Verdana, Arial, Helvetica, sans-serif">    In previous discussion on performance it has been noted that the performance of this module must meet certain criteria.  In this section I would like to make note of ideas for tuning this module should the need arise.</font>
+</p>
+
+
+<p>
+  <a name="1001014"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Dana:  Sorting the list so that the next scheduled event is at the had of the list.  This would allow you to only decrement the counter in this event, keeping track of how much its been decremented.</font>
+</p>
+
+
+<p>
+  <a name="1001019"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Dana: Changing the tag from a pointer to a string to an integer value might help</font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="memory.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="scan.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

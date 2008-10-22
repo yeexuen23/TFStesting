@@ -1,0 +1,311 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:20:26 2002">
+<title>CHAPTER 7 Key and Knob Scanning</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="schedule.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="screenmgr.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="1000257"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 7 	 Key and Knob Scanning</font>
+</h1><hr>
+
+
+<h2>
+  <a name="1000258"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">7-1  Introduction</font>
+</h2>
+
+
+<p>
+  <a name="999226"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This document describes the requirements and the design of the front panel key and knob scanning routines.  Perhaps more importantly, the format of the tokens used to send information from the scanning routines to the local process is documented here.  The means by which JediPlus extracts these tokens from the local exchange is discussed in the chapter entitled <strong><u><a href="userInterface.html#1007926">User Interface</a></u></strong>.</font>
+</p>
+
+
+<h2>
+  <a name="1000284"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">7-2  Scanning  Requirements</font>
+</h2>
+
+
+<p>
+  <a name="1000285"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The most important requirement for the knob and key scanning algorithms is that they execute quickly.   However, there are specific features for the algorithms that I would like to discuss in further detail.  Both algorithms will result in a key or knob "token" being placed in a pSOS message exchange (<em>xidLocal</em>) that is consumed by the Local parser process.</font>
+</p>
+
+
+<h3>
+  <a name="1000286"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">7-2.1  Knob scanning requirements</font>
+</h3>
+
+
+<p>
+  <a name="1000225"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Front panel knob scanning is the only task that is executed on every Timer Interrupt Service Routine (TISR).  The quadrature encoders used on the front panel of all HP546xx products can actually be made to change states as fast as once per 400 - 600Us.  However, one must try very hard to do this and it is not within the boundaries of normal use.  Scanning fast enough to <strong>never</strong> miss a state change would cause the CPU to spend too much of its time scanning.  Fortunately, it is virtually impossible to accelerate a knob fast enough to miss determining which direction it is turning with a 2 ms scan rate.  So the knob scanning algorithm will note a direction of turning for a knob when it begins to turn, then count undersampled scans as a single token in that direction.</font>
+</p>
+
+
+<p>
+  <a name="1000239"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Once a knob turn is decoded, the design will tokenize this into a unique value and send the token to the <em>xidLocal</em>.  The token will be time tagged with the relative time that it was decoded so that the knob parsing algorithms can use the time information in acceleration algorithms.</font>
+</p>
+
+
+<h3>
+  <a name="1000234"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">7-2.2  Key scanning requirements</font>
+</h3>
+
+
+<p>
+  <a name="1000235"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Key scanning takes place every 16ms.  The scanner will be designed to be independent of the behavior of the system in which it is utilized.  Therefore, the tokens that it produces will simply describe the front panel event that caused the token.  The scanner will place the decoded tokens into the <em>xidLocal</em>.</font>
+</p>
+
+
+<p>
+  <a name="1000802"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Specifically, the required features for the key scanner are to recognize and tokenize:</font>
+</p>
+
+<ul>
+  <li><a name="1000889"> </a><font face="Verdana, Arial, Helvetica, sans-serif">key pressed</font>
+  <li><a name="1000808"> </a><font face="Verdana, Arial, Helvetica, sans-serif">key released before it is considered "held down"</font>
+  <li><a name="1000809"> </a><font face="Verdana, Arial, Helvetica, sans-serif">key held down</font>
+  <li><a name="1000810"> </a><font face="Verdana, Arial, Helvetica, sans-serif">key released after it is considered "held down"</font>
+  <li><a name="1000893"> </a><font face="Verdana, Arial, Helvetica, sans-serif">key still held down or key "repeat"</font>
+</ul>
+
+<h2>
+  <a name="1000851"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">7-3  Key and Knob scanning design</font>
+</h2>
+
+
+<h3>
+  <a name="1000318"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">7-3.1  Key and Knob naming convention</font>
+</h3>
+
+
+<p>
+  <a name="1000335"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following conventions will be used for defining the token values for front panel interface devices:</font>
+</p>
+
+<ul>
+  <li><a name="1000321"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Hard keys will use the prefix <strong>HK_</strong></font>
+  <li><a name="1000322"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Soft keys will be named <strong>SOFTKEY1</strong> thru <strong>SOFTKEY6</strong></font>
+  <li><a name="1000409"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Soft knob(The "Entry" knob) will be named <strong>SOFTKNOB</strong></font>
+  <li><a name="1000329"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Hard knobs will use the prefix <strong>HKNB_</strong></font>
+</ul>
+
+<h3>
+  <a name="1000330"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">7-3.2  Layout definition technique</font>
+</h3>
+
+
+<p>
+  <a name="1000336"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The front panel key and knob layout will be defined using arrays:</font>
+</p>
+
+<pre>
+<a name="1000340"> </a>keyTokenArray[NUMBER_OF_LAYOUTS]
+                          [NUMBER_OF_KEY_ROWS]
+                          [NUMBER_OF_KEYS_PER_ROW] =
+{
+    HK_CH1MODE, SOFTKEY1, SOFTKEY2, SOFTKEY3, SOFTKEY4, SOFTKEY5, HK_LOGIC_THRESHOLD,
+    HK_LABEL, SOFTKEY6, HK_CHAN_ON_OFF,...
+<a name="1000337"> </a>knobTokenArray[NUMBER_OF_LAYOUTS]
+                            [NUMBER_OF_KNOB_ROWS]
+                            [NUMBER_OF_KNOBS_PER_ROW] =
+{
+    HKNB_CH1POS,  HKNB_CH2POS, HKNB_UNUSED_KNOB, HKNB_UNUSED_KNOB,
+    HKNB_MOVEWAVE,...;
+</pre>
+
+<p>
+  <a name="1000338"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These arrays correspond exactly to the keyboard schematic for the layout being used.</font>
+</p>
+
+
+<h3>
+  <a name="1000411"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">7-3.3  xidLocal Message definition</font>
+</h3>
+
+
+<p>
+  <a name="1000431"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The pSOS message structure is a 6 long word structure (24 bytes) in which the first 2 long words are defined by pSOS.  The following 4 long words are completely user definable.  Therefore, we will use the following data structure to send to the <em>xidLocal</em>:</font>
+</p>
+
+<pre>
+<a name="1000685"> </a>{
+    int link;
+    int homeExchange;
+
+    uint16 tokenType;
+    uint16 token;
+    uint16 direction;
+    uint32 time;
+}FpInputMsg;
+</pre>
+<ul>
+  <li><a name="1000680"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>tokenType</em> member differentiates between <strong>up keys</strong>, <strong>down keys</strong>, <strong>held-down</strong> keys, <strong>released</strong> keys, <strong>released after held</strong> keys and <strong>knobs</strong>.  </font>
+  <li><a name="1000681"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>token</em> is the token that was decoded.</font>
+  <li><a name="1000868"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>direction </em>member is the direction that the knob was turned for knob tokens.</font>
+  <li><a name="1000682"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>time</em> is the absolute time (in 2ms counts) that has expired since powerup.  Each token will be time-tagged with this value.</font>
+</ul>
+
+<p>
+  <a name="1000424"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The encoding used for tokens will <strong>not</strong> differentiate between softkeys and hardkeys or softknobs and hardknobs.  That is information that resides on the parser side of the exchange.</font>
+</p>
+
+
+<h3>
+  <a name="1000341"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">7-3.4  Key scanning design</font>
+</h3>
+
+
+<p>
+  <a name="1000346"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The keyboard is designed as a grid of address and data lines in which pressing a key results in an address line and a data line being connected together.  With this design, we can simply place a low on any address line, then determine which, if any, data lines have been pulled low as a result.  Also, by driving all of the address <strong>rows </strong>low, we can use one read to determine if any keys are currently held down.</font>
+</p>
+
+
+<p>
+  <a name="1000351"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The keyboard scanning algorithm has two distinct parts.  The first part is a fast access subroutine that allows the TISR to quickly determine whether or not a key is pressed.  This uses the technique cited above in which all of the key rows are driven low.  The interface for this function follows:</font>
+</p>
+
+<pre>
+<a name="1000359"> </a>boolean anyKeysAreDown(unsigned short *ptr)
+</pre>
+
+<p>
+  <a name="1000360"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The second part of the keyboard scanning is where decoding into specific key tokens occurs.  This code resides in the subroutine:</font>
+</p>
+
+<pre>
+<a name="1000361"> </a>static ScheduledEventResults scanKeys(void)
+</pre>
+
+<p>
+  <a name="1000362"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This subroutine again verifies that a key is currently pressed.  If so, the key is decoded into its token using:</font>
+</p>
+
+<pre>
+<a name="1000367"> </a>unsigned short getKeyToken(void) 
+</pre>
+
+<p>
+  <a name="1000368"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The key token is then compared to a static variable called <em>lastKey </em>to debounce the token.  If the token is the same as the token seen on the last scan, then it is considered to be a valid token.  At this point, we send a <strong>key pressed</strong> token.  Then, on subsequent calls of the key scanner we check to see if the key is still held down and decrement a counter if it is.  If the key is held down when the timer expires, we send a <strong>key held</strong> token.  If not, we send a <strong>key released before held</strong> token.  If we've sent a <strong>key held</strong> token, then, the first time we scan key and see that the key has been released, we send a key <strong>released after held</strong> token.  If we have repeating turned on, and the key continues to be held down, we'll send key repeat tokens every time a key repeat timer counts down.</font>
+</p>
+
+
+<p>
+  <a name="1000904"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If this routine places any token in <em>xidLocal</em>, <strong>S_RET_ACTION_TAKEN</strong> will be returned.  Otherwise, <strong>S_RET_NO_ACTION_TAKEN</strong> will be returned.</font>
+</p>
+
+
+<h3>
+  <a name="1000369"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">7-3.5  Knob scanning design</font>
+</h3>
+
+
+<p>
+  <a name="1000401"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The knob scanning code has 3 major requirements.  First, it must determine if any knobs are being turned and which knobs.  Second, it must determine which direction the knob is turning.  Finally, the software must keep track of which direction a knob is turning so that an aliased scan does not yield a token in the wrong direction.</font>
+</p>
+
+
+<p>
+  <a name="1000371"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The front panel knob encoders are quadrature encoders which have the following characteristics:</font>
+</p>
+
+
+<p>
+  <a name="1000458"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In a clockwise rotation the encoders follow the pattern:<br>
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000462"> </a>TABLE 10.  Quadrature encoder clockwise pattern</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000466"> </a>MSB</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000468"> </a>LSB</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000470"> </a>0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000472"> </a>0</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000474"> </a>1</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000476"> </a>0</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000478"> </a>1</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000480"> </a>1</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000482"> </a>0</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1000484"> </a>1</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="1000459"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The array <em>knobDir</em> will be used to decode the knob direction.  This is a 4X4 array that is accessed with the previous and the current value of the knob bit pair.</font>
+</p>
+
+
+<p>
+  <a name="1000402"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The knob scanning code resides in the subroutine:</font>
+</p>
+
+<pre>
+<a name="1000403"> </a>static ScheduledEventResults scanKnobs(void)
+</pre>
+
+<p>
+  <a name="1000404"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This subroutine first repeatedly reads each knob row until two consecutive reads yield the same result.  Next, for each row, the value is compared to the previous debounced value for that row.  If the values differ, then the code enters an inner loop that examines each bit pair to see which of the knobs has changed.  Once it is determined which knob is rotating, then the static variable <em>knobDirectionKnown</em> is checked.  If the knob was already turning, we use the already known knob direction and send the appropriate token to the <em>xidLocal</em>.  If not, we determine the direction using <em>knobDir</em> and send the token.</font>
+</p>
+
+
+<p>
+  <a name="1000933"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In the interest of speed, most of the code in the subroutine <em>scanKnobs</em> is in-line.  For the most part this function determines the percentage of time that the CPU spends in the TISR.  If this routine places any token in <em>xidLocal</em>, <strong>S_RET_ACTION_TAKEN</strong> will be returned.  Otherwise, <strong>S_RET_NO_ACTION_TAKEN</strong> will be returned.</font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="schedule.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="screenmgr.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

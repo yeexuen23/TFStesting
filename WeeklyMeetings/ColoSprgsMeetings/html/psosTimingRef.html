@@ -1,0 +1,599 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:27:42 2002">
+<title>CHAPTER 28 Timing Reference for PSOS - 68020</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="os_wrapr.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="commonAbs.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="1003638"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 28 	 Timing Reference for PSOS - 68020</font>
+</h1><hr>
+
+<pre>
+<a name="1003857"> </a><em>Note: This chapter is a document from Software Components Group, the company that provided the version 
+of PSOS from which the HP-psos is derived. The performance numbers should reflect our kernel perfor-
+mance rather well and should be useful to estimate JediPlus execution when the Os_wrapr layer is consid-
+ered.
+</em></pre>
+
+<p>
+  <a name="1003645"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This Timing Reference Document contains important information and data on PSOS- 68020 performance. Data herein are useful in competitive evaluations against other real- time operating systems and executives, as well as in the design considerations and analysis of the user's application.</font>
+</p>
+
+
+<p>
+  <a name="1003646"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The sections which precede the timing data are important reading, as they discuss what is measured, how it is measured, and how to use the information.</font>
+</p>
+
+
+<h2>
+  <a name="1003648"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-1  Perspective</font>
+</h2>
+
+
+<p>
+  <a name="1003649"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Timing is but one of several criteria for judging an operating system or kernel. Among others are ease-of-use, reliability and functionality. The relative significance of these factors depends on the application at hand.</font>
+</p>
+
+
+<p>
+  <a name="1003650"> </a><font face="Verdana, Arial, Helvetica, sans-serif">However, detailed timing information can be very valuable in another respect - they reveal design flaws and imbalances. For example, timing formulae confirm that another executive's performance suffers severely for all but the smallest of applications, due to recurring, lengthy search loops and simplistic data structures. In other words, timing data reflect not just real- time performance, but fundamental design quality.</font>
+</p>
+
+
+<p>
+  <a name="1003651"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Many benchmarks quote only singular numbers for the simplest test cases. They mislead by being deliberately incomplete, and by idealizing system states and conditions. A detailed timing reference document, if available, should always be used for any meaningful evaluation.</font>
+</p>
+
+
+<h2>
+  <a name="1003653"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-2  The Key Parameters</font>
+</h2>
+
+
+<p>
+  <a name="1003654"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Responsiveness and throughput are the two common metrics for benchmarking a real- time kernel. Of the two, responsiveness is usually the more important.</font>
+</p>
+
+
+<p>
+  <a name="1003655"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Responsiveness measures a system's ability to react to external events. A key parameter is Interrupt Response, or Latency. A real-time kernel must solve numerous, low-level race conditions on common data structures by disabling interrupts. The longest such interval during which interrupts are turned off in a kernel defines its Interrupt Latency, which directly affects the min;.mum interrupt separation and service time which can be safely designed into the user's application. Other relevant responsiveness indicators include the speed with which a kernel can synchronize a process to the interrupting event, and switch to it.</font>
+</p>
+
+
+<p>
+  <a name="1003687"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Throughput measures a kernel's transaction handling speed, and is given as execution times for system calls, particularly those which are heavily used in timing sensitive paths of an application. One often quoted number, the task switch, or rescheduling, time, measures the efficiency with which a kernel switches between processes. We have elected to simply include this in the timing for those system call cases which result in a process switch.</font>
+</p>
+
+
+<h2>
+  <a name="1003689"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-3  Apples and Oranges</font>
+</h2>
+
+
+<p>
+  <a name="1003690"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Timing, like all specifications, are difficult to compare. Consider just the following caveats.</font>
+</p>
+
+
+<p>
+  <a name="1003691"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Most benchmarks publish only a single timing number for a system call, which invariably represents the best case, e.g. no rescheduling. Nor do such numbers reveal variable terms, such as search loops, which are conveniently dropped. Particularly for flawed designs which are heavily search-laden, such variables can easily overwhelm the published, best-case number.</font>
+</p>
+
+
+<p>
+  <a name="1003692"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A case in point is one executive which searches an all in one task chain after almost every system call, in order to dispatch a task, whether or not a task switch has occurred. Such searches are time-consuming, especially for designs running a good number of tasks, but are omitted from the published best-case numbers. Or worse, executives commonly suffer from interrupt latencies which too are variable functions, usually of the length of list structures. Again, best-case numbers may look acceptable. But reality could be sobering.</font>
+</p>
+
+
+<p>
+  <a name="1003693"> </a><font face="Verdana, Arial, Helvetica, sans-serif">By contrast, PSOS is a highly balanced design. Key performance areas such as interrupt latency and preemptive system calls have fast, and fixed, timing. For all other system transactions, variable terms are strictly minimized, which will be evident from the furnished measurement data.</font>
+</p>
+
+
+<p>
+  <a name="1003694"> </a><font face="Verdana, Arial, Helvetica, sans-serif">PSOS is very fast. Many systems only look fast.</font>
+</p>
+
+
+<p>
+  <a name="1003695"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We believe that benchmarks for real-time systems should document all significant cases and variables terms. Until then, it is still caveat emptor!</font>
+</p>
+
+
+<h2>
+  <a name="1003701"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-4  Measurement Methodology</font>
+</h2>
+
+
+<p>
+  <a name="1003702"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Timing is measured by actual execution on known hardware. The PSOS version used is V4.1 for the 68020 processor.</font>
+</p>
+
+
+<h3>
+  <a name="1003703"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-4.1  Measurement Hardware</font>
+</h3>
+
+
+<p>
+  <a name="1003704"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Execution and measurement are performed on a 68020 CPU clocked at 25Mhz, or 40 nanoseconds per clock cycle, with the cache turned off. Memory uses static RAM (i.e. accessed with zero wait-states).</font>
+</p>
+
+
+<h3>
+  <a name="1003705"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-4.2  Measurement Software</font>
+</h3>
+
+
+<p>
+  <a name="1003706"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Benchmark Suites are carefully designed. They verify hardware characteristics, and provide a known and reproducible measurement environment.</font>
+</p>
+
+
+<p>
+  <a name="1003707"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each measurement involves 100 repetitions of a PSOS transaction. The time taken is then divided by 100 to obtain the benchmark time for a single instance of that PSOS transaction.</font>
+</p>
+
+
+<p>
+  <a name="1003708"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For example, to measure the preemptive SEND MESSAGE call, 100 identical processes are created with ascending priorities. Each executes long enough to Request a Message from an empty Exchange, and thus wait in a FIFO queue. The low-priority Root process starts the timer and the chain reaction by sending a message into the exchange, thereby dequeueing a waiting process, which preempts Root. This process in turn sends a message into the exchange, and is preempted by the next process. And so on. The last, 100th, process to execute simply stops the timer.</font>
+</p>
+
+
+<h3>
+  <a name="1003709"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-4.3  Measurement Path</font>
+</h3>
+
+
+<p>
+  <a name="1003710"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each measurement path involves a system call to PSOS. In some cases, PSOS returns control to the caller. In other cases, the PSOS dispatcher switches to run another process. Referring to the diagram below, the former cases measure the path from (A) to (B), inclusive of the TRAP to PSOS. The latter cases measure the path from (A) to (B)', which thus also includes a process context switch.
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1003875"> </a>TABLE 14.  Measurement path illustration</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1003879"> </a>Calling_Process:<a name="1003889"> </a><strong>.<br>.<br></strong><a name="1003886"> </a>(A) ---&gt;	 <a name="1003890"> </a>TRAP #PSOS	 <a name="1003891"> </a>(B) &lt;---<a name="1003896"> </a>.<br>.<a name="1003895"> </a><br></font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1003893"> </a>Another-Process:<a name="1003894"> </a><strong>.<br>.<br></strong><a name="1003881"> </a>TRAP #PSOS or Domesticity <a name="1003908"> </a>(B)' &lt;---<a name="1003905"> </a>.<br>.<a name="1003909"> </a><br></font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h3>
+  <a name="1003718"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-4.4  Other Considerations</font>
+</h3>
+
+
+<p>
+  <a name="1003719"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The data presented are obtained through real execution. By contrast, many benchmarks are derived from formulae using published 68020 instruction timing data, and are therefore optimistic, since such 68020 timing data assumes optimal prefetch conditions. Our tests indicate that timing "computed" in this manner is 1. to 6% below actual execution time.</font>
+</p>
+
+
+<h2>
+  <a name="1003721"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-5  Data Interpretation</font>
+</h2>
+
+
+<p>
+  <a name="1003722"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following sections catalog the timing data for various PSOS System Services. Not all PSOS system calls are included. Some system services, Set - Time or Create/Delete Exchange for example, are typically not used in time-sensitive paths. The important system services to note are those commonly used for process communication, e.g. Message and Event services.</font>
+</p>
+
+
+<h3>
+  <a name="1003723"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-5.1  Measurement Cases</font>
+</h3>
+
+
+<p>
+  <a name="1003724"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For most system services, the measured timing depends on the outcome of the transaction, which in turn depends on the temporal state of the system. Each different outcome is called a Measurement Case. For each system service in the catalog, all important measurement cases are included. However, it is simply not possible, nor educational, to list all measurement cases.</font>
+</p>
+
+
+<h3>
+  <a name="1003725"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-5.2  Measurement Data</font>
+</h3>
+
+
+<p>
+  <a name="1003726"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Every measurement case has a timing number and a "Variant Condition". The timing number is the best-case timing for a single transaction. The variant condition shows the variable terms which may have to be added to that timing number, depending on the temporal state of the system, and parameter options.</font>
+</p>
+
+
+<p>
+  <a name="1003727"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For many measurement cases, the timing is fixed. For those cases whose timing contain variant conditions, the variable terms are annotated and explained in the section "Variant Conditions"	 
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1003963"> </a>TABLE 15.   Interrupts</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1003969"> </a><br></font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1006667"> </a>TIME(&#181;s) </font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1003973"> </a>VARIANT CONDITIONS </font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1003975"> </a>INTERRUPT LATENCY        </font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1003977"> </a>&lt; 7</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1003979"> </a>Fixed, worst case among all PSOS Code</font></td>
+  </tr>
+</table>
+
+
+
+
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004005"> </a>TABLE 16.   Process Management</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004011"> </a><br></font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004013"> </a>TIME(&#181;s)</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004015"> </a>VARIANT CONDITIONS</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004017"> </a>SPAWN PROCESS</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004019"> </a>56 </font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004178"> </a>See (M), for process stack allocation</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004111"> </a>ACTIVATE PROCESS "A <br>Returns to Caller<br>"A" Preempts Caller</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004025"> </a><br>29 <br>48 </font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004027"> </a><br>See (R), for inserting "A" to ready list <br>Fixed. Includes (P) switch to Process "A"</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004041"> </a>SUSPEND PROCESS "A" <br>Returns to Caller<br>Self Suspend</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004043"> </a><br>22 <br>41 </font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004045"> </a><br>Fixed <br>Fixed. Includes (P) switch to Next Process</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004140"> </a>RESUME PROCESS "A" <br>Returns to Caller<br>"A" Preempts Caller</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004152"> </a><br>29 <br>48 </font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004063"> </a><br>See (R) <br>Fixed. Includes (P) switch to Process "A"</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004193"> </a>CHANGE PRIORITY of "A"<br>Returns to Caller<br>"A" Preempts Caller</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004079"> </a><br>35 <br>54</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004081"> </a><br>See (R), for moving "A" within ready list<br>Fixed. Includes (P) switch to Process "A"</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004159"> </a>DELETE PROCESS "A" <br>Returns to Caller</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004166"> </a><br>60</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004099"> </a><br>See (A)</font></td>
+  </tr>
+</table>
+
+
+
+
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004293"> </a>TABLE 17.  Communication Calls</font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004299"> </a><br></font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004301"> </a>TIME(&#181;s)    </font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004303"> </a>VARIANT CONDITIONS</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004305"> </a>REQUEST MESSAGE from "X" <br>Message Q "X" was Nonempty<br>Caller Waits (FIFO)</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004307"> </a><br>28<br>51</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004309"> </a><br>Fixed <br>See (T). Includes (P) switch to Next Process</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004323"> </a>SEND/JAM MESSAGE to "X" <br>Wait Q "X" was Empty<br>DQ'ed Process made Ready<br>DQ'ed Process Preempts</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004325"> </a><br>34<br>37<br>55</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004327"> </a><br>Fixed <br>See (R) <br>Fixed. Includes (P) switch to DQ'ed Process</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004347"> </a>WAIT EVENTS <br>Event was Pending<br>Caller Waits</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004349"> </a><br>19<br>41</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004351"> </a><br>Fixed <br>See (T). Includes (P) switch to Next Process</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004365"> </a>SIGNAL EVENTS to "A" <br>Sets &amp; Returns to Caller<br>Process "A" made Ready<br>"A" Preempts Caller</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004367"> </a><br>23<br>34<br>53</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004369"> </a><br>Fixed <br>See (R) <br>Fixed. Includes (P) switch to Process "A"</font></td>
+  </tr>
+</table>
+
+
+
+
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004672"> </a>TABLE 18.  Memory Management Calls</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1004572"> </a><br></font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1004574"> </a>TIME(&#181;s) </font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1004576"> </a>VARIANT CONDITIONS</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004578"> </a>ALLOCATE SEGMENT</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004580"> </a>32</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004582"> </a>See (M) </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004584"> </a>FREE SEGMENT <br>No Segment Merge Possible</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004586"> </a><br>31</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004588"> </a><br>See (F), if no process waiting for memory</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004591"> </a>GET-BUF</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004593"> </a>18</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004595"> </a>Fixed </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004597"> </a>RET-BUF</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004599"> </a>17</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004601"> </a>Fixed</font></td>
+  </tr>
+</table>
+
+
+
+
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004685"> </a>TABLE 19.  Miscellaneous Calls</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1004691"> </a><br></font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1004693"> </a>TIME(&#181;s)</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1004695"> </a>VARIANT CONDITIONS </font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004697"> </a>I/0 CALL OVERHEAD</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004699"> </a>10</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1004701"> </a>Fixed, assumes null driver</font></td>
+  </tr>
+</table>
+
+
+
+ 
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005343"> </a>TABLE 20.  Interrupt Service Calls</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1005349"> </a><br></font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1005351"> </a>TIME(&#181;s)</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366"><a name="1005353"> </a>VARIANT CONDITIONS </font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005355"> </a>RETURN FROM INTERRUPT <br>To Nested Level<br>To Interrupted Process "A"<br>To a Preempting Process "B"</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005357"> </a><br>7<br>11<br>30</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005359"> </a><br>Fixed<br>Fixed<br>Fixed. Includes (P) switch from "A" to "B" </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005361"> </a>ANNOUNCE TICK</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005363"> </a>12</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005365"> </a>Fixed </font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005367"> </a>SEND/JAM MESSAGE to "XI' <br>Wait Q "X" was Empty<br>DQ'ed Process made Ready<br>DQ'ed Process Preempts</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005369"> </a><br>30<br>33<br>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005371"> </a><br>Fixed<br>See (R)<br>N/A, deferred to last nested RET_I</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005373"> </a>SIGNAL EVENTS to "A" <br>Sets &amp; Returns to Caller<br>Process "A" made Ready<br>"A" Preempts</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005375"> </a><br>19<br>30<br>-</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="1005377"> </a><br>Fixed<br>See (R) <br>N/A, deferred to last nested RET_I</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<h2>
+  <a name="1003766"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-6  Variant Conditions</font>
+</h2>
+
+
+<h3>
+  <a name="1005384"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-6.1  (R) - Ready List Insertion</font>
+</h3>
+
+
+<p>
+  <a name="1003767"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This condition results from inserting a process into an ordered ready list. To be added to the timing number is:</font>
+</p>
+
+
+<p>
+  <a name="1003768"> </a><font face="Verdana, Arial, Helvetica, sans-serif">     Variable Term = I * (R-1) microseconds</font>
+</p>
+
+
+<p>
+  <a name="1003769"> </a><font face="Verdana, Arial, Helvetica, sans-serif">where R is the number of processes in the ready-to-run state which have higher priority than the process being inserted to the ready list.</font>
+</p>
+
+
+<p>
+  <a name="1003770"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It is important to note that at any given time, in a real-time application, the majority of processes are waiting for something. Therefore, the number of processes in the ready state is usually very small, so that the variable term (R) is insignificant.</font>
+</p>
+
+
+<h3>
+  <a name="1003771"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-6.2  (T) - Timeout Option</font>
+</h3>
+
+
+<p>
+  <a name="1003772"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This condition occurs when a process waits for message, memory, or events, with the timeout option, thus requiring the insertion of the process into an ordered timeout list. To be added to the timing number is:</font>
+</p>
+
+
+<p>
+  <a name="1003773"> </a><font face="Verdana, Arial, Helvetica, sans-serif">     Variable Term = 2 * T microseconds</font>
+</p>
+
+
+<p>
+  <a name="1003774"> </a><font face="Verdana, Arial, Helvetica, sans-serif">where T is the number of processes in the timeout state which will time out sooner than the process being inserted into the timeout list.</font>
+</p>
+
+
+<p>
+  <a name="1003775"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For transactions which wait without timeout, i.e. forever, this term is zero.</font>
+</p>
+
+
+<p>
+  <a name="1003776"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It is important to note that, in a typical application, only the few "things" which are external and may fail to materialize should be waited for with timeout. Therefore, the number of processes in the timeout state is usually very small, so that the variable term (T) is insignificant.</font>
+</p>
+
+
+<p>
+  <a name="1003777"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It is also interesting to note a common practice among many designs, wherein interrupts are disabled during the entire search and insertion to the timeout list. This adversely affects interrupt latency. By contrast, PSOS allows an interrupt-window between searching each element in the list.</font>
+</p>
+
+
+<h3>
+  <a name="1003778"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-6.3  (P) - Process Switching</font>
+</h3>
+
+
+<p>
+  <a name="1003779"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The PSOS process-switch, or rescheduling, time is fixed, and appears as a 19 microsecond overhead over an identical transaction which does not result in a process switch. This time is already included in the appropriate measurement cases.</font>
+</p>
+
+
+<p>
+  <a name="1003780"> </a><font face="Verdana, Arial, Helvetica, sans-serif">By contrast, many designs exhibit a variable rescheduling time. Worse, they often incur this overhead activity even in the absence of a process switch, i.e. when returning to the same process.</font>
+</p>
+
+
+<h3>
+  <a name="1003784"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-6.4  (M) - Memory Allocation</font>
+</h3>
+
+
+<p>
+  <a name="1003785"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This condition occurs when the PSOS memory manager needs to search one or both of its free-segment lists in order to allocate a memory segment. To be added to the timing number is:</font>
+</p>
+
+
+<p>
+  <a name="1003786"> </a><font face="Verdana, Arial, Helvetica, sans-serif">     Variable Term = 2 * M microseconds</font>
+</p>
+
+
+<p>
+  <a name="1003787"> </a><font face="Verdana, Arial, Helvetica, sans-serif">where M is the number of segments searched, but which were too small.</font>
+</p>
+
+
+<p>
+  <a name="1003788"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If the user always requests fixed-size segments from each memory region, then the variable term is zero, as searching is not necessary.</font>
+</p>
+
+
+<p>
+  <a name="1003789"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It is important to note that, in a typical real-time application, the allocation and de- allocation of memory segments are well within the user's control and anticipation. Even if variable-sized segments are used, the number of disjoint free segments should be quite small. This (M) term should not be significant.</font>
+</p>
+
+
+<h3>
+  <a name="1003790"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-6.5  (F) - Free Memory</font>
+</h3>
+
+
+<p>
+  <a name="1003791"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This condition arises when a memory segment is returned, as PSOS searches the calling process's owned memory list. To be added to the timing number is:</font>
+</p>
+
+
+<p>
+  <a name="1003792"> </a><font face="Verdana, Arial, Helvetica, sans-serif">     Variable Term = 2 * F</font>
+</p>
+
+
+<p>
+  <a name="1003793"> </a><font face="Verdana, Arial, Helvetica, sans-serif">where M is the number of memory segments allocated to, and owned by, the process subsequent to the segment now being returned.</font>
+</p>
+
+
+<p>
+  <a name="1003794"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Note that a typical process will not, at a given time, own many segments. Therefore, this term is insignificant. The benefits, on the other hand, are important, as this allows PSOS to perform automatic reclamation of segments when a process is deleted.</font>
+</p>
+
+
+<h3>
+  <a name="1003795"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">28-6.6  (A) - Active Chain Removal</font>
+</h3>
+
+
+<p>
+  <a name="1003796"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This condition arises when a process is deleted and must be removed from an active chain. Since process deletion is generally not time critical, this active chain is singly- linked, so that removal requires searching. To be added to the timing number is:</font>
+</p>
+
+
+<p>
+  <a name="1003797"> </a><font face="Verdana, Arial, Helvetica, sans-serif">     Variable Term = .8 * A</font>
+</p>
+
+
+<p>
+  <a name="1003798"> </a><font face="Verdana, Arial, Helvetica, sans-serif">where A is the number of active processes created subsequent to the process now being deleted.</font>
+</p>
+
+
+<p>
+  <a name="1003799"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This variable term could be significant if the number of active processes is large. However, process deletion is not typically time-critical.</font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="os_wrapr.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="commonAbs.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

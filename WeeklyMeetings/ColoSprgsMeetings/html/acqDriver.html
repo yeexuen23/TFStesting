@@ -1,0 +1,769 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:23:01 2002">
+<title>CHAPTER 14 Acquisition Drivers</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="hal.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="chanDriver.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="124832"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 14 	 Acquisition Drivers</font>
+</h1><hr>
+
+
+<h2>
+  <a name="130295"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">14-1  Overview</font>
+</h2>
+
+
+<p>
+  <a name="144221"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> The Acquisition (Acq) Driver is the software (SW) module that encapsulates the control of the waveform acquisition system in the JediPlus products. The Logical Acq Driver presents an Application Interface (API) that unifies and standardizes control over the logical blocks in the JediPlus acquisition system. It accepts the acq configuration parameters from the various acq controls in the behavioral layer of the User Interface (UI) and maps it into the control parameters for the logical blocks in the acq system. The primary purpose of this logical driver is to provide an abstraction layer interface between the UI controls in the behavioral layer of the UI and the product specific code that invokes the physical drivers to program the acq HW.   This standard API facilitates quick development of the follow on JediPlus products since it isolates the SW changes needed to support different Acq HW implementations, down in the Physical Acq Driver. The Physical Acq driver accepts the acq control parameters for the logical acq blocks and maps them into the form needed to program the physical components implementing the logical blocks. </font>
+</p>
+
+<a name="144330"> </a>FIGURE 35.&#32; <img src="images/acqDrivera.gif" height="324" width="624">
+ Acq Driver Context Diagram
+<p>
+  <a name="144334"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Acq Driver Context Diagram is a simplified view of the relationships between the Acq Driver and the rest of the JediPlus SW System. Its shows the Logical Acq Driver providing part of the hardware abstraction layer (HAL), between the UI and the Physical Acq Driver. It shows the Physical Acq Driver programming and monitoring the status of the Acq HW, that acquires real time data on each trigger and produces ensemble waveform records over multiple triggers.</font>
+</p>
+
+
+<p>
+  <a name="145450"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The  waveform data records, which represent the input signals, are used by the Plot HW to create the signal graphics displayed on screen. Some are also made accessible to the host CPU for analysis, via the Signals Store. </font>
+</p>
+
+
+<p>
+  <a name="141215"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Because special emphasis isplaced on superior waveform displays in the JediPlus product family, much of the instruments' fundamental waveform acq/display cycle has been implemented in hardware. There are distinct differences in partitioning between the HW implementations in the MUSKRAT and PUMA product lineages, that must be accomodated by these drivers. In MUSKRAT the acq/display cycle has basically been optimized for update rate. In PUMA, the emphasis is shifted towards parametric performance consistent with higher bandwidth products. These differences require these drivers to handle multiple HW implementations. They are organized into two layers, Logical Drivers and Physical Drivers, to deal with the mapping of logical HW functionality into the physical HW implementations. </font>
+</p>
+
+
+<h3>
+  <a name="144351"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">14-1.1  The Logical Acq Driver APIs</font>
+</h3>
+
+
+<p>
+  <a name="144357"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Logical Acq Driver in the JediPlus SW is composed of a set data structures, called the Acq Settings Templates, and the set of functions that initialize, update, manipulate and propagate the information in these structures. The Acq Templates basically hold the state information for the Logical Acq Driver. A simple view is that acq settings information from the UI is passed into the driver and saved in the appropiate Template. This is used to generate additional control information for the various logical blocks in the Acq System which is also saved. A mix of this UI and logic block information provides the basis for the API with the Physical Acq Driver. The details of this API with the Physical Driver are presented in the next Section.</font>
+</p>
+
+
+<h4>
+  <a name="144368"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">The Acq Template Structure </font>
+</h4>
+
+
+<p>
+  <a name="144477"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Like other Setting Templates in JediPlus, the Acq Settings Templates are made up of multiple sections, containing User Factors, Generic Driver Facors and Product Specific Driver Factors. The AcqTemplate, defined in the file /jediPlus/include/dvrAcq.h, contains distilled UI information called the Acq User Factors, and the acq change register. The AcqTemplate section of the templates constitutes a critical section of the API between the UI and Logical Acq Driver.  The definitions are shown below: </font>
+</p>
+
+<pre>
+<a name="144480"> </a>
+<a name="144483"> </a>/* MACRO defining the USER factors in the Acq Templates*/
+<a name="144484"> </a>#define ACQ_USER_FACTORS\
+<a name="144485"> </a>float64 wantedSampleRate;  /* Desired rate for point storage */\
+<a name="144525"> </a>float64 acqSampleRate;     /* Rate points are actually stored */\
+<a name="144487"> </a>float64 measSampleRate;    /* Rate points are stored in analysis record */\
+<a name="144528"> </a>int32 wantedPoints;        /* Desired number of points to collect */\
+<a name="144489"> </a>int32 acqPoints;           /* Number of points acquired */\
+<a name="144490"> </a>int32 measPoints;          /* Number of points in analysis record */\
+<a name="144491"> </a>boolean autoSampleRate;    /* TRUE = ignore sampleRateWanted */\
+<a name="144531"> </a>boolean autoPoints;        /* TRUE = ignore pointsWanted */\
+<a name="144493"> </a>TimeMode timeMode;         /* horiz mode Main, Dlyd, Dual, Roll or XY */\
+<a name="144494"> </a>AcqMode acqMode;           /* acq/plot mode Norm, Peak, or Ave */\
+<a name="144495"> </a>RunMode runMode;           /* run mode Running, Stopped, etc. */\
+<a name="144496"> </a>uint16 numAverages;    /* Number of averages */\
+<a name="144534"> </a>boolean realtimeOnly;  /* TRUE = don't do random repetative */\
+<a name="144498"> </a>boolean ditherAcq      /* TRUE = do dither */
+</pre>
+
+<p>
+  <a name="144499"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<pre>
+<a name="144501"> </a>/* AcqTemplate definition */
+<a name="144502"> </a>typedef struct
+<a name="144503"> </a>{
+<a name="144548"> </a>   Change change;      /* Bitset indicating changes in the acq settings */
+<a name="144505"> </a>   ACQ_USER_FACTORS;   
+<a name="144507"> </a>}AcqTemplate;
+</pre>
+
+<p>
+  <a name="144458"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="144712"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The DvrAcqTemplate, defined in the file jediPlus/hwDvr/include/dvrAcqUtil.h, consists of an AcqTemplate followed by the group of Generic Driver Factors.  These generic factors are a group of driver private parameters that are common to all JediPlus instruments.  The definitions are shown below:</font>
+</p>
+
+<pre>
+<a name="144369"> </a>/* MACRO defining the generic driver factors in the acq templates */
+<a name="144383"> </a>#define ACQ_DVR_FACTORS\
+<a name="144553"> </a>Set acqChans;         /* Set of channels acquired */\
+<a name="144385"> </a>AcqCycle acqCycle;    /* Acq cycle used during the acquisition */\
+<a name="144386"> </a>boolean mainInRR;     /* TRUE when generating main eq-time record */\
+<a name="144387"> </a>boolean dlydInRR;     /* TRUE when generating dlyd eq-time record */\
+<a name="144388"> </a>uint16 tpdIndex;      /* Main Time per division index when acquired */\
+<a name="144389"> </a>uint16 dlydTpdIndex;  /* Dlyd Time per division index when acquired */\
+<a name="144390"> </a>int64 timeLeftEdge    /* Time at left edge of screen in counts */
+<a name="144592"> </a>
+<a name="144392"> </a>/* DvrAcqTemplate definition */
+<a name="144393"> </a>typedef struct
+<a name="144394"> </a>{
+<a name="144395"> </a>   Change change;     /* Bitset indicating changes in the acq settings */
+<a name="144556"> </a>   ACQ_USER_FACTORS;
+<a name="144397"> </a>   ACQ_DVR_FACTORS;
+<a name="144398"> </a>}
+<a name="144399"> </a>DvrAcqTemplate;
+<a name="144559"> </a>
+<a name="144593"> </a>The MuskAcqTemplate, defined in jediPlus/hwDvr/dvrMuskrat/muskAcqUtil.h, consists of a 
+DvrAcqTemplate followed by the unique Muskrat Acq factors. The definitions are shown 
+below:
+<a name="144727"> </a>/* MACRO defining the MUSKRAT acq factors */
+<a name="144561"> </a>#define ACQ_MUSK_FACTORS\
+<a name="144562"> </a>int64 timeLeftOfMem;      /* Time at left edge of acq mem in counts */\
+<a name="144597"> </a>int64 preTrigDelay;       /* Samples stored before the trigger */\
+<a name="144564"> </a>int64 postTrigDelay;      /* Samples from trigger to start of memory */\
+<a name="144565"> </a>int64 screenDelay;        /* Samples to the end of memory */\
+<a name="144566"> </a>uint32 samples;           /* Number of samples to acquire, in Rt record */\
+<a name="144567"> </a>uint32 samplePeriod;      /* Time per point in time counts */\
+<a name="144568"> </a>uint32 minSampleNum;      /* First sample in Rt record, starting with 0 */\
+<a name="144569"> </a>uint32 maxSampleNum;      /* Last  sample in Rt record, starting with 0 */\
+<a name="144600"> </a>uint32 minDepth;          /* Min mem depth optimised for fast display */\
+<a name="144571"> </a>uint32 maxDepth;          /* Max mem depth for high quality display */\
+<a name="144572"> </a>uint32 storeRate;         /* Rate points are stored on x axis in Sa/s */\
+<a name="144573"> </a>uint32 storeDecim;        /* Store Decimation for dividing sample rate */\
+<a name="144574"> </a>uint16 plotDecim;         /* Plot Decimation factor for fast plotting */\
+<a name="144575"> </a>uint16 numHrmSamples;     /* Normalized number of samples HRM'd together */\
+<a name="144576"> </a>uint16 sampleExpansion;   /* sample spacing in RR modes */\
+<a name="144577"> </a>CaptureMode captureMode;  /* Running, Single or Deep Stop capture*/\
+<a name="144578"> </a>AcqDataType acqData       /* Raw, Hi_Res, Bob_mode ..... */
+<a name="144579"> </a>
+<a name="144366"> </a>/* MuskAcqTemplate definition */
+<a name="144581"> </a>typedef struct
+<a name="144582"> </a>{
+<a name="144583"> </a>   Change change;         /* Bitset indicating changes in x-axis */
+<a name="144584"> </a>   ACQ_USER_FACTORS;
+<a name="144585"> </a>   ACQ_DVR_FACTORS;
+<a name="144586"> </a>   ACQ_MUSK_FACTORS;
+<a name="144587"> </a>}
+<a name="144588"> </a>MuskAcqTemplate;
+</pre>
+
+<p>
+  <a name="144734"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The PumaAcqTemplate, defined in jediPlus/hwDvr/dvrPuma/pumaAcqUtil.h, consists of a DvrAcqTemplate followed by Puma Acq factors.   The definitions are shown below:</font>
+</p>
+
+
+<p>
+  <a name="144737"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="144832"> </a><font face="Verdana, Arial, Helvetica, sans-serif">/* MACRO defining the PUMA acq factors */</font>
+</p>
+
+<pre>
+<a name="144608"> </a>#define ACQ_PUMA_FACTORS\
+<a name="144609"> </a>int64 timeLeftOfMem;      /* Time at left edge of acq mem in counts */\
+<a name="144653"> </a>int64 preTrigDelay;       /* Samples stored before the trigger */\
+<a name="144611"> </a>int64 postTrigDelay;      /* Samples from trigger to start of memory */\
+<a name="144612"> </a>int64 screenDelay;        /* Samples to the end of memory */\
+<a name="144613"> </a>uint32 samples;           /* Number of samples to acquire, in Rt record */\
+<a name="144614"> </a>uint32 samplePeriod;      /* Time per point in time counts */\
+<a name="144615"> </a>uint32 minSampleNum;      /* First sample in Rt record, starting with 0 */\
+<a name="144616"> </a>uint32 maxSampleNum;      /* Last  sample in Rt record, starting with 0 */\
+<a name="144617"> </a>uint32 minDepth;          /* Min mem depth optimised for fast display */\
+<a name="144618"> </a>uint32 maxDepth;          /* Max mem depth for high quality display */\
+<a name="144619"> </a>uint32 storeRate;         /* Rate points are stored on x axis in Sa/s */\
+<a name="144620"> </a>uint32 storeDecim;        /* Store Decimation for dividing sample rate */\
+<a name="144621"> </a>uint16 plotDecim;         /* Plot Decimation factor for fast plotting */\
+<a name="144622"> </a>uint16 sampleExpansion;   /* sample spacing in RR modes */\
+<a name="144623"> </a>CaptureMode captureMode;  /* RUNNING_RT, SINGLE, DEEP_STOP */\
+<a name="144624"> </a>AcqDataType acqData;      /* Raw, Hi_Res, Bob_mode ..... */\
+<a name="144625"> </a>NautilusMode adcMode;     /* Mode of Nautilus ADC */\
+<a name="144626"> </a>boolean mainInFSR;        /* TRUE when main using FSR mover */\
+<a name="144627"> </a>boolean dlydInFSR;        /* TRUE when delayed using FSR mover */\
+<a name="144628"> </a>uint32 acqMemSize         /* Size of acq memeory (1,2,4,8 Meg) */
+</pre>
+
+<p>
+  <a name="144629"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+<pre>
+<a name="144630"> </a>/* PumaAcqTemplate definition */
+<a name="144636"> </a>typedef struct
+<a name="144637"> </a>{
+<a name="144638"> </a>   Change change;        /* Bitset indicating changes in acq settings  */
+<a name="144639"> </a>   ACQ_USER_FACTORS;
+<a name="144640"> </a>   ACQ_DVR_FACTORS;
+<a name="144641"> </a>   ACQ_PUMA_FACTORS;
+<a name="144642"> </a>}
+<a name="144643"> </a>PumaAcqTemplate;
+</pre>
+
+<p>
+  <a name="144644"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Driver factor sections these templates make up part of the API between the Logical Acq Driver and Physical Acq Driver.  Intrument specific driver factors are a method to deal with differences in the API due to differences in the HW implementations when there is no straight forward way to  handle the differences with generic SW.  There is potential to promote some of the instrument specific factors to be generic fractors at a later time when it is determined they indeed can be defined and used identically.</font>
+</p>
+
+
+<p>
+  <a name="144606"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In the MUSKRAT products twelve MuskAcqTemplate are  instantiated in jediPlus/hwDvr/dvrMuskrat/muskAcq.c.  In the PUMA product twelve PumaAcqTemplates are instanciated in jediPlus/hwDvr/dvrPuma/pumaAcq.c. The four templates describing the real-time (RT) acquisitions are called dvrCurrScopeAcq, dvrLastScopeAcq, dvrCurrLogicAcq, and dvrLastLogicAcq. As the names indicate, two describe the current RT acquisitions and two describe the last RT acquisitions for the scope and the logic timing analyzer.  The current templates are copied to the associated last templates when an acquisition is stopped AND a trigger has occurred since the acquisition was enabled. The four scope templates describing ensemble waveforms acquired are called dvrCurrMainScopeRec, dvrCurrDlydScopeRec. dvrLastMainScopeAcq, dvrLastDlydScopeAcq.  The four logic templates describing ensemble waveforms acquired are called dvrCurrMainLogicRec, dvrCurrDlydLogicRec. dvrLastMainLogicAcq, dvrLastDlydLogicAcq. Notice there still current and last versions of these templates but the ensemble waveforms also require seperate templates to describe the records acquired for the main and delayed sweep windows.</font>
+</p>
+
+
+<p>
+  <a name="144745"> </a><font face="Verdana, Arial, Helvetica, sans-serif">No AcqTemplates or DvrAcqTemplates are instanciated in any of the products except as part of either a MuskAcqTemplate or PumaAcqTemplate. In a C++ code base these would exist as virtual base classes since they are inherited by the child class to form the common part but they never get instanciated alone.  </font>
+</p>
+
+
+<p>
+  <a name="144820"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A pointer to the AcqTemplate type is defined for and used by the UI to access the Acq User Factors and change flags.   Since the AcqTemplate portion is identical in all these templates the UI only deals with one template via one pointer, called the currAcqPtr.  The Acq Driver SW propogates  changes to the Acq User Factors in the other templates automatically. This scheme isolates the UI from differences in the driver factors and also protects the driver factors from changes in the UI. This allows the Driver Factors in various products to be different where HW differences dictate, without effecting the API between the UI and  the Logical Acq Driver.   </font>
+</p>
+
+
+<p>
+  <a name="144806"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Pointers  to the AcqTemplate sections of the other template are defined in muskAcq.c or pumaAcq.c, respectively.  These are used privately by the Acq Driver SW, NOT by the UI.  These pointers are called the currScopeAcqPtr, currLogicAcqPtr, lastScopeAcqPtr and lastLogicAcqPtr. Typically these pointers are passed as parameters to functions that access and manipulate the acq templates.  As execution passes from the UI to the Logical Driver to the Physical Driver the functions become cognizant of the physical differences between products and the pointers are cast to the appopriate type to access more specific factors in the templates. For example, when a function needs to access the generic driver factors they cast the pointers to be pointers to DvrAcqTemplates. When a function needs to access the instrument specific driver factors they cast the pointers to be pointers to MuskAcqTemplates or PumaAcqTemplates accordingly.   </font>
+</p>
+
+
+<h4>
+  <a name="144558"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Change Flag Usage</font>
+</h4>
+
+
+<p>
+  <a name="144871"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When UI control changes cause changes in the fields in the Acq Templates, the appropriate change flags in the Change register for the template must also be set TRUE.  Usually the UI does this when it changes Acq User Factors in the AcqTemplate via the currAcqPtr, but sometimes Logical Acq Driver functions must also set change flags when they change a field.  These flags are used by the Logical HW Drivers to determine which configuration functions must be executed to deal with a given change thereby improving efficiency. The table below shows the relationship between the fields and the change flags for the acq templates.
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif">
+<a name="144919"> </a><font  size="3" face="Verdana, Arial, Helvetica, sans-serif"><br></font>
+
+</font></i></b></caption>
+  <tr bgcolor="#CCCCCC"><div align="center">
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366">
+<p>
+  <a name="144923"> </a><font face="Verdana, Arial, Helvetica, sans-serif">FIELD CHANGED </font>
+</p>
+
+</font></th>
+    <th><font face="Verdana, Arial, Helvetica, sans-serif" color="#003366">
+<p>
+  <a name="144925"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CHANGE FLAGS SET</font>
+</p>
+
+</font></th>
+  </div></tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144927"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145019"> </a><font face="Verdana, Arial, Helvetica, sans-serif">otherChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144931"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SEE NOTE 1 BELOW</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145021"> </a><font face="Verdana, Arial, Helvetica, sans-serif">resetAcq</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144935"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145023"> </a><font face="Verdana, Arial, Helvetica, sans-serif">trigChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144939"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SEE NOTE 2 BELOW</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145025"> </a><font face="Verdana, Arial, Helvetica, sans-serif">skewChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144943"> </a><font face="Verdana, Arial, Helvetica, sans-serif">runMode (except when it  is set to STOPPED_MODE)</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145027"> </a><font face="Verdana, Arial, Helvetica, sans-serif">runModeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144947"> </a><font face="Verdana, Arial, Helvetica, sans-serif">timeMode</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145029"> </a><font face="Verdana, Arial, Helvetica, sans-serif">timeModeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144951"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqCycle</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145031"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqCycleChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144955"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqMode, numAverages, ditherAcq or realtimeOnly</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145033"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqModeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144959"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqChans</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145035"> </a><font face="Verdana, Arial, Helvetica, sans-serif">acqSrcChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144963"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145037"> </a><font face="Verdana, Arial, Helvetica, sans-serif">funcChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144967"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145039"> </a><font face="Verdana, Arial, Helvetica, sans-serif">funcAutoScale</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144971"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145041"> </a><font face="Verdana, Arial, Helvetica, sans-serif">dispChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144975"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SEE NOTE 3 BELOW</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145043"> </a><font face="Verdana, Arial, Helvetica, sans-serif">xScaleChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145499"> </a><font face="Verdana, Arial, Helvetica, sans-serif">minDepth, maxDepth, storeDecim, plotDecim, acqData, tpdIndex, dlydTpdIndex, samplePeriod, storeRate, acqSampleRate, measSampleRate </font>
+</p>
+
+
+<p>
+  <a name="145517"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SEE NOTE 4 BELOW</font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145045"> </a><font face="Verdana, Arial, Helvetica, sans-serif">xRangeChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144983"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145047"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yAcqScaleChange</font>
+</p>
+
+</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="144987"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif">
+<p>
+  <a name="145049"> </a><font face="Verdana, Arial, Helvetica, sans-serif">yPlotScaleChange</font>
+</p>
+
+</font></td>
+  </tr>
+</table>
+
+
+
+</font>
+</p>
+
+
+<p>
+  <a name="145512"> </a><font face="Verdana, Arial, Helvetica, sans-serif">NOTE 1 - The resetAcq bit is an exception to the rule that bits get set as fields in the template change.  In this case the bit gets set when an acquisition is reset.  This means that the data last acquired is not valid and it is used blank the last data from the screen.  This occurs when the RUN or SINGLE button are pushed and when switching between some acq modes while STOPPED.</font>
+</p>
+
+
+<p>
+  <a name="145518"> </a><font face="Verdana, Arial, Helvetica, sans-serif">NOTE 2 - The skewChange bit is an exception to the rule that bits get set as fields in the template change. This bit is a composite LOGICAL OR of  the skewChange bits in all the analogChan[] templates. </font>
+</p>
+
+
+<p>
+  <a name="145523"> </a><font face="Verdana, Arial, Helvetica, sans-serif">NOTE 3 - The xScaleChange bit is an exception to the rule that bits get set as fields in the template change. This bit is a composite LOGICAL OR of the xScaleChange bits in the mainSweep and dlydSweep templates.</font>
+</p>
+
+
+<p>
+  <a name="145538"> </a><font face="Verdana, Arial, Helvetica, sans-serif">NOTE 4 - The xRangeChange bit is somewhat of an exception to the rule that bits get set as fields in the template change. This bit is a composite LOGICAL OR of the xRangeChange bits in the mainSweep and dlydSweep templates when the Logical Driver is entered.  Later it is adjusted when the acqTable is accessed.  When the table entry changes the bit is set TRUE.  When the entry does not change from the last table access the bit is set FALSE. </font>
+</p>
+
+
+<p>
+  <a name="145510"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In MUSKRAT and PUMA the currAcqPtr points at the dvrCurrScopeAcq template.  When the logical acq driver is entered the USER ACQ FACTORS and the CHANGE REGISTER is copied to the dvrCurrLogicAcq template so they are consistent. Most of the Acq Driver does not execute when the instrument is not RUNNING.  There is no reason to reconfigure the current acquisition, which will happen on the next trigger, for most changes that occur while STOPPED.  In this case, the change flags are queued up by the Logical Acq Driver in a private change register called stoppedChange, which is restored back into the templates when instrument is switched back to RUNNING.  These mechanisms are in the entry point function for the Logical Acq Driver,  configXAcq(), in the file jediPlus/hwDvr/generic/dvrAcq.c </font>
+</p>
+
+
+<h4>
+  <a name="145506"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Acq Driver Initializion Functions</font>
+</h4>
+
+
+<p>
+  <a name="145121"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This initialization function is called once at power up to make sure the Logical Acq Driver is properly initialized.</font>
+</p>
+
+<ul>
+  <li><a name="145122"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean initAcqDvr(boolean verbose, boolean diagnostics); </font>
+
+<p>
+  <a name="145123"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Initializes the acq data structures and the acq HW.</font>
+</p>
+
+  <li><a name="145365"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern boolean initSettlingMgr(boolean verbose, boolean diagnostics);</font>
+
+<p>
+  <a name="145379"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Initialiazes the Settling Time Utility in the Acq Driver. This needs to be initialized before most of the other hardware drivers, so the other drivers can use the service </font>
+</p>
+
+</ul>
+
+<h4>
+  <a name="144869"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Logical Acq Driver Entry Point Functions</font>
+</h4>
+
+
+<p>
+  <a name="145249"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The entry point functions for the Logical Acq Driver are defined in /jediPlus/include/dvrAcq,h.  When controls change that effect the Acq System they typically update one or more distilled User Factors in some Settings Template and mark their dependent "meta control". This causes the effector routine for the "meta control"  to run later, where the call to Logical Acq Driver entry point routine. There are meta controls that handle x-axis changes, x-axis skew changes and y-axis changes.  The setAcqChanSet() entry point is called directly form the the effector routine for the  "Acq Needed Channel" control in the behavioral layer of  the UI, rather than using a meta control. The entry point functions are:</font>
+</p>
+
+<ul>
+  <li><a name="145147"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configXAcq(SweepTemplate *sweepPtr, AcqTemplate *acqPtr);</font>
+
+<p>
+  <a name="145170"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Entry point that configures the horz acq system.</font>
+</p>
+
+  <li><a name="145150"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configYAcq(Set *availChans);</font>
+
+<p>
+  <a name="145181"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Entry point that calcualtes the vert acq system factors.</font>
+</p>
+
+  <li><a name="145193"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configXSkews(void);</font>
+
+<p>
+  <a name="145199"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Entry point that configures the horz acq system time skews.</font>
+</p>
+
+  <li><a name="145157"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setAcqChanSet(Set *needChanPtr);</font>
+
+<p>
+  <a name="145206"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Entry point that figures out what channels to acquire on the next acq cycle.</font>
+</p>
+
+</ul>
+
+<h4>
+  <a name="145277"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Logical Acq Driver Utility Functions</font>
+</h4>
+
+
+<p>
+  <a name="145220"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The utility functions described below allow the rest of JediPlus system to access acq system  functionality that is global in nature. These access functions include:</font>
+</p>
+
+<ul>
+  <li><a name="145262"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void setAcqCycle(SweepTemplate *const sweepPtr, AcqTemplate *acqPtr);</font>
+
+<p>
+  <a name="145224"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Utility that figures out what acq cycle to run when the signal Path is re-enabled. </font>
+</p>
+
+  <li><a name="145164"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern void configInterAcqDither(void);</font>
+
+<p>
+  <a name="145236"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Utility that configures the dither between acquisitions.</font>
+</p>
+
+  <li><a name="145316"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> extern void resetAverage(void);</font>
+
+<p>
+  <a name="144868"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> Utility that programs the Frame Mgr to reset the averaging</font>
+</p>
+
+  <li><a name="145322"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern double getMinStoppedDelay(void);</font>
+
+<p>
+  <a name="145288"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Utility that returns the time of the first point in the real time acq memory</font>
+</p>
+
+  <li><a name="145293"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint32 getPodActivity(DigitalPodId pod, boolean lsbIsLsb);</font>
+  <li><a name="145294"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint32 remoteGetPodActivity(DigitalPodId pod);</font>
+
+<p>
+  <a name="145337"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> Utility  functions that return the activity data for the passed pod.</font>
+</p>
+
+  <li><a name="145297"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint32 remoteGetChanActivity(void);</font>
+  <li><a name="145298"> </a><font face="Verdana, Arial, Helvetica, sans-serif">extern uint32 localGetChanActivity(void);</font>
+
+<p>
+  <a name="145346"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Utility functions that return the activity data for the scope channels.</font>
+</p>
+
+</ul>
+
+<h2>
+  <a name="143810"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">14-2  The Logical Model of the Acquisition System</font>
+</h2>
+
+
+<p>
+  <a name="131817"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The functional blocks in the JediPlus Acq System are shown logically in the figure below. Acquisition blocks include the Analog to Digital Converter (ADC), Acq/Display Cycle Control (Cycle Control), the Timebase , the Pre-Capture Waveform Processing Pipeline, the Acquisition Memory (Acq Mem), the Post-Capture Waveform Processing Pipeline, the Record Memory, the Analysis Waveform Processing Pipeline (Analysis Pipe), and the Analysis Memory. Here the Plot System blocks are shown in simplified form as the Plot Waveform Processing Pipeline (Plot Pipe) and The Display Memory (Display Mem), for completion's sake. </font>
+</p>
+
+<a name="130655"> </a>FIGURE 36.&#32; The logical block diagram for the Acq and Plot System HW<img src="images/acqDriver2.gif" height="653" width="622">
+
+<p>
+  <a name="137649"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Acquisition System in the JediPlus products is responsible for producing a set of waveform records that represent the input signals which are used by the Plot System to generate the displays on the CRT and used by the Signal Analysis Library (SAL) to perform measurements and math functions on the signals. There are a number of waveform records that are produced by the Acq System to fulfill these needs in the various operating modes available in the products. </font>
+</p>
+
+
+<p>
+  <a name="137471"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The ADC samples the analog scope signals and converts them to a digital data stream. The Capture Pipe processes the stream and produces the following waveform records into the Acq Memory:</font>
+</p>
+
+<ul>
+  <li><a name="137480"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Current Real-time (RT) Waveform Record (1 per scope channel, 1 per logic pod) - A complete record is collected on each trigger. The time span for the record is controlled so that it is greater than the time span of the Main sweep on screen. </font>
+  <li><a name="137483"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Last Real-time (RT) Waveform Record (1 per channel, 1 per logic pod) - This is basically the same as the Current RT record above, except it was collected on the last trigger. It is used when the Current record is not valid, until the current one becomes valid. This occurs is cases when the instrument is: stopped, not triggering, or being reconfigured, etc. </font>
+</ul>
+
+<p>
+  <a name="141325"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These Rt waveform records tend have large time spans to allow for panning and zooming on data, that was off screen when the instrument was running, after the instrument is stopped. </font>
+</p>
+
+
+<p>
+  <a name="137840"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When the time resolution of points in the Current RT record is coarser than the time represented by a pixel column on screen, the Random Repetitive Pipe consumes a selected portion of the Current RT record on each trigger and produces one or more of the following "ensemble" records back into the Acq Memory:</font>
+</p>
+
+<ul>
+  <li><a name="137652"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Main Equivalent-time (ET) Waveform Record (1 per scope channel) - This record is built over multiple triggers by bucketizing points from the Current RT record falling in the time span of interest. The time span and point resolution in the record is more than sufficient to generate the Main sweep waveforms on screen. </font>
+  <li><a name="137488"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Delayed Equivalent-time (ET) Waveform Record (1 per scope channel) - This is basically the same as the Main ET record above, except it is for the Delayed sweep.</font>
+</ul>
+
+<p>
+  <a name="137842"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When the Average waveform math function is on, the Average Pipe consumes a selected portion of either the Current RT record or the ET records and produces one or more of the following "averaged" records back into the Acq Memory:</font>
+</p>
+
+<ul>
+  <li><a name="137836"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Main Averaged Waveform Record (1 per scope channel) - This record is built by calculating an average value for the points falling in each bucket using points from the Current RT or the Main ET record over multiple triggers.The time span and point resolution in the record is more than sufficient to generate the Main sweep waveforms on screen. </font>
+  <li><a name="137552"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Delayed Averaged Waveform Record (1 per scope channel) - This is basically the same as the Main Averaged record above, except it is for the Delayed sweep.</font>
+</ul>
+
+<p>
+  <a name="137555"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Note that any of the aforementioned waveform records can be source data for either the Plot Pipe or the Analysis Pipe. </font>
+</p>
+
+
+<p>
+  <a name="137658"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Upon demand, the Analysis Pipe consumes records in the Acq Memory and produces records into the Analysis Memory independent of whether the instrument's acquisition system is running or stopped. These records are always accessible by the host uP and are produced for use by the Signal Analysis Library(SAL) to perform math functions and make measurements on the input signals. In general, the Analysis Pipe produces an analysis waveform for each channel being plotted. Hence, the Analysis waveforms represent the portion of a given active input signal that lies in the Main and Delayed Sweep areas on screen. </font>
+</p>
+
+
+<p>
+  <a name="137675"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Plot Pipe produces the waveform graphics that are stored in the Plot Memory and are used to light up the appropriate pixels on the CRT. For active inputs it uses waveforms in the Acq Memory as the source for the data being plotted. For math functions, it uses waveforms produced by the Signal Analysis Library that are logically handled as a special kind of Analysis waveform.</font>
+</p>
+
+
+<p>
+  <a name="137689"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Timebase functional block controls the horizontal (time) axis for all the waveform records described. The logical diagram represents this by showing the timebase generating the clocks that coordinate the sampling and storage of data. The actual functionality is more complex. There are several control parameters that determine the processing performed by the various pipes which effect the time span and resolution of the points in the various waveform records described. In the logical model, this classic oscilloscope timebase block provides the basis for an abstract, relatively simple API from which all the HW specific settings are derived. </font>
+</p>
+
+
+<p>
+  <a name="137690"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Cycle Control / Status block controls and monitors the acq/display cycle. The logical diagram represents this by showing it controlling and monitoring the timebase; again a simplistic view. In reality there are a variety of control and status mechanisms distributed through the Acq and Plot Systems that accomplish this logical task. The key point is that a common interface to these utilities is provided to the Signal Path Manager SW, for controlling the acq/display cycles. The Acq Manager SW, in turn, provides a higher level interface for acq/display cycle selection and synchronization to the rest of the host SW. For a more detailed description of its operation see the chapter titled "Signal Path Manager". </font>
+</p>
+
+
+<p>
+  <a name="141353"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The remainder of this chapter describes the APIs for controlling these Logical Blocks in the Acq, Time and Plot Drivers used by controls in the behavioral layer of the User Interface (UI).  </font>
+</p>
+
+
+<p>
+  <a name="145404"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="145405"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Physical Drivers, deal directly with the actual HW components in a specific product. They consist of the data structures and functions used to program each component. These private drivers are not generally accessible to the outside world. The Physical Drivers are used primarily by the associated Logical Drivers to setup the physical components that implement their logical blocks. Ocassionally the logical model for a functional block is implemented directly in hardware.  In this cases, The Logical and Physical Driver functions are synonomous, since no SW abstraction is necessary. The APIs for these functions appear in the Logical Drivers, since they are identical for all the products and hence can be accessed from the behavioral SW layer.  There will however be unique SW functions coded to interact with unique physical implemenations in HW. </font>
+</p>
+
+
+<p>
+  <a name="145406"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The descriptions and APIs for the Physical Drivers appear in the chapters that cover the driver for the individual HW components in the MUSKRAT and PUMA products. For example, the Logical Acq, Time and Plot Drivers for MUSKRAT use mostly the functions defined in the "COYOTE/WILEY Driver" chapter. The Logical Acq, Time and Plot Driver for PUMA uses mostly the functions defined in the "MONGREL/ZEUM Driver" chapter.  </font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="hal.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="chanDriver.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

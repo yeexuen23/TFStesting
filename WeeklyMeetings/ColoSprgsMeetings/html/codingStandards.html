@@ -1,0 +1,740 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:27:57 2002">
+<title>CHAPTER 31 546xx Family Coding Standards</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="buildEnv.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="124832"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 31 	 546xx Family Coding Standards</font>
+</h1><hr>
+
+
+<h2>
+  <a name="126760"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-1  Introduction</font>
+</h2>
+
+
+<p>
+  <a name="126761"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This document details the conventions and recommended practices for implementing in C for the Moab project and later.  The goals are readability and ease of working on each other's code within the group.  Nothing in this document should be taken as a substitute for common sense.</font>
+</p>
+
+
+<h3>
+  <a name="126517"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-1.1  Compliance</font>
+</h3>
+
+<ul>
+  <li><a name="126518"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Code written by the software team should conform to the standard.</font>
+  <li><a name="126519"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Code leveraged from other projects should also be revised to conform to the standard.</font>
+  <li><a name="126520"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Reused code from either internal or external sources is exempt.  However, non ANSI-C interfaces should still be encapsulated with ANSI-C prototypes, for type-checking.</font>
+  <li><a name="126750"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All compiler warnings should be resolved, with the compiler in its most verbose warning mode.</font>
+</ul>
+
+<h2>
+  <a name="126751"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-2  Files</font>
+</h2>
+
+
+<h3>
+  <a name="126752"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-2.1  Source File Contents</font>
+</h3>
+
+
+<p>
+  <a name="126524"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All C program constructs are acceptable for .c files.  The following items should be unique to .c files; don't put these in a .h file:</font>
+</p>
+
+<ul>
+  <li><a name="126525"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Function definitions:	  </font>
+<pre>
+<a name="132354"> </a>char get(void) {return *p;}
+</pre>
+  <li><a name="126526"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Data definitions:      	  </font>
+<pre>
+<a name="132355"> </a>char a; int n = 10;
+</pre>
+  <li><a name="126527"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Constant definitions:	  </font>
+<pre>
+<a name="132356"> </a>const Cathcart missions[] = {25, 65};
+</pre>
+</ul>
+
+<h3>
+  <a name="126528"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-2.2  Header File Contents</font>
+</h3>
+
+
+<p>
+  <a name="126529"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Header files contain common declarations and definitions which are shared between.c files. They also contain the declarations and definitions required for the external interface to a library module.</font>
+</p>
+
+
+<p>
+  <a name="126530"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Only the following items make sense for placement in a header file:</font>
+</p>
+
+<ul>
+  <li><a name="126531"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Function externs:</font>
+<pre>
+<a name="132321"> </a>extern int32 strlen(char* s);
+</pre>
+  <li><a name="127217"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Data externs:</font>
+<pre>
+<a name="132322"> </a>extern int a;
+</pre>
+  <li><a name="126533"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Type definitions:</font>
+<pre>
+<a name="133283"> </a>
+typedef struct 
+{
+   int32 x;
+   int32 y;
+} Point;
+
+</pre>
+  <li><a name="126534"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Enumerations:</font>
+<pre>
+<a name="132341"> </a>
+typedef enum 
+{
+    FALSE,
+    TRUE
+} Boolean;
+
+</pre>
+  <li><a name="126535"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Define directives:</font>
+<pre>
+<a name="132336"> </a>#define FALSE 0
+</pre>
+  <li><a name="126536"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Macro definitions:</font>
+<pre>
+<a name="132337"> </a>#define SQUARE(x) ((x) * (x))
+</pre>
+  <li><a name="126537"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Pertinent Comments:</font>
+<pre>
+<a name="132338"> </a>/* check for end of file */
+</pre>
+</ul>
+
+<h3>
+  <a name="126538"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-2.3  General Guidelines<br></font>
+</h3>
+
+<ul>
+  <li><a name="126539"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Keep truly local definitions and declarations inside .c files until they are needed in other .c files. Internal functions and data should be made local by using the static storage class.</font>
+  <li><a name="126540"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If an item is needed in more than one .c file, an extern for it should be placed in a header file which is shared by the other .c files.</font>
+  <li><a name="132306"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In cases where there are both a public api and a private api to a package, separate them into different header files so that the private declarations can be kept private.</font>
+  <li><a name="126541"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Headers should include all dependencies, that is, they should include any additional headers required for compilation.</font>
+  <li><a name="126987"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Source and header files should be partitioned carefully to encourage reuse and minimize interdependencies.  Granularity should be: not too fine, not too coarse, but just right. </font>
+  <li><a name="132353"> </a><font face="Verdana, Arial, Helvetica, sans-serif">File partitioning is particularily important for files that are archived in libraries. This is because we want to be able to "overload" library functions to allow customizing projects. The file is the smallest element that can be extracted from a library. So if there are many functions in a file, a developer must replace all of them. On the other hand, if there is only one function per file, functions may be replaced individually.</font>
+  <li><a name="126542"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All headers should contain protection from multiple inclusion.  For example, the header file Gronk.h should look like:</font>
+<pre>
+<a name="126543"> </a>... standard header file header comment ...
+<a name="126544"> </a>#ifndef GRONK_H  
+#define GRONK_H
+<a name="126545"> </a>... the rest of Gronk.h's definitions ...
+<a name="126546"> </a>#endif GRONK_H
+<a name="126547"> </a>... end of Gronk.h ...
+</pre>
+  <li><a name="126548"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All extern declarations should be done in public header files. </font>
+  <li><a name="126549"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The header file which declares the external name must be included in the C source file which defines the name, so that the compiler will be able to check the types for consistency.</font>
+</ul>
+
+<h2>
+  <a name="126550"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-3  Coding Guidelines</font>
+</h2>
+
+
+<h3>
+  <a name="126551"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-3.1  Source File Format</font>
+</h3>
+
+
+<p>
+  <a name="126552"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A source file should contain the following items in order:</font>
+</p>
+
+<ol type="1">
+  <li value="1"><a name="126553"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A header comment based on the template "StdHdr.c" located in "jediPlus/doc/templates" (see section 7 in this chapter).</font>
+  <li value="2"><a name="126554"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Preprocessor include directives.</font>
+  <li value="3"><a name="127285"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Static functions should be first so other functions can use them without forwards.</font>
+  <li value="4"><a name="127286"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Functions available outside the file.  These are prototyped in a .h file.</font>
+</ol>
+
+<p>
+  <a name="126555"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Each function should have a header comment based on the template in the file "StdHdr.func" located in "jediPlus/doc/templates".</font>
+</p>
+
+
+<h3>
+  <a name="126557"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-3.2  Header File Format</font>
+</h3>
+
+
+<p>
+  <a name="126558"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A header file should contain the following items in order:</font>
+</p>
+
+<ol type="1">
+  <li value="1"><a name="126559"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A header comment based on the template "StdHdr.h", located in "jediPlus/doc/templates" (see section 7).</font>
+  <li value="2"><a name="126560"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Preprocessor include directives. </font>
+  <li value="3"><a name="126561"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The appropriate typedefs, defines, declarations and comments.</font>
+</ol>
+
+<h4>
+  <a name="126562"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Comments</font>
+</h4>
+
+<ul>
+  <li><a name="126563"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Precede each section of code with a comment which describes the overall function of the code.</font>
+  <li><a name="126564"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Block-mode comments are preferred to multiple end-of-line comments. The "/*-" syntax is a block comment tag that the jpindent program detects. This prevents the comment from being mangled (adversely formatted). For example:</font>
+<pre>
+<a name="126565"> </a>   /*- 
+    | The following code exhibits behavior correlated to the phase of  
+      | the moon. Expect increased strange behavior on or about a full            
+    | moon as this is when the werewolves come out to howl.
+   */
+</pre>
+  <li><a name="126567"> </a><font face="Verdana, Arial, Helvetica, sans-serif">End-of-line comments are preferred for declarations:</font>
+<pre>
+<a name="126568"> </a>    typedef struct Foo 
+    {
+        struct Foo *next;   /* next item in linked list  */
+        struct Foo *prev;   /* previous item...          */
+        int sausage;        /* the real guts of the link */
+    } FooType;
+<a name="126569"> </a>    FooType bar;             /* global sausage item       */
+</pre>
+  <li><a name="126570"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Don't blindly comment just to say "Yeah, it's commented."  Make comments meaningful.</font>
+  <li><a name="126571"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Keep comments accurate. Misleading or badly out-of-date comments are worse than no comments at all.</font>
+  <li><a name="126572"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Avoid comments which merely restate the code's intrinsic function:</font>
+<pre>
+<a name="126573"> </a>    f = istate.centerFreq;   /* set f to center frequency */
+</pre>
+  <li><a name="126574"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Comment external items enough so that they may be easily understood by those who must use them.</font>
+  <li><a name="126575"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If code gets the least bit obscure, take special care to indicate the problem being solved, the methodology used, and pitfalls to avoid when modifying the code.</font>
+</ul>
+
+<h4>
+  <a name="126576"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Indentation</font>
+</h4>
+
+<ul>
+  <li><a name="126577"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Indentation increment is 4 spaces. </font>
+  <li><a name="126578"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Tabstop increment is 8, but don't use tabs.</font>
+  <li><a name="126579"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Limit line length to 80 columns.</font>
+  <li><a name="127108"> </a><font face="Verdana, Arial, Helvetica, sans-serif">See section 8-5 for examples of indentation style.</font>
+</ul>
+
+<h4>
+  <a name="126581"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Curly Brace Placement</font>
+</h4>
+
+<ul>
+  <li><a name="127111"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Opening and closing curly braces should be placed in the same column.</font>
+  <li><a name="126583"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Curly braces for a function body should be in column 1.</font>
+  <li><a name="126584"> </a><font face="Verdana, Arial, Helvetica, sans-serif">See section 5 for examples of curly brace placement style.</font>
+  <li><a name="126585"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If you take ownership of a file that does not conform to this style, change the format throughout the file.  (Tools exist to help do this, such as the jpindent program.)</font>
+  <li><a name="126586"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Use curly braces even if there is only one statement in the block.  At the expense of extra clutter, this eliminates the nested-if ambiguity and makes conditionally compiled code work more predictably.</font>
+</ul>
+
+<h4>
+  <a name="126587"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Use of spaces and blank lines</font>
+</h4>
+
+<ul>
+  <li><a name="126588"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Use whitespace to enhance readability.</font>
+  <li><a name="126589"> </a><font face="Verdana, Arial, Helvetica, sans-serif">See section 6 for examples of whitespace usage and expression style.</font>
+</ul>
+
+<h4>
+  <a name="126590"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Storage Classes</font>
+</h4>
+
+<ul>
+  <li><a name="127125"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In general, keep local data and functions hidden using the scope rules of the language.  Don't make local items globally available.  Data should be local unless global linkage is specifically necessary.  Global data should be explicitly externed in a header file.</font>
+  <li><a name="126592"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Beware the double meaning of the static keyword. Used inside a function, static means that the data is truly static and will be preserved between invocations of the function.  Used outside a function, static means that the name is to be known only inside the current file.</font>
+  <li><a name="126593"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Be aware of the volatile type qualifier.  This qualifier indicates to the compiler that all references to a variable should be performed, even if redundant or optimizable.  This is crucial in two areas: device registers, and data shared by two or more processes.</font>
+  <li><a name="126594"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Use the register, const, volatile and static keywords to properly characterize your data and functions.</font>
+</ul>
+
+<h4>
+  <a name="127128"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Function Definitions</font>
+</h4>
+
+<ul>
+  <li><a name="127135"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Use ANSI-C argument prototypes.  This will allow the compiler to type-check every invocation of your function.</font>
+  <li><a name="127132"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Replace the old-style stuff:</font>
+<pre>
+<a name="127253"> </a>    Foo funcName(arg1, arg2, arg3)
+        int arg1, arg2;
+        char *arg3;
+    {
+       ...
+    }
+
+<p>
+  <a name="126599"> </a><font face="Verdana, Arial, Helvetica, sans-serif">    with ANSI-C stuff:</font>
+</p>
+
+<a name="127159"> </a>    Foo funcName(int arg1, int arg2, char *arg3)
+    {
+        ...
+    } 
+</pre>
+</ul>
+
+<h4>
+  <a name="126601"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Function Declarations</font>
+</h4>
+
+<ul>
+  <li><a name="126602"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All external functions should have a declaration available in a header file.</font>
+  <li><a name="126603"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Although only the abstract type is required for argument type specifiers in function declarations, place the same name in the declaration as in the definition.  Well chosen names provide documentation:</font>
+<pre>
+<a name="126604"> </a>    extern Foo funcName(int iterations, int startValue, char *location);
+</pre>
+  <li><a name="126605"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Use the void keyword to indicate functions that accept or return no arguments:</font>
+<pre>
+<a name="126606"> </a>    void getUnit(void)
+    {
+        return;
+    }
+</pre>
+</ul>
+
+<h4>
+  <a name="126607"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Performance</font>
+</h4>
+
+<ul>
+  <li><a name="126608"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Use char variables only when a character is intended. For new development, don't use long, short or double variables. Use int8, int16, int32, float32 or float64 instead. int32 is the same as int. float32 is the same as float. Use float64 only when additional precision and accuracy are needed.</font>
+  <li><a name="126609"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The 64 bit and 96 bit fixed point math packs add int64 and int96 types. These types typically offer better performance than float64.</font>
+  <li><a name="132312"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Use unsigned types where applicable; these are uint8, uint16 and uint32.</font>
+  <li><a name="132313"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Don't return large structures from functions;  use pointers to structures instead.</font>
+  <li><a name="126612"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Use register variables for the most heavily used pointers and variables.</font>
+  <li><a name="126613"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For speed-critical portions of code, be aware of the ways in which your code can be optimized to use cache when its available.</font>
+</ul>
+
+<h4>
+  <a name="126614"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Serviceability</font>
+</h4>
+
+<ul>
+  <li><a name="127186"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Don't write obfuscated code.  Allow the optimizer to do its job.  Don't make a simple three-liner into a tricky one-liner.</font>
+  <li><a name="126616"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Don't waste time writing lots of "DEBUG" code.  Use the debugger.  See other guidelines below.</font>
+  <li><a name="126617"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Bitwise operators (&amp; | ~ ^ &gt;&gt; &lt;&lt;) should be explicitly parenthesized when combined with other operators:</font>
+<pre>
+<a name="126618"> </a>    if ((Status &amp; MASK)!= Set)
+</pre>
+  <li><a name="126619"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The if-else statement is generally preferred to the conditional operator.</font>
+  <li><a name="126620"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Pointer entities should be explicitly declared with the appropriate data pointer type.  Use void* for generic pointers, not char*.</font>
+  <li><a name="126621"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If pointer values must be converted, use explicit casts.</font>
+  <li><a name="126622"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If no value is returned from a function, declare the function to return void, not int.</font>
+  <li><a name="126623"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Use no magic numbers in code;  all constants should be given meaningful names using #define statements at the start of the file.  Common numbers like zero and one are exceptions.</font>
+  <li><a name="126624"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Check existing definitions for constants first!  Create your own local item only if it doesn't exist somewhere else.</font>
+  <li><a name="126625"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The goto statement should be avoided.</font>
+</ul>
+
+<h4>
+  <a name="126626"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Reliability</font>
+</h4>
+
+
+<p>
+  <a name="126627"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Code should not depend upon the order of evaluation of expressions, except as guaranteed by C.   Read up in K&amp;R.  This is important even if we use the same compiler throughout the project.  Optimization can change the order of evaluation.  In particular, avoid these constructs:</font>
+</p>
+
+<pre>
+<a name="126628"> </a>    *p++ = *p;           Foo(i++, i);           a[i] = i++;
+</pre>
+
+<p>
+  <a name="126629"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These should be rewritten using temporary variables and/or multiple statements, as needed.</font>
+</p>
+
+
+<h4>
+  <a name="126630"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Preprocessor Macros</font>
+</h4>
+
+
+<p>
+  <a name="126631"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Preprocessor macros with arguments are a problem in C because they are outside the language.  There is no way to check argument or return types, and there is no protection from side-effects in the arguments.  They are hard to decypher in the debugger.  Macros are also tricky to write and can easily cause non-obvious bugs.</font>
+</p>
+
+
+<p>
+  <a name="126632"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It is best to avoid macros and use functions instead.  This is especially true if the macro contains a significant amount of code.  When macros are used the following guidelines apply:</font>
+</p>
+
+<ul>
+  <li><a name="126634"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Watch out for side-effects in macro arguments.</font>
+  <li><a name="126635"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Be sure the arguments used in the definition are inside parentheses:</font>
+<pre>
+<a name="126636"> </a>    #define MAX(x,y) ((x) &gt; (y) ? (x): (y))
+</pre>
+  <li><a name="126637"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Define macros so that the invocation is syntactically correct.  Usually this means having no trailing semicolons in the definition.</font>
+</ul>
+
+<h4>
+  <a name="126638"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Conditional Compilation</font>
+</h4>
+
+
+<p>
+  <a name="126639"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Conditional compilation is generally discouraged in released code.  Such code is a maintenance liability and should be avoided.</font>
+</p>
+
+
+<p>
+  <a name="126640"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For code differing between projects, different .c and .h files should be created for each project.  To keep track of incremental changes and historical features, use the history manager.</font>
+</p>
+
+
+<p>
+  <a name="126641"> </a><font face="Verdana, Arial, Helvetica, sans-serif">During development, however, conditional compilation is a good technique for commenting out sections, since it is not sensitive to embedded comments.</font>
+</p>
+
+
+<h2>
+  <a name="126642"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-4   Naming Conventions</font>
+</h2>
+
+<ul>
+  <li><a name="127245"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Variables should be given concise but meaningful names, except for standard short names such as c for char, i, j, k for indexes, p or q for pointers, n for counters, and s for strings.</font>
+  <li><a name="126644"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Multiple word names should use capitalization to separate the words.  For example: centerFreq vs. centerfreq.  The capitalized version is much easier to read.</font>
+  <li><a name="126645"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Case usage:
+
+<table border="1" bordercolorlight="#FFFFFF" bordercolordark="#000000"
+       cellpadding="5" cellspacing="0">
+  <caption><b><i><font face="Verdana, Arial, Helvetica, sans-serif"></font></i></b></caption>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="133170"> </a>CapitalizedName</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="133172"> </a>All names beginning with uppercase letters indicate typedef or struct names.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="133178"> </a>unCapitalizedName</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="133180"> </a>All names beginning with lowercase letters indicate functions, data and structure members.</font></td>
+  </tr>
+  <tr>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="133186"> </a>UPPER_CASE</font></td>
+    <td><font face="Verdana, Arial, Helvetica, sans-serif"><a name="133188"> </a>All upper case names are constants, e.g. TRUE, TEST, DEBUG, .h identifiers, enum elements and macros. Upper case symbols use underscores to separate words. </font></td>
+  </tr>
+</table>
+
+
+
+</font>
+  <li><a name="126649"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Example typedef declaration:</font>
+<pre>
+<a name="126650"> </a>    typedef enum
+    {
+        SINGLE,
+        UPPER_LOWER,
+        FRONT_BACK, 
+        STATE
+    } DisplayFormat;
+
+</pre>
+  <li><a name="126651"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Name spaces:</font>
+</ul>
+<dl>
+  <dt> <a name="126652"> </a><font face="Verdana, Arial, Helvetica, sans-serif">ANSI-C provides name spaces so that the member names of different structures and unions do not collide.  However, all enumerated constants and #defined constants share one name space.</font>
+</dl>
+
+<h2>
+  <a name="126653"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-5   Indentation and curly brace placement style.</font>
+</h2>
+
+<ul>
+  <li><a name="126654"> </a><font face="Verdana, Arial, Helvetica, sans-serif">struct, enum and union definitions:</font>
+<pre>
+<a name="127256"> </a>    typedef struct
+    {
+        Type1 member1;
+        Type2 member2;
+        ...;
+    } StructureName;
+<a name="126656"> </a>    typedef union
+    {
+        Type1 member1;
+        Type2 member2;
+        ...;
+    } Unionism;
+<a name="126657"> </a>    typedef enum
+    {
+        MEMBER1,
+        MEMBER2,
+        ...
+    } EnumName;
+
+</pre>
+  <li><a name="126658"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Null statements should be clearly visible, via indentation or curly braces:</font>
+<pre>
+<a name="126659"> </a>    while (*s++);      /* Too easy to miss the semicolon */          
+
+    while (*s++)
+    {;}
+
+</pre>
+  <li><a name="126660"> </a><font face="Verdana, Arial, Helvetica, sans-serif">IF statements should be like these examples:</font>
+<pre>
+<a name="132270"> </a>    if (cond)
+    {
+        statement;
+    }
+ 
+<a name="132273"> </a>    if (cond)
+    {
+        statement;
+    }
+    else
+    {
+        statement;
+    }
+
+<a name="126662"> </a>    if (cond1)
+    {
+        statement;
+    }
+    else if (cond2)
+    {
+        statement;
+    }
+    else if (cond3)
+    {
+        statement;
+    }
+    else
+    {
+        statement;
+    }
+
+</pre>
+  <li><a name="126663"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Switch statement</font>
+<pre>
+<a name="127269"> </a>    switch (controlValue)
+    {
+    case CASE1:
+         stmnt1;
+         break;
+
+    case CASE2:
+         stmnt2;
+         /* FALLTHROUGH */ 
+
+    default:
+         stmnt3;
+         break;
+    }
+
+<p>
+  <a name="126666"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Just about every switch statement needs a default case for clarity.  Document "fall through" cases as shown.</font>
+</p>
+
+</pre>
+  <li><a name="126667"> </a><font face="Verdana, Arial, Helvetica, sans-serif">While statement:</font>
+<pre>
+<a name="126668"> </a>    while (cond)
+    {
+        statement;
+    }
+<a name="126669"> </a>    while (1) /* LOOP FOREVER */
+    {
+        statement;
+    }
+
+<p>
+  <a name="126670"> </a><font face="Verdana, Arial, Helvetica, sans-serif">    Clearly mark "forever" loops.</font>
+</p>
+
+</pre>
+  <li><a name="126671"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Do-while statement:</font>
+<pre>
+<a name="126672"> </a>    do
+    {
+        statement;
+    } while (cond);
+</pre>
+  <li><a name="126673"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For statement:</font>
+<pre>
+<a name="126674"> </a>    for (expr; cond; incr)
+    {
+        statement;
+    }
+<a name="126675"> </a>    for (;;) /* LOOP FOREVER */
+    {
+        statement;
+    }
+
+<p>
+  <a name="126676"> </a><font face="Verdana, Arial, Helvetica, sans-serif">     Clearly mark "forever" loops.</font>
+</p>
+
+</pre>
+  <li><a name="126677"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Multi-line statements:</font>
+<pre>
+<a name="127272"> </a>    InstrumentState&gt;CenterFrequency =
+             VerboseFunctionName(VerboseArgumentName,
+                                 PainfullyVerboseAndWordyArgumentName);
+
+<p>
+  <a name="126679"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Trailing lines of multi-line statements may be indented more than the normal increment, to enhance readability.</font>
+</p>
+
+</pre>
+</ul>
+
+<h2>
+  <a name="126680"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-6   Recommended Expression Style.</font>
+</h2>
+
+<ul>
+  <li><a name="126681"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Familiarize yourself with the C operator precedence and associativity scheme.  See page 53 of K&amp;R II.</font>
+  <li><a name="126682"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The primary operators "[]", "()", "." and "-&gt;" should be written with no space around them:</font>
+<pre>
+<a name="126683"> </a>    a[i]    f(x)    s.m    p-&gt;m
+</pre>
+  <li><a name="126684"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The unary operators should be written with no space between them and their operands:</font>
+<pre>
+<a name="126685"> </a>    !p    ~b    ++i    --j    -n    (long)m    *p    &amp;x    sizeof(type)
+</pre>
+  <li><a name="126686"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Other operators should be written with one space on either side of the operator:</font>
+<pre>
+<a name="126687"> </a>    x + y       a &lt; b &amp;&amp; b &lt; c       m + 1
+</pre>
+  <li><a name="126688"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The conditional operator should have space around its parts:</font>
+<pre>
+<a name="126689"> </a>    n &gt; 0 ? n : -n
+</pre>
+  <li><a name="126690"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The assignment operators must always have space around them:</font>
+<pre>
+<a name="126691"> </a>    c1 = c2     i += j
+</pre>
+  <li><a name="126692"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Occasionally operators may omit space to emphasize grouping:</font>
+<pre>
+<a name="126693"> </a>    flag? a : b-10          printf (fmt, a+1, b+1, c+1, 2*a + 3*c);
+</pre>
+  <li><a name="126694"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Commas (and semicolons) should have one space (or newline) after them:</font>
+<pre>
+<a name="126695"> </a>    strncat(t, s, n);    for (i = 0; i &lt; n; ++i)
+</pre>
+  <li><a name="126696"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Keywords (if, while, for, switch, return, etc) should be followed by one space.</font>
+</ul>
+
+<h2>
+  <a name="126697"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-7   Template for source and header file header comment block.</font>
+</h2>
+
+
+<p>
+  <a name="126698"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following is the recommended header format for files.  This template is found in the history manager in the file  <em>jediPlus/doc/templates/stdHdr.c</em>. History manager variables are used to ensure that the file name, revision level, and date are maintained correctly.  The "Source" variable should be used to distinguish the specific project, since the filename is not necessarily unique within the file system.</font>
+</p>
+
+<pre>
+<a name="126699"> </a>
+/*-
+ |     $Source: /col/scopes/jediPlus/doc/templates/stdHdr.c,v $
+ |   $Revision: 1.11 $
+ |       $Date: 97/06/17 16:03:30 $
+ |          ex: set ts=8 sw=4: 
+ | 
+ |      Author: 
+ | 
+ | Description: 
+ | 
+*/ 
+</pre>
+
+<h2>
+  <a name="126700"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-8   Template for functions.</font>
+</h2>
+
+<pre>
+<a name="126701"> </a>
+/*-
+ |  Description: 
+ | 
+ |   Parameters: 
+ | 
+ |      Returns: 
+ | 
+ | Side effects: [optional] 
+ | 
+*/ 
+void foo(void) 
+{ 
+} 
+</pre>
+
+<h2>
+  <a name="126704"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">31-9  Template for HMS checkins</font>
+</h2>
+
+
+<p>
+  <a name="126705"> </a><font face="Verdana, Arial, Helvetica, sans-serif">HMS requests an explanation when you check in a file, and as the code matures it becomes more important to give a good explanation for the change.  If the change is so formal that an ATM defect is involved, use the format in the following example:</font>
+</p>
+
+<pre>
+<a name="126706"> </a>
+Associated Bug: 54645A_D.22 
+Symptom: 2-key down powerup doesn't work correctly when MSM attached. It 
+locks up. 
+Functions changed: determineDefaultFftOffset
+<a name="126707"> </a>This function assumes that the system configuration is defaulted and uses 
+the systems "userChVolts" function to set up the default FFT offset. 
+Unfortunately, during a 2-key powerup, this function is called BEFORE the 
+systems "initConfig" function runs and puts real values in the system 
+configuration image. This results in 0.00 being used for the sensitivity, 
+and subsequently a zero divide occurs. I put in a check for 0 divide and 
+simply assumed 100mV for the sensitivity if this happens. 
+</pre>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="buildEnv.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

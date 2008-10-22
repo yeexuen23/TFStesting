@@ -1,0 +1,376 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:22:42 2002">
+<title>CHAPTER 13 The Hardware Abstraction Layer - Overview and APIs</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="controls.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="acqDriver.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="124832"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 13 	 The Hardware Abstraction Layer  - Overview and APIs</font>
+</h1><hr>
+
+
+<h2>
+  <a name="125031"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">13-1  Overview</font>
+</h2>
+
+
+<p>
+  <a name="125015"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The role of the Hardware Abstraction Layer is to encapsulate the underlying acquisition system (hardware and software) and display hardware within a standard interface. This approach is taken to minimize or localize the impact of hardware changes on instrument software and provides the framework for handling the modularity requirements of the design. To accomplish this, this layer must present a generic view of the hardware system that can be used to describe any future implementation. From a practical standpoint, this ultimate model does not need to be implemented for the first generation product. However, this is the vision of the evolutionary path of the design and should be used to help detail elements of the API. This chapter summarizes the basic structure of this layer and the API it presents to the upper levels of the user interface.</font>
+</p>
+
+
+<h2>
+  <a name="129090"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">13-2  The generic SignalPath model</font>
+</h2>
+
+
+<p>
+  <a name="129091"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Before considering the form of the API, the general design of the SignalPath itself needs to be considered. On a coarse scale, there are six objects that make up the SignalPath. In the following figure, these objects are depicted in a entity relationship diagram. Note: The convention for this type of drawing is that objects are drawn as boxes, relationships are drawn as diamonds. In this diagram, the focus is on the primary relationships internal to the SignalPath. </font>
+</p>
+
+
+<p>
+  <a name="129646"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Vertical and Trigger Hardware is rather different than the other objects in that it has fewer relationships. Also, it is rather simple with few internal states. Aside from settling state and input protection, this hardware can be configured once and then it just free runs. It has the relationships with the Acquisition State Machine of <em>conditions inputs for</em> and <em>is settled</em> <em>for</em> acquisition.</font>
+</p>
+
+
+<p>
+  <a name="129652"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In contrast, the Acquisition State Machine has relationships with nearly all of the other objects in the SignalPath. It is the central or controlling object that manages all SignalPath operations. The state machine consists of two sub-machines, the hardware state machine and the AcqMgr. The hardware based machine handles the steady state, high performance operations and also includes the fundamental timebase and digitizer functions. The AcqMgr handles the state sequences required to transition to steady state operation (such as during a settings change) and other non-prime modes of operation such as selftests, calibration, measurement synchronization, etc.</font>
+</p>
+
+
+<p>
+  <a name="129660"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Signal object also has a relationship with most of the other SignalPath objects. It is a data object that consists of the actual acquired waveform samples and additional descriptive information used for measuring and displaying the samples. The intent is that the Signal forms a complete representation of the acquired data and therefore provides a reduced context of information for analysis. </font>
+</p>
+
+<a name="129649"> </a>FIGURE 31.&#32; Entity relationship diagram of the SignalPath<img src="images/hala.gif" height="680" width="624">
+
+<p>
+  <a name="129678"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Analysis package is tightly coupled with Signals by design. The Signal data structure is designed to be in a directly useful form for measurements. This allows the methods of measurement and performing functions to be largely independent of the acquisition system. Some signal processing functions such as interpolation and averaging can be considered to be part of either the Acqusition State Machine or the Analysis package. The placement is governed by whether execution can be optimized by tight coupling with the acquisition process. </font>
+</p>
+
+
+<p>
+  <a name="130030"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Signal Imaging Hw includes the vertical pan and zoom block and the display engine. It is synchronized by the Acquisition State Machine and renders Signals as bitmap images.</font>
+</p>
+
+
+<h2>
+  <a name="130845"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">13-3  Encapsulating the SignalPath</font>
+</h2>
+
+
+<p>
+  <a name="130846"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The next figure shows the relationships between the Hardware Abstraction Layer and the SignalPath. The main relationships are that the SignalPath <em>is controlled by</em> the Abstraction Layer. Secondly, the Abstraction Layer <em>retrieves data from</em> the SignalPath per requests from the user via the UserInterface.</font>
+</p>
+
+<a name="130850"> </a>FIGURE 32.&#32; Relationships between the SignalPath and the Hardware Abstraction Layer<img src="images/hal3.gif" height="246" width="612">
+
+<h2>
+  <a name="130849"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">13-4  Components of the Hardware Abstraction Layer</font>
+</h2>
+
+
+<p>
+  <a name="126528"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Hardware Abstraction Layer is subdivided into a set of drivers and common utility services that map on top of the SignalPath model. Drivers include those for controlling the vertical, trigger and timebase subsystems, for example. Some drivers may use other drivers. For example, the Calibration driver (CalDvr) uses the Channel driver (ChanDvr), Timebase driver (TimeDvr) and others to help perform its work. The utility services are a wide variety of functions including the SettlingMgr, SelfCalMgr and the TimerServices. The following figure depicts these components. (More need to be added as we discover them during detailed design and implementation.)</font>
+</p>
+
+<a name="130039"> </a>FIGURE 33.&#32; The components of the Hardware Abstraction Layer and Signal Path<img src="images/hal2.gif" height="514" width="624">
+
+<p>
+  <a name="136534"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following is a brief description of the drivers and utilities:</font>
+</p>
+
+<ul>
+  <li><a name="136537"> </a><font face="Verdana, Arial, Helvetica, sans-serif">ChanDvr - performs the hardware control and provides the limits and menus of the input paths. Includes the signal conditioning for the sync path as well as vertical path functions.</font>
+  <li><a name="136538"> </a><font face="Verdana, Arial, Helvetica, sans-serif">TrigDvr - performs the hardware control and limits for the trigger system.</font>
+  <li><a name="136539"> </a><font face="Verdana, Arial, Helvetica, sans-serif">RunCntl - provides SignalPath synchronization.</font>
+  <li><a name="136540"> </a><font face="Verdana, Arial, Helvetica, sans-serif">AcqMgrDvr - performs timebase hardware control and provides imits. Configures the AcqMgr based on channel and measurement selections and acquisition mode.</font>
+  <li><a name="136541"> </a><font face="Verdana, Arial, Helvetica, sans-serif">PlotDvr - configures the PlotEngine</font>
+  <li><a name="136542"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SignalDvr - a reader/writer of the Signal data structure for external access to the numerical view of acquired inputSignals.</font>
+  <li><a name="136543"> </a><font face="Verdana, Arial, Helvetica, sans-serif">MeasDvr - installs continuous measurements, configures measurement options, and provides instantaneous measurements of signals.</font>
+  <li><a name="136544"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CursorDvr - controls markers and cursors</font>
+  <li><a name="136545"> </a><font face="Verdana, Arial, Helvetica, sans-serif">FuncDvr - installs and executes waveform math functions</font>
+  <li><a name="136546"> </a><font face="Verdana, Arial, Helvetica, sans-serif">PixelImageDvr - provides access to screen images</font>
+  <li><a name="136547"> </a><font face="Verdana, Arial, Helvetica, sans-serif">HostDispDvr - provides basic (text) screen interface for host processor. </font>
+  <li><a name="136548"> </a><font face="Verdana, Arial, Helvetica, sans-serif">AutoscaleDvr - does really good autoscales using other drivers and direct hardware access.</font>
+  <li><a name="136549"> </a><font face="Verdana, Arial, Helvetica, sans-serif">CalDvr - provides calibrations of channels, timebase, and trigger</font>
+  <li><a name="136550"> </a><font face="Verdana, Arial, Helvetica, sans-serif">TestDvr - provides self-test features</font>
+  <li><a name="136551"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Self-cal Mgr - handles the automatically run periodic self-calssoftware and hardware state machines that run the SignalPath</font>
+  <li><a name="136552"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Initialize - provides the startup initialization of the drivers and SignalPath</font>
+  <li><a name="136553"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Settling Mgr - service to keep track of settling time</font>
+  <li><a name="136555"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Timer Services - a simple scheduler built on the 2ms tick generator</font>
+</ul>
+
+<h2>
+  <a name="132493"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">13-5  Interactions with the Behavioral Layer</font>
+</h2>
+
+
+<h3>
+  <a name="132531"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">13-5.1  Driver call order</font>
+</h3>
+
+
+<p>
+  <a name="132520"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A user input to the instrument will typically be translated into many driver level calls. For example, if a channel's scale is changed, the ChanDvr is called to effect the hardware change and the AcqMgr driver (AcqMgrDvr) is called to setup the execution of the scale change sequence. Because this call pattern is consistent for any implementation of an oscilloscope, it is visible at the API to this layer. That is, there is not a need to hide the call sequence inside the Hardware Abstraction Layer API.</font>
+</p>
+
+
+<p>
+  <a name="132749"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The rules for call order are determined by the prerequisites of each driver. Partioning of functionality onto drivers considers these dependencies and it is done to eliminate circularities. The call order rules are built into the Behavioral Layer via the control dependency mechanism; they determine, in part, the evaluation order of controls.</font>
+</p>
+
+
+<p>
+  <a name="136559"> </a><font face="Verdana, Arial, Helvetica, sans-serif">One basic principle is to try to effect hardware changes as early as possible, especially changes of the analog input path. This is to allow settling to occur in parallel with other calculations. A second principle is to release the SignalPath to continue running as soon as posible, for example,  before menu changes are made. This allows the generation of signal images to begin in parallel with the remaining processing of the UserRequest.</font>
+</p>
+
+
+<h3>
+  <a name="132543"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">13-5.2  Driver configuration</font>
+</h3>
+
+
+<p>
+  <a name="136524"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are both data and control information that are provided at the API to drivers. For all drivers, there are some style guidelines that should be considered. In general, it is desireable to avoid using global data. It is acceptable at this interface because the protocol for use is well defined and enforceable. But global data may make it more difficult to reuse or port drivers since the drivers must know about where the global data is located and how to access it. For the same reason, it is probably easier to implement unit testing on functions if their interface is strictly through the parameter list.</font>
+</p>
+
+
+<h4>
+  <a name="135299"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Data sharing</font>
+</h4>
+
+
+<p>
+  <a name="132539"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are many pieces of state information that must be shared between the Behavioral Layer and the drivers. This is particularily true for the drivers directly involved in acquisition: ChanDvr, TimeDvr, TrigDvr and AcqMgrDvr. As a result, there are several key data objects that are shared at this API. The following figure illustrates some of these data objects, their producers and consumers.</font>
+</p>
+
+<a name="132750"> </a>FIGURE 34.&#32; Key data shared between user interface acquisition controls and drivers<img src="images/hal4.gif" height="538" width="624">
+
+<p>
+  <a name="133122"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In this figure, there are quite a few separate stores of information. But they can be catagorized into three classes: Primary settings, derived settings, and SignalPath data structures. The ChanSettings structure is a primary settings store, it is the actual configuration structure used in the upper user interface to hold instrument state. The store AuxChanSettings provides a place where additional data that is commonly used in calculations can be computed once and remembered. Similarly, the TrigSet is a set of channels being used for triggering. The ChanOnSet is a derived data structure that represents what channels are on. These sets are useful for computations done by the AsmDvr so they are maintained by the upper level of the UserInterface. The ChanTemplate and WindowTemplate stores represent portions of the Signal data structure. These structures are updated by various driver functions, and are ultimately copied into the corresponding Signals by the Acquisition State Machine.</font>
+</p>
+
+
+<h4>
+  <a name="135300"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Control flow</font>
+</h4>
+
+
+<p>
+  <a name="135292"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The figure emphasizes the state information that the UserInterface provides to the drivers. An additional aspect of the interface is conveying <em>what changed</em>. Historically, this has been a problematic part of our instrument designs. Because many calculations required several input parameters, it is a useful strategy to delay the calculation until all the inputs are known so that the calculation doesn't need to be repeated. For example, the timebase hardware configuration is calculated using the timebase scale, delay, reference, channel skew factors, and possibly other factors such as channel counts, timebase mode, acquisition mode, etc. So the final computation of the timebase hardware configuration should be done after any of these user settable parameters are processed. Later, after new data has been acquired with the new configuration, measurements and displays need to be reconfigured in turn to reflect the changes in the acquired data. The difficulty is in remembering specifically what part of the configuration has changed and as a result additional computation is often done "to be sure" or to determine what has changed.</font>
+</p>
+
+
+<p>
+  <a name="133125"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Two design elements are used to deal with this need. First, the control dependency mechanism of the Behavioral Layer provides a convenient way to schedule computations. This is done by factoring a control element that appears on the user interface into two or more parts: The part that accepts and processes the user input and a second, hidden control element that invokes the corresponding hardware drivers. By establishing a dependency between these, one can achieve a delayed computation and a guarranteed schedule of execution. Details of how this works are explained in the the chapter on controls.</font>
+</p>
+
+
+<p>
+  <a name="133130"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The second design element that supports delayed computation serves the need for the SignalPath to respond dynamically to settings changes. The template structures, ChannelTemplate and WindowTemplate, each have a set of "change flags" that are used to record the kinds of changes that have occurred - in terms of the signal data. So, a change of the vertical hardware that causes a different Q level size (yInc) is recorded as an ACQ_SCALE_CHG in the ChannelTemplate. If only the display scaling changes, but not the underlying data, then a SCALE_CHG is recorded. The idea is to note in the signal structure the changes the SignalAnalyzer cares about, when it is known what has changed. The template structures are the molds from which the signal header structures are cast. So, when the user interface processes a change, the significance of the change is recorded for use by the SignalPath at a later time. This avoids the need to detect or compute the change again later when time is better spent on measuring. </font>
+</p>
+
+
+<p>
+  <a name="135301"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The Signal and template structures are not designed yet, but they may look similar to the following:</font>
+</p>
+
+<pre>
+<a name="133232"> </a>/* WindowTemplate def, the x axis component of signal template */
+typedef struct 
+{
+#define WAV_DISP_SCALE         /* 4    ScaleChg fields                       */\
+         boolean valid;             /* If false, structure corrupt           */\
+             Chg xChg;              /* Bitset indicating changes             */\
+          uint16 spare1;            /* Future                                */\
+         float32 xDispRange;        /* Range covered by display in X axis    */\
+         float64 xDispOrg           /* Offset of first display column        */ 
+
+<a name="133239"> </a>#define WAV_ACQ_SCALE          /* 10   Acq scale ScaleChg fields             */\
+         WavType wavType;           /* Type of wav / how AuxData is used     */\
+        DataAttr dataAttr;          /* Attributes of particular data         */\
+            int8 xPlaceRnd;         /* Power of 10 place round for x axis    */\
+                                    /*   measurements.                       */\
+            int8 xRawPlaceRnd;      /* Place round for raw acq data          */\
+         float64 xInc;              /* Magnitude per index of x axis         */\
+                                    /*   Same as YInc for versus             */\
+         float64 xOrg;              /* Offset of first point                 */\
+                                    /*   Same as YOrg for versus             */\
+           int32 maxPt;             /* Last index point in array of y data   */\
+           int32 nReqd;             /* Number of complete buckets required   */\
+                                    /*   NReqd in terms of YMaxPt for vs wav */\
+            int8 filterPad;         /* Data pad to account for filtering data*/\
+           uint8 firstPath;         /* Hybrid path of first data point       */\
+  FiltSampleRate sampleRate;        /* Sample rate at which data was acquired*/\
+           uint8 spare2;            /* Future                                */\
+          uint16 spare3;            /* Future                                */\
+         WavAttr attr;              /* Various waveform attributes.          */\
+   const  Encode *xEncode           /* Q level format for AuxData            */ 
+
+<a name="133260"> </a>#define WAV_OTHER              /* 4    OtherChg fields                       */\
+           int32 nAcqs;             /* Number of acq requested for ensemble  */\
+                                    /*   ( 1 if normal data )                */\
+           Units xUnits;            /* Units suffix for x axis               */\
+          Cutoff filtBW;            /* Effective bandpass after filtering    */\
+         float32 spare4             /* Future                                */
+} WindowTemplate;
+<a name="133147"> </a>
+<a name="133377"> </a>typedef struct 
+{
+#define SIG_DISP_SCALE         /* 3    ScaleChg fields                        /\
+          uint16 checkSum;          /* Checksum of signal.                   */\
+                                    /* Second byte contains tSigRev code     */\
+         boolean valid;             /* If Valid false, structure corrupt     */\
+             Chg yChg;              /* Bitset indicating changes             */\
+         float32 yDispRange;        /* Fullscale magnitude of y axis         */\
+         float32 yDispOrg           /* Magnitude at midpoint of y axis       */
+
+#define SIG_ACQ_SCALE          /* 7    more ScaleChg fields                  */\
+         boolean overload;          /* Signal overload occurred (asyncronous)*/\
+           uint8 fnID;              /* Id of function that produced waveform */\
+            int8 yPlaceRnd;         /* Power of 10 place round for y axis    */\
+                                    /*   measurements.                       */\
+            int8 yRawPlaceRnd;      /* Place round for raw acq data          */\
+         float32 yInc;              /* Magnitude per Q level of meas data    */\
+         float32 yOrg;              /* Magnitude of Q level 0                */\
+   const  Encode *yEncode;          /* Q level format, def of clip &amp; hole    */\
+         float32 impedance;         /* Input impedance during acq            */\
+                                    /*   Unknown/default value is zero.      */\
+         tCutoff acqBW              /* Cutoff freqs of analog path           */\
+
+#define SIG_OTHER             /* 12    OtherChg fields                       */\
+           Units yUnits;            /* Unit suffix for y axis                */\
+         SigName name;              /* User name of signal                   */\
+    SerialNumber frameSer;          /* Frame serial number string            */\
+    FrameModelId frameNum;          /* Frame number                          */\
+   PluginModelId moduleNum;         /* Module number                         */\
+         boolean eraseChgSig;       /* Should changed signal be explicitly   */\
+                                    /* erased. Based on avg/persist mode.    */
+             Chg xChg[N_WINDOWS];   /* chg flags set by ui                   */
+          uint16 spare4;
+} ChanTemplate;
+</pre>
+
+<p>
+  <a name="133456"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The change flags, yChg and xChg both use the same bitset enumeration:</font>
+</p>
+
+<pre>
+<a name="133459"> </a>typedef enum {                      /* Must be in this order, used as bitmap */
+               NO_CHG        = 0,   /* No change occurred                    */
+               SCALE_CHG     = 1,   /* Display or acquisition scale changed  */
+               OTHER_CHG     = 2,   /* Non-scale change occurred             */
+               DISPLAY_CHG   = 4,   /* Display state (on/off) or scale chg   */
+                                    /*   Only present in YChg                */
+               NEW_WAVE      = 8,   /* Begin acquiring a new waveform, a     */
+                                    /*   restart that doesnot affect analyzer*/
+               FUNCTION_CHG  = 16,  /* The producing function has changed    */
+               ACQ_SCALE_CHG = 32,  /* Acq scale (inc or org, x or y) changed*/
+               TRIG_CHG      = 64,  /* The sync for the signal has changed   */
+               RESTART_ACQ   = -128 /* Unconditional restart of ensemble     */
+                                    /*   Only present in YChg                */
+} Chg ;
+</pre>
+
+<p>
+  <a name="133500"> </a><font face="Verdana, Arial, Helvetica, sans-serif">As a side note, the template structures are defined using macros so that other identical substructures can be easily defined such as those within the Signal structure.</font>
+</p>
+
+
+<h3>
+  <a name="132538"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">13-5.3  Driver capability: User interface controls and control limits</font>
+</h3>
+
+
+<p>
+  <a name="132521"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Drivers provide limit and capability information to the UserInterface. For example, timebase range limits (s/div) are provided by the timebase driver. A primary benefit of this design is that it allows the impact of a timebase specification change to be localized to the driver. In most cases, this is merely a code organizational issue - a matter of how to partition files - and not a major design issue. A second benefit is that the driver does not have to do any range checking. Drivers can assume that all parameters passed to them are "in bounds" per the rules of the API.</font>
+</p>
+
+
+<p>
+  <a name="133113"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For some user controls, the limits of setability are dependent upon other control settings. For example, if an instrument implements input coupling and impedance controls, the selection of AC 50 Ohms is typically disallowed. The rules for control dependencies such as this are enforced above the Hardware Abstraction Layer, in the Behavioral Layer. The rationale for this is that even though the actual limitation is determined by the hardware design, the hardware is designed to fit the conventional model of operation that the user expects. Therefore, there are behavioral standards that can be enforced (and reused) at a higher level in the user interface.</font>
+</p>
+
+
+<p>
+  <a name="133110"> </a><font face="Verdana, Arial, Helvetica, sans-serif">An issue that needs to be discussed further is how to specify limits in a "hardware neutral" way. The goal at the API to the Behavioral Layer is to express limits in "user units", that is essentially in the same way that the rules might be expressed in a product data sheet. This is necessary if we are to hide the underlying hardware implementation details. It also helps encourage behavioral standardization between different products which is a part of the division's common look and feel goal.</font>
+</p>
+
+
+<p>
+  <a name="133116"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Fortunately, most control limits are rather easily expressed. The most difficult or controversial are the limits for channel offset and timebase delay. These will be explored further in the chapter on instrument behavior.</font>
+</p>
+
+
+<p>
+  <a name="133503"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In addition to limits, the drivers may also need to specify what control capabilities exist and the corresponding menu and remote language elements. In some cases, this may entail a subsetting approach in which the driver might exclude some features of a general model. This scheme was used on Denali for channels and on Jedi for module support. In other cases, the impact to the system may be so great that it requires replacing or adding to the existing model.</font>
+</p>
+
+
+<h3>
+  <a name="136562"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">13-5.4  Menus and remote languages</font>
+</h3>
+
+
+<p>
+  <a name="136563"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This area needs to be explored further. It is desireable to have the menus and remote parser grammar provided by the drivers, so that the generic parts of these languages are not affected by aquisition changes. The menu system is modular at the menu level so it seems feasible to patch a menu at runtime with driver provided data. The remote language may not be so easy. In the past, the remote language has been defined as the superset of all products it supports and the subsetting has been done at the action routine level.</font>
+</p>
+
+
+<h2>
+  <a name="132513"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">13-6  API reference</font>
+</h2>
+
+
+<p>
+  <a name="130995"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following sections describe the various drivers and services in more detail. Functions and typedefs defined at this API are all described. Some abstract data types are provided from the system and are described elsewhere. These include the Set, List and Units types among others. In the final section, examples are given of some typical user inputs and the resulting interactions across this API.</font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="controls.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="acqDriver.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

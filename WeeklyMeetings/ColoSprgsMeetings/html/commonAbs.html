@@ -1,0 +1,576 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:27:45 2002">
+<title>CHAPTER 29 Common Abstract Data Types</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="psosTimingRef.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="buildEnv.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="124832"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 29 	 Common Abstract Data Types</font>
+</h1><hr>
+
+
+<p>
+  <a name="130447"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are several abstract data types that are broadly useful in the JediPlus platform. They are:</font>
+</p>
+
+
+<h4>
+  <a name="130468"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">containers</font>
+</h4>
+
+<ul>
+  <li><a name="130448"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Set - a bitset</font>
+  <li><a name="130449"> </a><font face="Verdana, Arial, Helvetica, sans-serif">List - a doubly linked list</font>
+  <li><a name="130450"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Queue - </font>
+</ul>
+
+<h4>
+  <a name="130469"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">number handling</font>
+</h4>
+
+<ul>
+  <li><a name="130451"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Units - a representation of units and some methods to operate on them</font>
+  <li><a name="130545"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Format</font>
+  <li><a name="130546"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Math64</font>
+</ul>
+
+<h4>
+  <a name="130470"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">other</font>
+</h4>
+
+<ul>
+  <li><a name="130471"> </a><font face="Verdana, Arial, Helvetica, sans-serif">DateTime</font>
+</ul>
+
+<h2>
+  <a name="130472"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">29-1  Containers</font>
+</h2>
+
+
+<h3>
+  <a name="130800"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">29-1.1  Set</font>
+</h3>
+
+
+<h4>
+  <a name="130455"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Name</font>
+</h4>
+
+
+<p>
+  <a name="130467"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130457"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Synopsis</font>
+</h4>
+
+<pre>
+<a name="130704"> </a>typedef enum
+{
+    SET_NO_ERROR,
+    SET_SIZE_OVERFLOW,
+    SET_MEMBER_OVERFLOW
+} SetStatus;
+
+<a name="130712"> </a>typedef struct
+{
+       uint32 members;
+        uint8 iterator;
+        uint8 size;
+        uint8 maxMember;
+    SetStatus status;
+} Set;
+<a name="130721"> </a>
+<a name="130722"> </a>/* Methods */
+<a name="130723"> </a>     void setInit(Set *theSet, uint32 maxSize);
+<a name="130724"> </a>SetStatus setStatus(Set *theSet);
+<a name="130725"> </a>  boolean setIsMember(Set *theSet, uint32 theMember);
+<a name="130726"> </a>  boolean setIsEmpty(Set *theSet);
+<a name="130727"> </a>    uint8 setSize (Set *theSet);
+<a name="130728"> </a>     void setAdd(Set *theSet, uint32 theMember);
+<a name="130729"> </a>     void setRemove(Set *theSet, uint32 theMember);
+<a name="130730"> </a>  boolean setUnion(Set *leftSet, Set *rightSet);
+<a name="130731"> </a>  boolean setIntersect(Set *leftSet, Set *rightSet);
+<a name="130732"> </a>  boolean setNot(Set *set);
+<a name="130733"> </a>  boolean setIterate(Set *theSet, uint32 contIterate, uint8 *theMember);
+<a name="130458"> </a>  boolean setSame(Set *leftSet, Set *rightSet);
+</pre>
+
+<h4>
+  <a name="130459"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Description</font>
+</h4>
+
+
+<p>
+  <a name="130460"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130461"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Return value</font>
+</h4>
+
+
+<p>
+  <a name="130462"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130463"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">See also</font>
+</h4>
+
+
+<p>
+  <a name="130464"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="130474"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">29-1.2  List</font>
+</h3>
+
+
+<h4>
+  <a name="130475"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Name</font>
+</h4>
+
+
+<p>
+  <a name="130476"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130477"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Synopsis</font>
+</h4>
+
+
+<p>
+  <a name="130478"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130479"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Description</font>
+</h4>
+
+
+<p>
+  <a name="130480"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130481"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Return value</font>
+</h4>
+
+
+<p>
+  <a name="130482"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130483"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">See also</font>
+</h4>
+
+
+<p>
+  <a name="130484"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="130490"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">29-1.3  Queue</font>
+</h3>
+
+
+<h4>
+  <a name="130491"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Name</font>
+</h4>
+
+
+<p>
+  <a name="130492"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130493"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Synopsis</font>
+</h4>
+
+
+<p>
+  <a name="130494"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130495"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Description</font>
+</h4>
+
+
+<p>
+  <a name="130496"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130497"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Return value</font>
+</h4>
+
+
+<p>
+  <a name="130498"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130499"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">See also</font>
+</h4>
+
+
+<p>
+  <a name="130500"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h2>
+  <a name="130802"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">29-2  Number handling</font>
+</h2>
+
+
+<h3>
+  <a name="130506"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">29-2.1  Units</font>
+</h3>
+
+
+<h4>
+  <a name="130507"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Name</font>
+</h4>
+
+
+<p>
+  <a name="130508"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130509"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Synopsis</font>
+</h4>
+
+<pre>
+<a name="130576"> </a>typedef enum 
+{
+   UNKNOWN,
+   VOLT,
+   SECOND,
+   METER,
+   INCH,
+   OHM,
+   DECIBEL,
+   HERTZ,
+   AMP,
+   WATT,
+   DEGREE,
+   PERCENT,
+   RATIO,
+   CONSTANT,
+   SAMPLE,
+   POINT,
+   DIVISION,
+   DECIBELM,
+   HOUR,
+   WAVEFORM,
+   HITS,
+   BIT,
+   REFLECT_C,
+   GAIN,
+   FEET,
+   INDUCTANCE,
+   CAPACITANCE,
+   USER_0_UNIT,
+   USER_1_UNIT,
+   USER_2_UNIT,
+   USER_3_UNIT,
+   USER_4_UNIT,
+   USER_5_UNIT,
+   USER_6_UNIT,
+   USER_7_UNIT,
+   USER_8_UNIT,
+   USER_9_UNIT,
+   USER_10_UNIT,
+   MAX_UNITS
+} BaseUnits;
+<a name="130574"> </a>typedef struct 
+{
+   BaseUnits baseUnits1;   /* Base unit of first scale */
+   BaseUnits baseUnits2;   /* Unit of second scale ie. s in Vs */
+   int8 unitsExp1;         /* Exponent of first base unit ie. V2*/
+   int8 unitsExp2;         /* Exponent of second unit ie. V2s2 */
+} Units;
+<a name="130549"> </a>void unitsInit(void);
+<a name="130550"> </a>void reciprocateUnits(Units *units);
+<a name="130551"> </a>uint8 unitsToStr(Units *units, char *str, boolean  relative);
+<a name="130552"> </a>boolean unitsEqual( Units *units1, Units *units2 );
+<a name="130553"> </a>void multUnits( Units *src1Units, Units *src2Units, Units *destUnits );
+</pre>
+
+<h4>
+  <a name="130511"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Description</font>
+</h4>
+
+
+<p>
+  <a name="130512"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130513"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Return value</font>
+</h4>
+
+
+<p>
+  <a name="130514"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130515"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">See also</font>
+</h4>
+
+
+<p>
+  <a name="130516"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="130528"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">29-2.2  Format</font>
+</h3>
+
+
+<h4>
+  <a name="130529"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Name</font>
+</h4>
+
+
+<p>
+  <a name="130530"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130531"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Synopsis</font>
+</h4>
+
+
+<p>
+  <a name="130532"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130533"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Description</font>
+</h4>
+
+
+<p>
+  <a name="130534"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130535"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Return value</font>
+</h4>
+
+
+<p>
+  <a name="130536"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130537"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">See also</font>
+</h4>
+
+
+<p>
+  <a name="130538"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="130804"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">29-2.3  Math64, Math96</font>
+</h3>
+
+
+<h4>
+  <a name="130805"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Name</font>
+</h4>
+
+
+<p>
+  <a name="130806"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130807"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Synopsis</font>
+</h4>
+
+
+<p>
+  <a name="130808"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130809"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Description</font>
+</h4>
+
+
+<p>
+  <a name="130810"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130811"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Return value</font>
+</h4>
+
+
+<p>
+  <a name="130812"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130813"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">See also</font>
+</h4>
+
+
+<p>
+  <a name="130814"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="130815"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h3>
+  <a name="130821"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">29-2.4  </font>
+</h3>
+
+
+<h4>
+  <a name="130822"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Name</font>
+</h4>
+
+
+<p>
+  <a name="130823"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130824"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Synopsis</font>
+</h4>
+
+
+<p>
+  <a name="130825"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130826"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Description</font>
+</h4>
+
+
+<p>
+  <a name="130827"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130828"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Return value</font>
+</h4>
+
+
+<p>
+  <a name="130829"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<h4>
+  <a name="130830"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">See also</font>
+</h4>
+
+
+<p>
+  <a name="130831"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="130832"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+
+
+<p>
+  <a name="130453"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="psosTimingRef.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="buildEnv.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

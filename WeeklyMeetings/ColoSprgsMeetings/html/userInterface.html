@@ -1,0 +1,1051 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:20:55 2002">
+<title>CHAPTER 9 User interface</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="screenmgr.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="helpText.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="1007926"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 9 	 User interface</font>
+</h1><hr>
+
+
+<h2>
+  <a name="1000611"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-1  Introduction</font>
+</h2>
+
+
+<p>
+  <a name="1002739"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This document describes the requirements and design for the JediPlus user interface architecture.  Rather than describe every menu used in the system,  we will describe the building blocks for menus.  After reading this document, it should be apparent how the various pieces of the user interface fit together and how one might change or add to the interface.  The document is organized to describe the requirements of the design first.  It seemed appropriate to describe how the user interface is intended to behave before explaining how the software makes it behave that way.  </font>
+</p>
+
+
+<p>
+  <a name="1007390"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The user interface described in this document is the local ,or frontpanel interface.  See <strong><u><a href="arch.html#123529">Figure 4</a></u></strong> in the chapter entitled The Architectural Model of the JediPlus Oscilloscope Family.  According to this diagram, this document deals with the "local UserRequest" arrow, as well as the portion of the "User Interface" bubble that deals with the "local UserRequests".</font>
+</p>
+
+
+<h2>
+  <a name="1004866"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-2  UI Assumptions</font>
+</h2>
+
+
+<p>
+  <a name="1004867"> </a><font face="Verdana, Arial, Helvetica, sans-serif">JediPlus is designed to be flexible enough to support many different user interfaces.  However, it is assumed that any of these interfaces will have several attributes in common.  First, this design is intended to support a softkey menu driven interface.  There will be hardkeys that invoke menus, and in each of these menus, a set of softkeys will take on different behaviors.  The design supports a single general purpose entry knob, as well as any number of dedicated functionality knobs.  The general purpose entry knob is used for adjusting manually placed cursors, as well as any parameter appearing in a menu that is most easily adjusted with a knob.  Also, the design will accomodate any number of illuminated indicators on the frontpanel of the oscilloscope to feed back setup information to the user.  </font>
+</p>
+
+
+<p>
+  <a name="1007381"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It is important to note that there will be additional behavioral assumptions made throughout this design.  The design is intended to support those behavioral assumptions, but also be flexible enough to adapt to the most likely modifications that will be made to those behaviors.</font>
+</p>
+
+
+<h2>
+  <a name="1002905"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-3  Widgets</font>
+</h2>
+
+
+<p>
+  <a name="1004884"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The discussions of the design requirements below are intended to show the building blocks with which we will be creating a user interface.  Many of the <em>widgets</em> described are utilized to create the menus that we've mentioned.  Others are used to create the remainder of the interface such as hardkeys, hardknobs, illuminated indicators, etc.  All of the <em>widgets</em> used in the system  are instantiated at link time. The menu dependent widgets are assigned to the softkeys on an as needed basis at run time.  </font>
+</p>
+
+
+<p>
+  <a name="1004895"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The JediPlus <em>widgets</em> are a set of building blocks that the system will use to create the user interface.  Each <em>widget</em> has a pre-described behavior and appearance, as well as a set of properties that may be defined to implement the application specific functionality.  <em>Widgets</em> are inherently designed to translate input events into a response and to display the results of control changes. </font>
+</p>
+
+
+<p>
+  <a name="1004182"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It is important to note that the user interface element referred to as a <em>widget</em> is not intended to imply anything about the underlying design.  Rather, the term <em>widget</em> is intended to encompass the entire behavior of a certain user interface paradigm.   It is convenient to describe the behavioral requirements of the user interface design in this fashion.  In this section, we will describe the behavior of all of the <em>widget</em> classes used in the system.</font>
+</p>
+
+
+<h3>
+  <a name="1001735"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-3.1  Input widgets</font>
+</h3>
+
+
+<p>
+  <a name="1004587"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These widgets exist as input only devices.  There are no display attributes inherently linked to these widgets.</font>
+</p>
+
+
+<h4>
+  <a name="1004582"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Hardkey widget</font>
+</h4>
+
+
+<p>
+  <a name="1001783"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>hardkey</em> widget is used for implementing keys on the front panel whose behaviors usually do not change based on the menu state.  Generally, hardkeys have no display elements directly associated with them.</font>
+</p>
+
+
+<h4>
+  <a name="1001792"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Knob widget</font>
+</h4>
+
+
+<p>
+  <a name="1001808"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>knob</em> widget is used to implement all of the knobs on the frontpanel.  Knobs all have the same properties associated with them except for the general purpose entry knob.  The general purpose entry knob is a special case that is described in detail later in this chapter.</font>
+</p>
+
+
+<h3>
+  <a name="1001810"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-3.2  Illuminated feedback widgets</font>
+</h3>
+
+
+<p>
+  <a name="1004586"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These widgets exist as display devices to feed back information to the user.  There are no input attributes to these widgets.  Generally, they are implemented using colored LEDs.</font>
+</p>
+
+
+<h4>
+  <a name="1004585"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Toggle LED indicator</font>
+</h4>
+
+
+<p>
+  <a name="1004571"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>toggle LED indicator</em> is an illuminated indicator that reflects the state of a feature that is either on, or off.</font>
+</p>
+
+
+<h4>
+  <a name="1004570"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">One of N LED indicator</font>
+</h4>
+
+
+<p>
+  <a name="1001812"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>one of N LED indicator</em>  is a widget containing multiple LED indicators, one of which is illuminated to reflect some feature's state. </font>
+</p>
+
+
+<h3>
+  <a name="1004688"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-3.3  Display widgets</font>
+</h3>
+
+
+<p>
+  <a name="1004707"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These widgets are rendered on the raster display.  They have no input attributes associated with them.</font>
+</p>
+
+
+<h4>
+  <a name="1004706"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Readout widget</font>
+</h4>
+
+
+<p>
+  <a name="1004689"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>readout</em> widget is simply a box that provides an anchor point for readout text.  It also provides separation from surrounding text.  The box will be rendered as <strong>in</strong> when the readout is static and <strong>out</strong> when the readout is changing.  Generally, <em>readout</em> widgets are used to display a field that the user can directly modify (e.g. V/div, S/div, delay, position, trigger level)</font>
+</p>
+
+
+<h4>
+  <a name="1004690"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Static display widget</font>
+</h4>
+
+
+<p>
+  <a name="1004691"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>static display</em> widget provides an undisplayed box the system can use to display text.  It provides a bounding box and a region for this text.  <em>Static display</em> widgets are used for fields that are not directly modifiable by the user, do not change until they are no longer needed, do not update periodically and do not blink. (e.g. "Pattern =", "Label =").</font>
+</p>
+
+
+<h4>
+  <a name="1004692"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Changing display widget</font>
+</h4>
+
+
+<p>
+  <a name="1004693"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>changing display</em> widget provides an undisplayed box the system can use to display text.  It provides a bounding box and a region for this text and a means of changing the rendering of the widget periodically.  Generally, display widgets are used for fields that are not directly modifiable by the user but change based on time or changes in the system (e.g. measurement results, Auto trigger indicator, Peak or average indicator).  Since this widget is used for showing continuous updates, the widget must have some means of determining the new information from the system (e.g. get new measurement string).</font>
+</p>
+
+
+<h4>
+  <a name="1004694"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Animated text widget</font>
+</h4>
+
+
+<p>
+  <a name="1004695"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>animated text</em> widget allows us to animate display text as when a new measurement appears on the screen.  This widget utilizes an undisplayed box to bound the text.</font>
+</p>
+
+
+<h4>
+  <a name="1004696"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Animated bitmap widget</font>
+</h4>
+
+
+<p>
+  <a name="1004697"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>animated bitmap</em> widget allows us to animate a bitmap as when one of the trademark logos appears on the screen (e.g. MegaZoom).</font>
+</p>
+
+
+<h4>
+  <a name="1004698"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Sliding image widget</font>
+</h4>
+
+
+<p>
+  <a name="1004699"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>sliding image</em> widget provides a simple means for us to render the ground and trigger point indicators.</font>
+</p>
+
+
+<h4>
+  <a name="1004700"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Softkey combiner widget</font>
+</h4>
+
+
+<p>
+  <a name="1004701"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>softkey combiner</em> provides a way for the system to portray softkeys that are linked together in a one of N choice.</font>
+</p>
+
+
+<h4>
+  <a name="1004702"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Pop-up text widget</font>
+</h4>
+
+
+<p>
+  <a name="1004703"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>pop up text </em>widget provides a way for the system to present multiple line text information like help system text.</font>
+</p>
+
+
+<h4>
+  <a name="1004704"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Cursor widget</font>
+</h4>
+
+
+<p>
+  <a name="1004705"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>cursor </em>widget provides a way for the system to manage displayed cursors.  Though our hardware platforms will usually support the rendering of these cursors, the screen management system needs a good way of managing their location, updating and appearance.  The active cursor will be rendered differently than the other cursors.  Most likely the active cursor will be displayed in a different color.</font>
+</p>
+
+
+<h3>
+  <a name="1000826"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-3.4  Softkey widgets</font>
+</h3>
+
+
+<p>
+  <a name="1004589"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These widgets serve as both feedback and input mechanisms.  Since the softkey labels change depending on the menu displayed, the widgets have inherent display attributes.  This is a comprehensive list of the types of widgets the system uses.   All softkey widgets utilize a GUI paradigm to appear as if they are either "pressed in" or "not pressed in".  When the user presses the softkey down, the key changes rendering to its "pressed in" look.  When the user is not pressing a key, it is rendered in its "not pressed in" look.</font>
+</p>
+
+
+<h4>
+  <a name="1004588"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Action key widget</font>
+</h4>
+
+
+<p>
+  <a name="1001356"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>action key</em> widget contains a prompt that describes what the key will do when it is pressed.  The prompt does not change when the key is pressed.  The prompt used on the <em>action key</em> will be either a two text line prompt, or a single text line prompt.  Single text line prompts will be vertically centered on the key.<img src="images/userInterface3.gif" height="109" width="590">
+</font>
+</p>
+
+
+<h4>
+  <a name="1000824"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">On/Off toggle key widget</font>
+</h4>
+
+
+<p>
+  <a name="1000785"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>on/off toggle key</em> contains a prompt that describes what on/off feature the key will toggle the state of when it is pressed.  A check mark will appear when the feature is turned on.   The check mark will not be displayed when the feature is turned off. <img src="images/userInterface4.gif" height="111" width="590">
+</font>
+</p>
+
+
+<h4>
+  <a name="1001649"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">One of N toggle key widget</font>
+</h4>
+
+
+<p>
+  <a name="1003490"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>one of N toggle key</em> contains a prompt that describes what feature the key will toggle the state of when it is pressed.  The current selection will be rendered in a brighter color than the non selected items.  Note that this widget should only be used for N &gt;=3. <img src="images/userInterface8.gif" height="111" width="590">
+</font>
+</p>
+
+
+<h4>
+  <a name="1004710"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Rolling select key</font>
+</h4>
+
+
+<p>
+  <a name="1004626"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>rolling select key</em> allows the user to choose one selection from a list of N selections by repeatedly pressing the key.  The key has a prompt for describing the feature and a readout for the current selection.  The current selection will have a check mark next to it similar to the Infinium pull down menus..<img src="images/userInterface6.gif" height="103" width="588">
+</font>
+</p>
+
+
+<h3>
+  <a name="1003517"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-3.5  Entry knob softkey widgets</font>
+</h3>
+
+
+<p>
+  <a name="1004605"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The general purpose entry knob mentioned earlier can be made to control parameters within the menus.  The parameters are not controlled with the softkeys underneath the parameter.  Generally, the softkey simply provides a convenient field to display the adjustable parameter.  However, when multiple entry knob softkeys appear in a menu, the key provides the means by which we change the entry knob from controlling one to controlling the other.  An icon that is intended to indicate "rotate" is displayed on all of this type of widget.  This icon is rendered in its normal foreground color when the widget is currently linked to the entry knob.  If it is not, the icon is rendered as "grayed out".</font>
+</p>
+
+
+<h4>
+  <a name="1004604"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Continuous entry widget</font>
+</h4>
+
+
+<p>
+  <a name="1000834"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>continuous entry </em>widget is used for adjusting continuous parameters.  In this case, there is an infinite number of settings for the parameter.  The <em>continuous entry </em>contains a prompt that describes which feature the entry knob adjusts.  Below this prompt is the continuous readout for the feature..<img src="images/userInterface5.gif" height="110" width="589">
+</font>
+</p>
+
+
+<h4>
+  <a name="1000962"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">One of N entry widget</font>
+</h4>
+
+
+<p>
+  <a name="1000966"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>one of N entry</em> widget is very similar to the <em>continuous entry </em>widget<em> </em>in that it provides the readout space for a feature and indicates that the entry knob should be turned.  Therefore, the <em>one of N entry</em> widget looks very much like the <em>continuous entry </em>widget.  Also, the behavior is similar to the <em>continuous entry </em>widget.  One difference is that this widget may cause a <em>pop up list </em>widget to be envoked when the knob is turned.  The only other difference is that the readout area will have a check mark next to it.<img src="images/userInterface7.gif" height="108" width="589">
+</font>
+</p>
+
+
+<h4>
+  <a name="1000964"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Pop up list widget</font>
+</h4>
+
+
+<p>
+  <a name="1001073"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>pop up list</em> widget provides a means for the user interface to present either an entire list of choices to the user or a subset of the list.  For rolling <em>select key</em> and <em>one of N entry</em> key widgets, past interfaces have simply displayed the currently selected choice.  This causes two problems.  First, the user cannot see the entire suite of choices availabe, which makes it more difficult to decide what the choice should be.  Second, it is fundamentally difficult to stop on a desired selection when you cannot see that it is the next selection.  In other words, the display currently selected paradigm usually yields a pass it up the first time phenomenon that is frustrating.</font>
+</p>
+
+
+<p>
+  <a name="1004654"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>pop up list</em> widget will present an animated pop up box that displays M of the N choices available.  The number displayed, M, will be between 3 and N, so that the user may see at least the previous and next choice and possibly all of the choices available.  The currently selected choice will have a check mark to its left.  Also, any unselectable items (due to some other configuration setting) will be rendered in "greyed out" text. <img src="images/userInterface9.gif" height="215" width="588">
+</font>
+</p>
+
+
+<h2>
+  <a name="1002909"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-4  Architecture</font>
+</h2>
+
+
+<p>
+  <a name="1007396"> </a><font face="Verdana, Arial, Helvetica, sans-serif">I'll reiterate that the term <em>widget</em> was intended to be used as a descriptor for certain interface paradigms.  You'll notice that the term is not used in the description of the design.  One reason is that the implementation is easier to accomplish by adopting an architectural pattern known as a Model-View-Controller.  Though the requirements discussion combines the input and response behavior in the <em>widget</em> descriptions, it is easier to describe the design by separating these discussions.</font>
+</p>
+
+
+<p>
+  <a name="1007541"> </a><font face="Verdana, Arial, Helvetica, sans-serif">As stated, we've adopted a Model-View-Controller architectural pattern to implement the local user interface.  It is important to make the distinction between "Control" and "Controller".  The former term has historically been used in Hewlett-Packard scope design to describe the portion of the architecture described in the pattern as the "Model".  In the architectural pattern, the term "Controller" deals with the input portion of the design.  Because of the coincidence that results in some confusion among terms, we will only use the "View" description from the pattern.  Otherwise, we will not refer to the Model-View-Controller pattern again.</font>
+</p>
+
+
+<p>
+  <a name="1007617"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Refer to Figure 1, below.  An<em> input device</em> is taken from the array <em>fpInDevice</em> based on the <em>token </em>member of the message found in the local exchange (See<strong><u><a href="scan.html#1000257"> Key and Knob Scanning</a></u></strong>).  Based on the <em>tokenType</em> member of the message found in the local exchange, a generic input handler is chosen.  This function is passed the input device.  The generic input handler accesses the <em>handler</em> member of the the input device structure and calls that function, passing the input device in the call.  Based on the behavior that is defined inside the specific input handler, a new value is determined for the control pointed to by the <em>control</em> member of the input device structure and <em>setCtrl</em> is called with this new value.  The control has a pointer to an array of views that depend on its value.  When the control value changes, <em>updateViews</em> is called with a pointer to this array.  The view handler then takes responsibility for getting the view updated, eventually calling the function pointed to by the <em>draw</em> member of the view structure.</font>
+</p>
+
+
+<h3>
+  <a name="1007400"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-4.1  General functionality</font>
+</h3>
+
+
+<p>
+  <a name="1007408"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><img src="images/userInterfacea.gif" height="276" width="624">
+</font>
+</p>
+
+<a name="1007487"> </a>FIGURE 17.&#32; Front panel interface using Model-View-Controller metaphor
+<h3>
+  <a name="1003580"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-4.2  Input device</font>
+</h3>
+
+
+<p>
+  <a name="1003582"> </a><font face="Verdana, Arial, Helvetica, sans-serif">An<em> input device </em>is a data structure used to describe to the system how a token from a given input mechanism is to be treated.  The <em>input device</em> determines which mechanical input mechanisms on the frontpanel control which features.  These <em>input devices</em> will be arranged in an array that is indexed by the token number of the input mechanism.  Since this is a softkey menu driven interface, there are a number of <em>input devices</em> that are attached to the softkeys based on the menu that we're in.  The mechanism by which the menu dependent <em>input devices</em> are attached to the softkeys is discussed in a later section.  The basic data structure for an <em>input device</em> is show here.</font>
+</p>
+
+<pre>
+<a name="1003586"> </a>typedef struct
+{
+    const Ctrl *control;
+    const View *view;
+    boolean (*handler) (const void *);
+    void *data;
+}FpInDevice;
+</pre>
+<ul>
+  <li><a name="1003590"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><em>control</em> - pointer to control that is affected by the device</font>
+  <li><a name="1003663"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><em>view</em> - pointer to view that is directly affected by the input device (as opposed to via the control that is being changed) </font>
+  <li><a name="1003664"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><em>handler</em> - pointer to the device specific behavior handler for this input device</font>
+  <li><a name="1003665"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><em>data</em> - miscellaneous use variable for such purposes as storing an enumeration value for the device to use in setting its control</font>
+</ul>
+
+<p>
+  <a name="1003666"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This data structure can be viewed as the base class for input devices. <em>Input devices</em> that have more complex behaviors may require classes derived from this structure.  It contains a pointer to the control that the input device should effect.  If the input device is directly connected to a view that is on screen as is the case for all softkeys, then the view pointer is in the structure.  The structure also contains a pointer to the function that implements the device specific behavior.  For example, if a rolling select key creates a pop up list when it is pressed, then one device specific behavior function is called and if the rolling select key simply rotates through the choices as Jedi did, a different behavior function is called.  Finally, a general purpose data element is contained in the structure to store enumeration values, acceleration factors or any other fixed value needed by the <em>input device</em>.</font>
+</p>
+
+
+<h4>
+  <a name="1007552"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">fpInDevice array</font>
+</h4>
+
+
+<p>
+  <a name="1007553"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The loop that consumes from the local exchange uses the <em>token</em> member of the token structure to index into an array of <em>input device</em> pointers called <em>fpInDevice</em>.  Due to the menu dependency of some of the <em>input devices</em> in this array, which is detailed in later sections, this array is RAM based.  The input dispatcher then uses the <em>tokenType</em> member of the token structure to index into an array called <em>genericHandler</em>.  This array contains a series of pointers to functions.  Each of these functions is designed to process a different <em>tokenType</em>.  The generic handler accessed via this array is then passed a pointer to the input device. </font>
+</p>
+
+
+<h3>
+  <a name="1007566"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-4.3  Generic input handler</font>
+</h3>
+
+
+<p>
+  <a name="1007573"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>generic input handler</em> is a function designed to handle a certain type of input token.  This function implements behavior that is independent of the feature a given input mechanism is intended to control.  For example, we currently intend to cause features to be changed upon the release of a key as opposed to when the key is pressed.  This allows us to bring up a page of help text if the key is held down for a certain period of time, without changing the control.  In this case, we wish control changes to take place via the <em>generic handler</em> responsible for the "key released before it is considered held down" behavior.  If we choose to change to the features changing when the key is pressed, we simply relocate the code in that <em>generic handler</em> to the one responsible for "key pressed" behavior.</font>
+</p>
+
+
+<p>
+  <a name="1007567"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The functions pointed to by the <em>genericHandler</em> array have the following interface:</font>
+</p>
+
+<pre>
+<a name="1007568"> </a>typedef void (*FpInputHandlerFunc)(const FpInDevice *);
+</pre>
+
+<h3>
+  <a name="1007589"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-4.4  Specific input handler</font>
+</h3>
+
+
+<p>
+  <a name="1007590"> </a><font face="Verdana, Arial, Helvetica, sans-serif">As discussed earlier, each input device contains a pointer, <em>handler</em>,  to a function that defines its behavior based on what type of input device it is.  An example of this type of function is <em>setCtrlToNextValueInPopUp</em>.  This function defines the behavior of a rolling select key that pops up a list the first time it is pressed.  One of the key advantages of this implementation is the ease with which a key's specific behavior may be changed.  If we would like to change rolling select keys to behave more like they did on previous HP546xx family products, we must simply change the <em>handler</em> element of the input device structure to point to <em>setCtrlToNextEnumValue</em>.  The latter function implements a rolling select key so that the user only sees the currently selected value at any given time.  Once the specific behavioral primitives have been generated, the behavior is very easy to change.  This should also make the testing of contrasting behaviors very easy.</font>
+</p>
+
+
+<h3>
+  <a name="1007597"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-4.5  Controls</font>
+</h3>
+
+
+<p>
+  <a name="1007599"> </a><font face="Verdana, Arial, Helvetica, sans-serif">See the chapter entitled <strong><u><a href="controls.html#57">The Behavioral Layer and the Control Abstraction</a></u></strong> for a description of controls.  It is worth repeating here that each control contains a pointer to an array of views that depend on that control's value.  When a control's value changes, this pointer is passed to the <em>view handler</em> via the <em>updateViews</em> call.</font>
+</p>
+
+
+<h3>
+  <a name="1003597"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-4.6  View Handler</font>
+</h3>
+
+
+<p>
+  <a name="1003598"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All objects that are used to give the oscilloscope user visual feedback (except for waveform displays)  are described as <em>views</em>.  The view structure is intended to contain all information necessary for a view to be rendered, or erased.  The view rendering functions will utilize control pointers contained in the view structure to access the control settings.  At this point there is no plan for views to maintain "shadow" information regarding the settings of the controls they use to render themselves.  Therefore, the control setting data must be up to date when the view is rendered.</font>
+</p>
+
+
+<p>
+  <a name="1007621"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All views for the system are instantiated at link time.  The view object contains enough information so that it can be determined whether it needs to be displayed or not.</font>
+</p>
+
+
+<p>
+  <a name="1007593"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The view objects use the base class described below.</font>
+</p>
+
+<pre>
+<a name="1003601"> </a>typedef void (*ViewDrawFuncPtr) (const void *);
+<a name="1003931"> </a>
+<a name="1003929"> </a>typedef struct
+{
+    ViewDisplayState *displayState;
+    ViewDrawFuncPtr draw;
+    ViewDrawFuncPtr undraw;
+    const Ctrl *control;
+    boolean deferred;
+}ViewStruct
+</pre>
+<ul>
+  <li><a name="1003659"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><em>displayState</em> - pointer to structure containing data necessary to determine whether or not the view is displayed</font>
+  <li><a name="1003661"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><em>draw</em> - the method for rendering the view</font>
+  <li><a name="1007934"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><em>undraw</em> - the method for removing the view from the screen</font>
+  <li><a name="1003662"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><em>control</em> - for views whose rendering method only requires the data from one control, this control is queried for its value</font>
+  <li><a name="1003681"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><em>deferred</em> - boolean flag that describes how the updating of the view should take place</font>
+</ul>
+
+<p>
+  <a name="1003599"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Since all views are not unconditionally displayed, the structure contains a pointer to a different structure that contains the data necessary to determine whether the view should be displayed.  The description of this structure and its design is found later in this chapter.  The structure also contains the pointers <em>draw </em>and<em> undraw</em>,  the functions that know how to draw, and erase, the view.  For those views that reuse the view base class structure, ViewStruct, these functions are the only entities that know what data is actually stored in the structure.  Finally, the <em>control</em> member points to the control that contains the data required by the view drawing routine to render the view.  Obviously, this information is only sufficient for views that only require the data from one control to render themselves.  For views that need data from more than one control, other derived classes will be designed.</font>
+</p>
+
+
+<h3>
+  <a name="1007941"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-4.7  Conditional rendering</font>
+</h3>
+
+
+<p>
+  <a name="1007970"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All views are not unconditionally rendered.  Some views may be rendered "grayed out", so that the user realizes a feature exists, but that it is unavailable.  Unfortunately, the logic that is used to determine if a view is displayed, or if is should be "grayed out" is different for every view.  Therefore, we require a very flexible means of instatiating this logic in the view.  The following structure is used to install this logic:</font>
+</p>
+
+<pre>
+<a name="1007942"> </a>typedef struct
+{
+    const uint16 algorithm;     /* What algorithm is used to determine result */
+    void *dataA;
+    void *dataB;
+}ViewDisplayState;
+</pre>
+
+<p>
+  <a name="1007973"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Remember that the displayState member of the View base class points to a structure of this type.  If the pointer is NULL the view is unconditionally rendered.  It is important to note that the logic required to make the determination described above is unknown for all cases at this time.  However, one example usage of this structure is as follows.  The member <em>dataA</em> points to a enumerated control.  The member <em>dataB</em> contains an enumerated value.  The function that evaluated the data simply compares the enumerated value stored in the control and the enumerated value stored in <em>dataB</em> and returns boolean TRUE if they are equal.  The <em>algorithm</em> member will tell the evaluating function how the data should be used in the evaluation.</font>
+</p>
+
+
+<p>
+  <a name="1007986"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This mechanism for evaluating conditional rendering is very flexible.  ViewDisplayState can be expanded to handle a larger general case, or derived structures can be designed to handle more specific cases.</font>
+</p>
+
+
+<h2>
+  <a name="1004830"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-5  APIs</font>
+</h2>
+
+
+<p>
+  <a name="1004847"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The most important public APIs utilized by this architecture are <em>setCtrl</em> and <em>getCtrlValue</em>, which are defined in  <strong><u><a href="controls.html#57">The Behavioral Layer and the Control Abstraction.</a></u></strong></font>
+</p>
+
+
+<p>
+  <a name="1004849"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The control system utilizes:</font>
+</p>
+
+<pre>
+<a name="1004850"> </a>void updateViews(const View *const viewList);
+</pre>
+
+<p>
+  <a name="1004851"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Since each control contains a pointer to an array of views that depend on its value, the control system simply passes the address of that array through this API.</font>
+</p>
+
+
+<p>
+  <a name="1004843"> </a><font face="Verdana, Arial, Helvetica, sans-serif">It is important to note the close association between views and controls.  Primarily, views are updated by the control system and obtain the information they require to render themselves from controls.  Views also utilize control values to determine whether or not they are even displayed.  For example, the ground indicator for an oscilloscope channel is a view that will not be displayed unless the state control for that channel is TRUE.  Sometimes controls are instantiated simply to support views.  For example, the Signal Analysis Library may be required to instantiate 3 continuous controls to communicate measurement results to the measurement views.</font>
+</p>
+
+
+<h2>
+  <a name="1003836"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-6  View Hierarchy</font>
+</h2>
+
+
+<h3>
+  <a name="1003839"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-6.1  CRT View details</font>
+</h3>
+
+
+<p>
+  <a name="1003885"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Most views are instantiations of classes derived from the ViewStruct base class.  Since there will be many classes of views that appear on the display, it is likely that this documentation will be out of date much of the time.  However, I will attempt to keep it as comprehensive as is practical.  The API to the function that knows how to render the view is also shown in each of the sections below.</font>
+</p>
+
+
+<h4>
+  <a name="1003890"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">ViewSoftkey</font>
+</h4>
+
+
+<p>
+  <a name="1003891"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This class may be utilized for an instant action widget, but more likely will be an abstract class from which to derive other softkey views.</font>
+</p>
+
+<pre>
+<a name="1003937"> </a>typedef struct
+{
+    ViewStruct vb;      /* The base class */
+    uint16     softkey; /* The softkey token enumeration */
+}ViewSoftkey;
+<a name="1003926"> </a>extern void dvSoftkey(const void *view);
+</pre>
+
+<h4>
+  <a name="1003897"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">ViewToggleSoftkey</font>
+</h4>
+
+
+<p>
+  <a name="1003898"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This class is used for the on/off toggle key widget described above.</font>
+</p>
+
+<pre>
+<a name="1003899"> </a>typedef struct
+{
+    ViewSoftkey vs;      /* The softkey base class */
+    const char  *prompt; /* The key "prompt" */
+}ViewToggleSoftkey;
+<a name="1003947"> </a>extern void dvToggleSoftkey(const void *view);
+</pre>
+
+<h4>
+  <a name="1003913"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">ViewEntrySoftkey structure</font>
+</h4>
+
+
+<p>
+  <a name="1003914"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This class is used for the continuous entry key widget described above.  Since the entry knob is used for many purposes in the JediPlus system, there is an array of input devices that can be attached to the entry knob token.  Every menu key that can be slaved to the entry knob stores the index of the input device that the softkey is attached to.  With this information, the view rendering function is able to determine whether the rotate icon should be displayed as "grayed out" or not.</font>
+</p>
+
+<pre>
+<a name="1003957"> </a>typedef struct
+{
+    ViewSoftkey vs;      /* The softkey base class */
+    const char  *prompt; /* The key "prompt" */
+    uint16      index;   /* Index into the array of entry knob input devices */
+}ViewEntrySoftkey;
+<a name="1003960"> </a>extern void dvEntrySoftkey(const void *view);
+</pre>
+
+<h4>
+  <a name="1003984"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">ViewPopUpList</font>
+</h4>
+
+
+<p>
+  <a name="1003985"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This class is used for the pop up list widget described above.</font>
+</p>
+
+<pre>
+<a name="1003989"> </a>typedef struct
+{
+    uint32           enumValue;
+   const char *const string;
+}StringToEnumStruct;
+
+typedef struct
+{
+    ViewSoftkey vs;        /* The softkey base class */
+    const char  *prompt;   /* The key "prompt" */
+    uint16      numInList; /* The number of items in the list */
+    const StringToEnumStruct *list;  /* Pointer to array of strings in list */
+}ViewPopUpList;
+<a name="1003968"> </a>extern void dvPopUpList(const void *view);
+</pre>
+
+<h4>
+  <a name="1003999"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">ViewRollSelectSoftkey</font>
+</h4>
+
+
+<p>
+  <a name="1004000"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This class is used for the roling select key widget described above.  The element that points to the pop up list widget will go away if testing indicates that we should not spawn a pop up list widget from a rolling select key widget.</font>
+</p>
+
+<pre>
+<a name="1004001"> </a>typedef struct
+{
+    ViewSoftkey vs;                    /* The softkey base class */
+    const char  *prompt;               /* The key "prompt" */
+    uint16      numInList;             /* The number of items in the list */
+    const StringToEnumStruct *list;    /* Pointer to array of strings in list */
+    /* Pointer to pop up list that replaces key on input */
+    const ViewPopUpList       *popUp;  
+}ViewPopUpList;
+<a name="1003969"> </a>extern void dvRollSelectSoftkey(const void *view);
+</pre>
+
+<h3>
+  <a name="1003884"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-6.2  LED View details</font>
+</h3>
+
+
+<p>
+  <a name="1003853"> </a><font face="Verdana, Arial, Helvetica, sans-serif">As stated earlier, every object that presents visual feedback to the user is an instantiation of the ViewStruct base class or some class derived from the ViewStruct base class.  As an example of how far this abstraction is taken, its interesting to note that an LED residing on the frontpanel is treated in JediPlus exactly as is a bitmap on the screen.  The LED that indicates the state of some control is a view object utilizing a derived class that contains information describing how to illuminate the proper LED on the screen.  The classes of views derived from ViewStruct are shown below.</font>
+</p>
+
+
+<h4>
+  <a name="1003857"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">ViewLedToggle</font>
+</h4>
+
+
+<p>
+  <a name="1003868"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This class of LED view is used in those cases when the control is a boolean value and the LED reflects the state of the control.  The channel 1 bandwidth limit LED is an example of a ViewLedToggle view.</font>
+</p>
+
+<pre>
+<a name="1004011"> </a>typedef struct
+{
+    ViewStruct vb;  /* The base class element */
+    uint16     led; /* The LED to illuminate */
+}ViewLedToggle;
+<a name="1003851"> </a>extern void dvLedToggle(const void *view);
+</pre>
+
+<h4>
+  <a name="1003860"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">ViewLedEnumVal</font>
+</h4>
+
+
+<p>
+  <a name="1003869"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This class of LED view is used when a particular value for a control is the only value for which the LED is illuminated or not illuminated.  In this case, all other values will cause the LED to be in the opposite state.  An example of this is the entry knob active icon.  When the entry knob input device is not attached to anything, then the LED should be off and it should be on when the entry knob controls the cursors or some menu dependent variable.</font>
+</p>
+
+<pre>
+<a name="1003861"> </a>typedef struct
+{
+    ViewStruct vb;    /* The base class element */
+    uint16     led;   /* The LED to illuminate */
+    uint16     value; /* Value to compare control setting to */
+    boolean    lit;   /* Value == getCtrlValue means lit */
+}ViewLedEnumVal;
+<a name="1004021"> </a>extern void dvLedEnumVal(const void *view);
+</pre>
+
+<h4>
+  <a name="1003127"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">ViewLedOneOfN</font>
+</h4>
+
+
+<p>
+  <a name="1003870"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This class of LED view is used when N LEDs are dependent on the value of the same control.  In this case, each LED is assigned an enumeration value for the control which causes that LED to be illuminated.  The class contains a comprehensive list of all the LEDs included in the view as well as the enumeration value that turns each LED on.</font>
+</p>
+
+<pre>
+<a name="1003879"> </a>typedef struct
+{
+    uint32          enumValue;
+    uint16          ledBit;
+}LedToEnumStruct;
+
+typedef struct
+{
+    ViewStruct vb;    /* The base class element */
+    uint16     led;   /* The LED to illuminate */
+    uint32     value; /* Value to compare control setting to */
+    /* Array of LEDs and their respective enum vals */
+    const LedToEnumStruct *leds; 
+}ViewLedOneOfN;
+<a name="1007683"> </a>extern void dvLedOneOfN(const void *view);
+</pre>
+
+<h2>
+  <a name="1003338"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-7  Menu Navigation</font>
+</h2>
+
+
+<p>
+  <a name="1004288"> </a><font face="Verdana, Arial, Helvetica, sans-serif">JediPlus is fundamentally designed to support a softkey menu driven frontpanel user interface.  The method that we use for changing the menu presented to the user is described in this section.</font>
+</p>
+
+
+<h3>
+  <a name="1004065"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-7.1  Menu Control</font>
+</h3>
+
+
+<p>
+  <a name="1004068"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The user interface instantiates some controls to augment user interface paradigms that would not be considered features by the user.  The most important of these UI controls is <em>menuCtrl</em>.  The menu navigation design utilizes the <em>setCtrlToEnumValue</em> specific input handler mentioned above to set <em>menuCtrl</em> to given enumerated values.  Using this mechanism makes handling menu changes identical to the way in which we change any control from one enumerated value to another.</font>
+</p>
+
+
+<h3>
+  <a name="1004069"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-7.2  Menu dependent views</font>
+</h3>
+
+
+<p>
+  <a name="1004087"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Figure 2 illustrates how the value of <em>menuCtrl</em> indexes an array of pointers to arrays of views for each menu.   As far as the system is concerned, these arrays of views are identical to those pointed to by the controls described earlier.  The <em>menuCtrl</em> data structure contains a pointer to a custom limit check function that calls <em>updateViews</em> with the array pointer from the last menu.  The view handler will determine that these views are obsolete, and invoke the <em>undraw</em> functions for all of them.  The limit check routine is responsible for modifying the menu state variable to the new menu.  Therefore, all this routine does is access <em>menuViewArray</em> with the menu state variable prior to changing it. The effector routine for <em>menuCtrl</em> calls <em>updateViews</em> with a pointer to the view array corresponding to the new menu. <img src="images/userInterface2.gif" height="192" width="624">
+</font>
+</p>
+
+<a name="1007856"> </a>FIGURE 18.&#32; Changing menu display based on menuCtrl<pre>
+<a name="1007920"> </a>const View *const viewsMENU_CH1MODE[] =
+{
+    (View *)&amp;viewCh1BwLimit,
+    (View *)&amp;viewCh1Coupling,
+    (View *)&amp;viewCh1FiftyOhms,
+    (View *)&amp;viewCh1Probe,
+    (View *)&amp;viewCh1Vernier,
+    (View *)&amp;viewCh1Invert,
+    (View *)NULL
+};
+<a name="1007921"> </a>const View *const viewsMENU_CH2MODE[] =
+{
+    (View *)&amp;viewCh2BwLimit,
+    (View *)&amp;viewCh2Coupling,
+    (View *)&amp;viewCh2FiftyOhms,
+    (View *)&amp;viewCh2Probe,
+    (View *)&amp;viewCh2Vernier,
+    (View *)&amp;viewCh2Invert,
+    (View *)NULL
+};
+<a name="1004090"> </a>
+<a name="1004139"> </a>const MenuViewDescription menuViewArray[]=
+{
+    NULL,
+    viewsMENU_CH1MODE,
+    viewsMENU_CH2MODE
+};
+</pre>
+
+<h3>
+  <a name="1004157"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-7.3  Softkey input devices</font>
+</h3>
+
+
+<p>
+  <a name="1004282"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There are 7 input mechanisms on the JediPlus frontpanel whose behavior must systematically change when <em>menuCtrl</em> changes.  The first 6 input mechanisms are the softkeys located underneath the CRT.  The softkeys are handled in much the same manner as the menu dependent views are handled (see above).  The example arrays shown below illustrate how the input device data structures for all 6 softkeys in each menu are stored.  </font>
+</p>
+
+<pre>
+<a name="1004222"> </a>const FpInDevice *const  skInMENU_NO_MENU[]=
+{
+    &amp;fpInputDevice,
+    &amp;fpInputDevice,
+    &amp;fpInputDevice,
+    &amp;fpInputDevice,
+    &amp;fpInputDevice,
+    &amp;fpInputDevice
+};
+
+<a name="1004271"> </a>const FpInDevice *const skInMENU_EXAMPLE1[]=
+{
+    &amp;fpInputDeviceA,
+    &amp;fpInputDeviceB,
+    &amp;fpInputDeviceC,
+    &amp;fpInputDeviceD,
+    &amp;fpInputDeviceE,
+    &amp;fpInputDeviceF
+};
+
+<a name="1004268"> </a>const FpInDevice *const  skInMENU_EXAMPLE2[]=
+{
+    &amp;fpInputDeviceV,
+    &amp;fpInputDeviceW,
+    &amp;fpInputDeviceX,
+    &amp;fpInputDeviceY,
+    &amp;fpInputDevice,
+    &amp;fpInputDevice
+};
+
+<a name="1004233"> </a>const FpInDevice *const *const menuSkInArray[NUM_MENUS] =
+{
+    skInMENU_NO_MENU,
+    skInMENU_EXAMPLE1,
+    skInMENU_EXAMPLE2
+  };
+
+</pre>
+
+<p>
+  <a name="1004285"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When the menu is changed, we modify the softkey token entries in the <em>fpInDevice</em> array to point to the devices in the appropriate menu array.  This takes place in the effector routine for <em>menuCtrl</em>.</font>
+</p>
+
+
+<h2>
+  <a name="1004221"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-8  Entry knob functionality</font>
+</h2>
+
+
+<p>
+  <a name="1004158"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The JediPlus frontpanel contains a general purpose entry knob that is used to adjust any parameter that does not have a knob dedicated to its adjustment.  This same knob is also used for manually placing the measurement cursors on the display.  Before launching into a discussion of how the behavior of this knob is implemented, I'll explain precisely what the proposed behavior is.  Though this behavior matches that used in previous HP546xx oscilloscopes, it is intended that the behavior will be tested, and if necessary, modified.</font>
+</p>
+
+
+<p>
+  <a name="1007746"> </a><font face="Verdana, Arial, Helvetica, sans-serif">First, if cursors are turned off and the menu does not contain a parameter that is adjusted by the entry knob, the knob is inactive.  If the current menu does have a parameter that is adjusted by the entry knob, then the entry knob is unconditionally dedicated to adjusting that parameter.   If the menu contains multiple parameters adjusted by the entry knob, then only that parameter whose softkey was last pressed is adjusted by the entry knob.  Finally, the entry knob adjusts the manual cursor location when not in a menu with a parameter that is adjusted by the entry knob and cursors are turned on.  There is currently no way for the user to control the cursors with the entry knob while in a menu containing a parameter that is controlled by the entry knob.</font>
+</p>
+
+
+<p>
+  <a name="1004161"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Its important to note that there is an LED view dedicated to alerting the user that the knob is currently controlling some parameter or the cursors.  This view is called <em>entryActive</em>.  The design described here must support having <em>entryActive</em> illuminated under the proper circumstances.  Also, when multiple parameters in a menu are controlled by the entry knob, the keys whose parameters are not currently tied to the entry knob will display the rotate icon in a "grayed out" fashion as described earlier.  The design must also systematically handle this behavior.</font>
+</p>
+
+
+<p>
+  <a name="1004165"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The frontpanel scanner will always generate the same token value for any input mechanism on the frontpanel.  Therefore, in order for the behavior of the entry knob to change, the input device connected with that token value must change.  Again, the token value is used to index the array <em>fpInDevice</em>.  So, the entry knob index of the <em>fpInDevice</em> array must be changed to reflect the desired behavior of the entry knob.  In the following sections we will carefully describe how this is achieved.</font>
+</p>
+
+
+<h3>
+  <a name="1004166"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-8.1  Entry input device array</font>
+</h3>
+
+
+<p>
+  <a name="1004171"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All of the input devices that can be assigned to the entry knob token are referenced in an array so that we can store the desired behaviors using a continuous control.  In the input device database file you will find the array:</font>
+</p>
+
+<pre>
+<a name="1004215"> </a>const void *const entryInDevices[] =
+{
+    NULL,
+    &amp;fpInputCursor,
+    &amp;fpInputEntryKnob1,
+    &amp;fpInputEntryKnob2
+};
+</pre>
+
+<p>
+  <a name="1004218"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Obviously, this is just an example array.</font>
+</p>
+
+
+<h3>
+  <a name="1004219"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-8.2  Entry input device control</font>
+</h3>
+
+
+<p>
+  <a name="1004220"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In order to augment changing the input device assigned to the entry knob token, we will utilize two more UI instantiated controls called <em>entryInCtrl </em>and<em> menuEntryInCtrl</em>.  The system model control that reflects the state of the cursor feature is called <em>cursorState</em>.  The description of how we control the entry input device must take into account these three controls as well as <em>menuCtrl</em>, since they all play a part.  First, I will define all four of these controls for clarity.</font>
+</p>
+
+
+<h4>
+  <a name="1004460"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">menuCtrl</font>
+</h4>
+
+
+<p>
+  <a name="1004467"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This control stores the integer value that identifies the menu.  The control has a NULL view list, but the methods invoke <em>updateViews</em> for the last and current menus..</font>
+</p>
+
+
+<h4>
+  <a name="1004464"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">cursorStateCtrl</font>
+</h4>
+
+
+<p>
+  <a name="1004468"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This control stores the boolean value identifying the on/off state of the cursors.  This control also has only one view to update, the LED view that reflects the state.</font>
+</p>
+
+
+<h4>
+  <a name="1004466"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">menuEntryInCtrl</font>
+</h4>
+
+
+<p>
+  <a name="1004470"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This control stores the integer index into <em>entryInDevices</em> that indicates which input should be attached to the entry knob based on the current menu.   This control's view list points to all of the views in the current menu which are effected by <em>entryInCtrl</em>.</font>
+</p>
+
+
+<h4>
+  <a name="1004501"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">entryInCtrl </font>
+</h4>
+
+
+<p>
+  <a name="1004502"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This control stores the integer index into <em>entryInDevices</em> that  indicates which input is currently attached to the entry knob.  This control's view list only points to the <em>entryActive</em> view.  This is a subordinate control that is dependent on the state of <em>menuEntryInCtrl</em> and <em>cursorState</em>.</font>
+</p>
+
+
+<h4>
+  <a name="1004485"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Requirements</font>
+</h4>
+
+
+<p>
+  <a name="1004497"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The following three scenarios fully exercise this design:</font>
+</p>
+
+<ol type="1">
+  <li value="12"><a name="1004498"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Change menus</font>
+  <li value="13"><a name="1004503"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Change active entry key in menu</font>
+  <li value="14"><a name="1004504"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Change cursor state</font>
+</ol>
+
+<p>
+  <a name="1004508"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This design is most easily illustrated by describing these scenarios in a step by step fashion.  So, without further adieu.</font>
+</p>
+
+
+<h4>
+  <a name="1004509"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Changing menus</font>
+</h4>
+
+<ol type="1">
+  <li value="1"><a name="1004510"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The device specific input handler calls the control method to set <em>menuCtrl</em>.</font>
+  <li value="2"><a name="1004515"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>menuCtrl</em> effector changes the input devices connected to the softkeys.</font>
+  <li value="3"><a name="1004516"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>menuCtrl</em> effector sets the view list in <em>menuEntryInCtrl</em> to NULL.</font>
+  <li value="4"><a name="1004517"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>menuCtrl</em> effector calls the control method to set <em>menuEntryInCtrl</em>.</font>
+  <li value="5"><a name="1004518"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>menuCtrl</em> effector sets the view list in <em>menuEntryInCtrl</em> for new menu.</font>
+  <li value="6"><a name="1004519"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>menuCtrl</em> control body calls the view method to update the menu view.</font>
+  <li value="7"><a name="1004520"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The generic input handler calls the control method to resolve dependent controls.</font>
+  <li value="8"><a name="1004529"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The resolve dependent controls method resolves <em>entryInCtrl</em>.</font>
+  <li value="9"><a name="1004534"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>entryInCtrl</em> effector sets the input device attached to the entry knob.</font>
+  <li value="10"><a name="1004535"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>entryInCtrl</em> control body calls the view method to update  <em>entryActive</em>.</font>
+</ol>
+
+<h4>
+  <a name="1004536"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Changing active entry keys</font>
+</h4>
+
+<ol type="1">
+  <li value="1"><a name="1004537"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The device specific handler calls the control method to set <em>menuEntryInCtrl</em>.</font>
+  <li value="2"><a name="1004538"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>menuEntryInCtrl</em> control body calls the view method to update view list.</font>
+  <li value="3"><a name="1004539"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Steps 8 - 10 from Changing menus, above</font>
+</ol>
+
+<h4>
+  <a name="1004540"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Changing cursor state</font>
+</h4>
+
+<ol type="1">
+  <li value="1"><a name="1004541"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Steps 1 - 6 from Changing menus, above</font>
+  <li value="2"><a name="1004542"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The device specific handler calls the control method to set <em>cursorState</em>.</font>
+  <li value="3"><a name="1004543"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The <em>cursorState</em> control body calls the view method to update the cursor state LED view.</font>
+  <li value="4"><a name="1004544"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Steps 7 - 10 from Changing menus, above</font>
+</ol>
+
+<h2>
+  <a name="1004289"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">9-9  Unresolved issues</font>
+</h2>
+
+<ul>
+  <li><a name="1004291"> </a><font face="Verdana, Arial, Helvetica, sans-serif">How does the UI support dialog interfaces?</font>
+  <li><a name="1004859"> </a><font face="Verdana, Arial, Helvetica, sans-serif">How are help text views supported?</font>
+</ul>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="screenmgr.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="helpText.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

@@ -1,0 +1,841 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:19:06 2002">
+<title>jediPlusTOC.html</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="jediPlusLOP.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="frntpnl.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h2>
+  <a name="826001"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#996747">Muskrat &amp; Puma Frontpanel</a></font>
+</h2>
+<dl>
+  <dd> <a name="826003"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#999225">Overview</a></font>
+  <dd> <a name="826005"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001449">General decisions</a></font>
+  <dd> <a name="826007"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001507">Horizontal control group</a></font>
+  <dd> <a name="826009"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001455">Run control group</a></font>
+  <dd> <a name="826011"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001459">Entry knob</a></font>
+  <dd> <a name="826013"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001471">Measure control group</a></font>
+  <dd> <a name="826015"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001480">Waveforms control group</a></font>
+  <dd> <a name="826017"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001484">Autoscale button</a></font>
+  <dd> <a name="826019"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001490">Archive control group</a></font>
+  <dd> <a name="826021"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001497">Utility button</a></font>
+  <dd> <a name="826023"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001499">Trigger control group</a></font>
+  <dd> <a name="826025"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001501">Vertical control group</a></font>
+  <dd> <a name="826027"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001509">Digital control group</a></font>
+  <dd> <a name="826029"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001521">Power button</a></font>
+  <dd> <a name="826031"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="frntpnl.html#1001527">Intensity knob</a></font>
+</dl>
+<h2>
+  <a name="826033"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#996747">Behavioral Requirements</a></font>
+</h2>
+<dl>
+  <dd> <a name="826035"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999254">Outline</a></font>
+  <dd> <a name="826037"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999255">Responsiveness</a></font>
+  <dl>
+     <dd> <a name="826039"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999354">Control performance regions *</a></font>
+  </dl>
+  <dd> <a name="826041"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999228">Feedback prioritization</a></font>
+  <dl>
+     <dd> <a name="826043"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999333">Screen object update order*</a></font>
+  </dl>
+  <dd> <a name="826045"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999229">Waveform location and movement</a></font>
+  <dd> <a name="826047"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999552">Logic channel bussing</a></font>
+  <dd> <a name="826049"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999230">Random repetitive pan &amp; zoom</a></font>
+  <dd> <a name="826051"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999469">Vertically clipped data</a></font>
+  <dd> <a name="826053"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999409">Post processing acquired data</a></font>
+  <dl>
+     <dd> <a name="826055"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999447">Post processing musts</a></font>
+     <dd> <a name="826057"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999413">Deleting acquired data</a></font>
+     <dd> <a name="826059"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999457">Displayed configuration information</a></font>
+     <dd> <a name="826061"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999431">Post processing WIBNIs</a></font>
+  </dl>
+  <dd> <a name="826063"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999391">Autoscale</a></font>
+  <dd> <a name="826065"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999490">Infinite persistence behavior</a></font>
+  <dd> <a name="826067"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999492">Save/Recall to/from floppy or memory</a></font>
+  <dd> <a name="826069"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999235">Quick-Meas automatic measurement system</a></font>
+  <dd> <a name="826071"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999286">Waveform Math</a></font>
+  <dd> <a name="826073"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999288">Permanent trigger level indicators</a></font>
+  <dd> <a name="826075"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999542">Roll mode and Scroll mode behaviors</a></font>
+  <dd> <a name="826077"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="behaviors.html#999543">Measurement reference point</a></font>
+</dl>
+<h2>
+  <a name="826079"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#105693">Architectural Model of the JediPlus Oscilloscope Family</a></font>
+</h2>
+<dl>
+  <dd> <a name="826081"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#108037">Objectives</a></font>
+  <dd> <a name="826083"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#108038">Design context for the oscilloscope</a></font>
+  <dd> <a name="826085"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#108041">Data flow view of the oscilloscope</a></font>
+  <dd> <a name="826087"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#121362">An implementation model - the top level</a></font>
+  <dd> <a name="826089"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#121448">Required behaviors at the top level of the design</a></font>
+  <dl>
+     <dd> <a name="826091"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#122854">Maximize SignalPath bandwidth</a></font>
+     <dd> <a name="826093"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#122868">Provide responsive userRequest processing</a></font>
+     <dd> <a name="826095"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#122884">Provide consistent and effective feedback to userRequests</a></font>
+  </dl>
+  <dd> <a name="826097"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#123163">Synchronization between UserInterface and SignalPath</a></font>
+  <dd> <a name="826099"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#108054">JediPlus Modularity Requirements</a></font>
+  <dd> <a name="826101"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#123757">Abstraction layers in the UserInterface</a></font>
+  <dd> <a name="826103"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="arch.html#127458">Functional partioning - encapsulating the SignalPath</a></font>
+</dl>
+<h2>
+  <a name="826105"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#996747">Process Model for JediPlus</a></font>
+</h2>
+<dl>
+  <dd> <a name="826107"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#999228">Overview</a></font>
+  <dd> <a name="826109"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#1013604">Processes</a></font>
+  <dl>
+     <dd> <a name="826111"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#1001031">Screen Process</a></font>
+     <dd> <a name="826113"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#999721">Spooler Process</a></font>
+     <dd> <a name="826115"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#999254">Local Process</a></font>
+     <dd> <a name="826117"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#999260">Remote Process</a></font>
+     <dd> <a name="826119"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#999725">SignalPath Process</a></font>
+  </dl>
+  <dd> <a name="826121"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#1001030">Interrupt Service Routines (ISRs)</a></font>
+  <dl>
+     <dd> <a name="826123"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#1001026">SuperIO ISR</a></font>
+     <dd> <a name="826125"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#999275">Module ISR</a></font>
+     <dd> <a name="826127"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#999277">Timer ISR</a></font>
+  </dl>
+  <dd> <a name="826129"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#1014399">Example Use Scenarios</a></font>
+  <dl>
+     <dd> <a name="826131"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#1003627">Single knob change event</a></font>
+  </dl>
+  <dd> <a name="826133"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="processModel.html#1014405">Scenario Worksheet</a></font>
+</dl>
+<h2>
+  <a name="826135"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="memory.html#996747">Memory requirements</a></font>
+</h2>
+<dl>
+  <dd> <a name="826137"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="memory.html#1000611">Overview</a></font>
+  <dd> <a name="826139"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="memory.html#1002905">Memory usage</a></font>
+</dl>
+<h2>
+  <a name="826141"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#996747">System Scheduling and Timer Interrupt</a></font>
+</h2>
+<dl>
+  <dd> <a name="826143"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#999225">Introduction</a></font>
+  <dd> <a name="826145"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000193">Scheduler requirements</a></font>
+  <dl>
+     <dd> <a name="826147"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000811">External requirements</a></font>
+     <dd> <a name="826149"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000921">Internal requirements</a></font>
+     <dd> <a name="826151"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000812">Scheduler features</a></font>
+     <dd> <a name="826153"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000199">Interrupt Service Routine performance</a></font>
+     <dd> <a name="826155"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000207">Scheduled event examples</a></font>
+  </dl>
+  <dd> <a name="826157"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000505">System Scheduler API</a></font>
+  <dl>
+     <dd> <a name="826159"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000887">Include file</a></font>
+     <dd> <a name="826161"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1001197">Scheduled event configuration status</a></font>
+     <dd> <a name="826163"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1001229">Scheduled event return value</a></font>
+     <dd> <a name="826165"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1001036">Scheduled events typedef</a></font>
+     <dd> <a name="826167"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000665">Installing scheduled events</a></font>
+     <dd> <a name="826169"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000673">Deleting scheduled events</a></font>
+     <dd> <a name="826171"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000677">Changing scheduled event period</a></font>
+     <dd> <a name="826173"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000589">Resetting scheduled events</a></font>
+     <dd> <a name="826175"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000736">Getting absolute time</a></font>
+  </dl>
+  <dd> <a name="826177"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1001365">System scheduler design</a></font>
+  <dl>
+     <dd> <a name="826179"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000821">Scheduled event data structure</a></font>
+     <dd> <a name="826181"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000737">Linked list design</a></font>
+     <dd> <a name="826183"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000754">Scheduler execution</a></font>
+  </dl>
+  <dd> <a name="826185"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000785">Performance</a></font>
+  <dl>
+     <dd> <a name="826187"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000867">User supplied events</a></font>
+     <dd> <a name="826189"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000881">Moab metrics</a></font>
+     <dd> <a name="826191"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000868">JediPlus scheduler overhead</a></font>
+     <dd> <a name="826193"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1000877">Further metrics</a></font>
+     <dd> <a name="826195"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="schedule.html#1001012">Tuning suggestions</a></font>
+  </dl>
+</dl>
+<h2>
+  <a name="826197"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="scan.html#1000257">Key and Knob Scanning</a></font>
+</h2>
+<dl>
+  <dd> <a name="826199"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="scan.html#1000258">Introduction</a></font>
+  <dd> <a name="826201"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="scan.html#1000284">Scanning Requirements</a></font>
+  <dl>
+     <dd> <a name="826203"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="scan.html#1000286">Knob scanning requirements</a></font>
+     <dd> <a name="826205"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="scan.html#1000234">Key scanning requirements</a></font>
+  </dl>
+  <dd> <a name="826207"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="scan.html#1000851">Key and Knob scanning design</a></font>
+  <dl>
+     <dd> <a name="826209"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="scan.html#1000318">Key and Knob naming convention</a></font>
+     <dd> <a name="826211"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="scan.html#1000330">Layout definition technique</a></font>
+     <dd> <a name="826213"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="scan.html#1000411">xidLocal Message definition</a></font>
+     <dd> <a name="826215"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="scan.html#1000341">Key scanning design</a></font>
+     <dd> <a name="826217"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="scan.html#1000369">Knob scanning design</a></font>
+  </dl>
+</dl>
+<h2>
+  <a name="826219"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#996747">Screen Management</a></font>
+</h2>
+<dl>
+  <dd> <a name="826221"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#999225">Outline</a></font>
+  <dd> <a name="826223"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#999967">Screen Management Requirements</a></font>
+  <dl>
+     <dd> <a name="826225"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#1000037">Localization issues</a></font>
+     <dd> <a name="826227"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#1000039">Use case scenarios</a></font>
+     <dd> <a name="826229"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#1000119">Types of on-screen information</a></font>
+  </dl>
+  <dd> <a name="826231"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#1000190">Screen Manager API</a></font>
+  <dd> <a name="826233"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#1000667">Screen Manager Design</a></font>
+  <dl>
+     <dd> <a name="826235"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#1000549">Screen object checkbox</a></font>
+     <dd> <a name="826237"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#1000421">Screen updates</a></font>
+     <dd> <a name="826239"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#1000317">Screen manager scheduler</a></font>
+  </dl>
+  <dd> <a name="826241"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#1000211">Character drawing interface</a></font>
+  <dd> <a name="826243"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#1000213">Bitmap drawing interface</a></font>
+  <dd> <a name="826245"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#1000145">Screen layout</a></font>
+  <dd> <a name="826247"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="screenmgr.html#1000054">Control to Screen Manager API</a></font>
+</dl>
+<h2>
+  <a name="826249"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1007926">User interface</a></font>
+</h2>
+<dl>
+  <dd> <a name="826251"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1000611">Introduction</a></font>
+  <dd> <a name="826253"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1004866">UI Assumptions</a></font>
+  <dd> <a name="826255"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1002905">Widgets</a></font>
+  <dl>
+     <dd> <a name="826257"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1001735">Input widgets</a></font>
+     <dd> <a name="826259"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1001810">Illuminated feedback widgets</a></font>
+     <dd> <a name="826261"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1004688">Display widgets</a></font>
+     <dd> <a name="826263"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1000826">Softkey widgets</a></font>
+     <dd> <a name="826265"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1003517">Entry knob softkey widgets</a></font>
+  </dl>
+  <dd> <a name="826267"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1002909">Architecture</a></font>
+  <dl>
+     <dd> <a name="826269"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1007400">General functionality</a></font>
+     <dd> <a name="826271"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1003580">Input device</a></font>
+     <dd> <a name="826273"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1007566">Generic input handler</a></font>
+     <dd> <a name="826275"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1007589">Specific input handler</a></font>
+     <dd> <a name="826277"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1007597">Controls</a></font>
+     <dd> <a name="826279"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1003597">View Handler</a></font>
+     <dd> <a name="826281"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1007941">Conditional rendering</a></font>
+  </dl>
+  <dd> <a name="826283"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1004830">APIs</a></font>
+  <dd> <a name="826285"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1003836">View Hierarchy</a></font>
+  <dl>
+     <dd> <a name="826287"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1003839">CRT View details</a></font>
+     <dd> <a name="826289"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1003884">LED View details</a></font>
+  </dl>
+  <dd> <a name="826291"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1003338">Menu Navigation</a></font>
+  <dl>
+     <dd> <a name="826293"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1004065">Menu Control</a></font>
+     <dd> <a name="826295"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1004069">Menu dependent views</a></font>
+     <dd> <a name="826297"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1004157">Softkey input devices</a></font>
+  </dl>
+  <dd> <a name="826299"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1004221">Entry knob functionality</a></font>
+  <dl>
+     <dd> <a name="826301"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1004166">Entry input device array</a></font>
+     <dd> <a name="826303"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1004219">Entry input device control</a></font>
+  </dl>
+  <dd> <a name="826305"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="userInterface.html#1004289">Unresolved issues</a></font>
+</dl>
+<h2>
+  <a name="826307"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="helpText.html#999227">Quick-Help</a></font>
+</h2>
+<dl>
+  <dd> <a name="826309"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="helpText.html#999228">Overview</a></font>
+  <dd> <a name="826311"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="helpText.html#999258">How fonts and text are handled</a></font>
+  <dd> <a name="826313"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="helpText.html#999264">Current font strategy</a></font>
+  <dd> <a name="826315"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="helpText.html#999386">Language and font database</a></font>
+  <dl>
+     <dd> <a name="826317"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="helpText.html#999439">Loading an additional language</a></font>
+     <dd> <a name="826319"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="helpText.html#999376">Replacing languages</a></font>
+     <dd> <a name="826321"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="helpText.html#999457">Graphics</a></font>
+  </dl>
+  <dd> <a name="826323"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="helpText.html#999492">Embedded system dependent text</a></font>
+  <dd> <a name="826325"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="helpText.html#999477">Issues not dealt with in this documentation yet.</a></font>
+</dl>
+<h2>
+  <a name="826327"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="localize.html#999227">Localization Strategy</a></font>
+</h2>
+<dl>
+  <dd> <a name="826329"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="localize.html#999228">Issues to be resolved</a></font>
+  <dl>
+     <dd> <a name="826331"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="localize.html#999512">In what form will we recieve content?</a></font>
+     <dd> <a name="826333"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="localize.html#999522">How do we embed system dependent text in then content?</a></font>
+     <dd> <a name="826335"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="localize.html#999525">How do we encode 16 bits text?</a></font>
+     <dd> <a name="826337"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="localize.html#999527">How do we store 16 bit fonts?</a></font>
+     <dd> <a name="826339"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="localize.html#999533">How do we embed graphics in the help content?</a></font>
+     <dd> <a name="826341"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="localize.html#999535">The system must elegantly handle multi-line messages.</a></font>
+     <dd> <a name="826343"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="localize.html#999538">What does the help developer and translater do about special characters?</a></font>
+     <dd> <a name="826345"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="localize.html#999542">Localization issues</a></font>
+  </dl>
+</dl>
+<h2>
+  <a name="826347"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#57">The Behavioral Layer and the Control Abstraction</a></font>
+</h2>
+<dl>
+  <dd> <a name="826349"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#81">Introduction</a></font>
+  <dd> <a name="826351"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#5882">The design premise of the control system</a></font>
+  <dl>
+     <dd> <a name="826353"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#5885">The control</a></font>
+     <dd> <a name="826355"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#5910">The control group</a></font>
+  </dl>
+  <dd> <a name="826357"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#5886">The JediPlus control system design</a></font>
+  <dd> <a name="826359"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#5888">Design details and implementation features</a></font>
+  <dd> <a name="826361"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#7757">JediPlus Control Groups</a></font>
+  <dl>
+     <dd> <a name="826363"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#14654">Group UserPreferences</a></font>
+     <dd> <a name="826365"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#23366">Group Trigger</a></font>
+     <dd> <a name="826367"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#24932">Group Channel&lt;N&gt;</a></font>
+     <dd> <a name="826369"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#17617">Group Acquire</a></font>
+     <dd> <a name="826371"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#11395">Group Timebase</a></font>
+     <dd> <a name="826373"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#17837">Group Display</a></font>
+     <dd> <a name="826375"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#4692">Group Memory</a></font>
+     <dd> <a name="826377"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#11365">Group Function</a></font>
+     <dd> <a name="826379"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#11367">Group Measure</a></font>
+     <dd> <a name="826381"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#11369">Group Marker</a></font>
+     <dd> <a name="826383"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#11371">Group Hardcopy</a></font>
+     <dd> <a name="826385"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#11373">Group Utility</a></font>
+     <dd> <a name="826387"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#11375">Group Calibrate</a></font>
+     <dd> <a name="826389"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#11377">Group Test</a></font>
+     <dd> <a name="826391"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#11379">Group Proto</a></font>
+     <dd> <a name="826393"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#11381">Group Developer</a></font>
+     <dd> <a name="826395"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#11383">Group User Interface</a></font>
+     <dd> <a name="826397"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="controls.html#11385">Group System</a></font>
+  </dl>
+</dl>
+<h2>
+  <a name="826399"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="hal.html#124832">The Hardware Abstraction Layer - Overview and APIs</a></font>
+</h2>
+<dl>
+  <dd> <a name="826401"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="hal.html#125031">Overview</a></font>
+  <dd> <a name="826403"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="hal.html#129090">The generic SignalPath model</a></font>
+  <dd> <a name="826405"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="hal.html#130845">Encapsulating the SignalPath</a></font>
+  <dd> <a name="826407"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="hal.html#130849">Components of the Hardware Abstraction Layer</a></font>
+  <dd> <a name="826409"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="hal.html#132493">Interactions with the Behavioral Layer</a></font>
+  <dl>
+     <dd> <a name="826411"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="hal.html#132531">Driver call order</a></font>
+     <dd> <a name="826413"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="hal.html#132543">Driver configuration</a></font>
+     <dd> <a name="826415"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="hal.html#132538">Driver capability: User interface controls and control limits</a></font>
+     <dd> <a name="826417"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="hal.html#136562">Menus and remote languages</a></font>
+  </dl>
+  <dd> <a name="826419"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="hal.html#132513">API reference</a></font>
+</dl>
+<h2>
+  <a name="826421"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqDriver.html#124832">Acquisition Drivers</a></font>
+</h2>
+<dl>
+  <dd> <a name="826423"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqDriver.html#130295">Overview</a></font>
+  <dl>
+     <dd> <a name="826425"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqDriver.html#144351">The Logical Acq Driver APIs</a></font>
+  </dl>
+  <dd> <a name="826427"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqDriver.html#143810">The Logical Model of the Acquisition System</a></font>
+</dl>
+<h2>
+  <a name="826429"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="chanDriver.html#124832">Channel Driver</a></font>
+</h2>
+<dl>
+  <dd> <a name="826431"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="chanDriver.html#130295">Overview</a></font>
+  <dl>
+     <dd> <a name="826433"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="chanDriver.html#144965">The ChannelDriver API</a></font>
+  </dl>
+</dl>
+<h2>
+  <a name="826435"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="plotDriver.html#124832">Plot Driver</a></font>
+</h2>
+<dl>
+  <dd> <a name="826437"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="plotDriver.html#130295">Overview</a></font>
+  <dl>
+     <dd> <a name="826439"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="plotDriver.html#144274">The Logical Plot Driver APIs</a></font>
+     <dd> <a name="826441"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="plotDriver.html#144650">The Logical Model of the Plot System</a></font>
+     <dd> <a name="826443"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="plotDriver.html#145496">The Logical to Physical Plot Driver APIs</a></font>
+     <dd> <a name="826445"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="plotDriver.html#132429">Scope Plot Pipe Driver</a></font>
+     <dd> <a name="826447"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="plotDriver.html#145572">Logic Plot Pipe Driver</a></font>
+     <dd> <a name="826449"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="plotDriver.html#145674">Plot Utilities</a></font>
+  </dl>
+</dl>
+<h2>
+  <a name="826451"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="timeDriver.html#124832">Time Driver</a></font>
+</h2>
+<dl>
+  <dd> <a name="826453"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="timeDriver.html#130295">Overview</a></font>
+  <dl>
+     <dd> <a name="826455"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="timeDriver.html#144263">The Time Driver API</a></font>
+  </dl>
+</dl>
+<h2>
+  <a name="826457"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="trigDriver.html#124832">Trigger Driver</a></font>
+</h2>
+<dl>
+  <dd> <a name="826459"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="trigDriver.html#130295">Overview</a></font>
+  <dl>
+     <dd> <a name="826461"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="trigDriver.html#144263">The Logical Trigger Driver APIs</a></font>
+     <dd> <a name="826463"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="trigDriver.html#146800">The Logical Trigger Model</a></font>
+     <dd> <a name="826465"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="trigDriver.html#146766">The Product Specific Trigger Driver APIs</a></font>
+     <dd> <a name="826467"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="trigDriver.html#146442">The Physical Trigger Driver APIs</a></font>
+  </dl>
+</dl>
+<h2>
+  <a name="826469"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#127470">The Signal Path and the Signal Data Structures</a></font>
+</h2>
+<dl>
+  <dd> <a name="826471"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#127471">Signal Path Overview</a></font>
+  <dd> <a name="826473"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#128326">Signal Path Model</a></font>
+  <dd> <a name="826475"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#127551">Signal Conditioning Block Overview</a></font>
+  <dd> <a name="826477"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#127705"> Signal Acquisition (Acq) Block Overview</a></font>
+  <dd> <a name="826479"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#127596"> Signal Analysis Block Overview</a></font>
+  <dd> <a name="826481"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#127855">Signal Display Block Overview</a></font>
+  <dd> <a name="826483"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#128848">Signal Path Manager (SigPath Mgr) Overview</a></font>
+  <dd> <a name="826485"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#128846">Signal Structures Overview</a></font>
+  <dd> <a name="826487"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#129036"> Signal Structure Definitions</a></font>
+  <dd> <a name="826489"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#129198">Waveform Descriptions</a></font>
+  <dl>
+     <dd> <a name="826491"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#129039">Analysis (Ans) Waveforms</a></font>
+     <dd> <a name="826493"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#129249">Analysis Waveform Data</a></font>
+     <dd> <a name="826495"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#129049">Real-time (Rt) Waveforms</a></font>
+     <dd> <a name="826497"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#129289">Equivalent-time (Et) Waveforms</a></font>
+     <dd> <a name="826499"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#129315">Averaged (Ave) Waveforms</a></font>
+  </dl>
+  <dd> <a name="826501"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#128316">The Waveform Structure Definition</a></font>
+  <dd> <a name="826503"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="signal.html#127463">Signal Structure API</a></font>
+</dl>
+<h2>
+  <a name="826505"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#135086">Signal Path Manager</a></font>
+</h2>
+<dl>
+  <dd> <a name="826507"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#135087">Overview</a></font>
+  <dd> <a name="826509"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#127989">Acquisition and Display Cycles in Jedi Plus Products</a></font>
+  <dl>
+     <dd> <a name="826511"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#138399">The Continuous Acq/Display Cycle</a></font>
+     <dd> <a name="826513"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#135252">The Single Acq/Display Cycle</a></font>
+     <dd> <a name="826515"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#134403">The Deep Stop Acq/Display Cycle</a></font>
+     <dd> <a name="826517"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#137117">The Continuous Scroll Acq/Display Cycle</a></font>
+     <dd> <a name="826519"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#137133">The Single Scroll Acq/Display Cycle</a></font>
+     <dd> <a name="826521"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#137148">The Roll Acq/Display Cycle</a></font>
+     <dd> <a name="826523"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#137192">The Digitize Acq/Display Cycle</a></font>
+     <dd> <a name="826525"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#137194">The Complete Digitize Acq/Display Cycle</a></font>
+     <dd> <a name="826527"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#135770">The Synchronous Acq/Display Cycle - NOT IMPLEMENTED</a></font>
+  </dl>
+  <dd> <a name="826529"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#137265">Application Interface (API) between the Signal Path Manager (SP Mgr) and the Signal Analysis Library (SAL)</a></font>
+  <dl>
+     <dd> <a name="826531"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#141393">The Analysis Waveform Records</a></font>
+     <dd> <a name="826533"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#141426">Programatic API between the Signal Path Mgr / Signal Analysis Library</a></font>
+     <dd> <a name="826535"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#141450">Example Operating Scenarios using the SP Mgr/SAL API</a></font>
+  </dl>
+  <dd> <a name="826537"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#131034">Application Interface (API) between the Signal Path Mgr and the Local / Remote User Interfaces (UIs)</a></font>
+  <dl>
+     <dd> <a name="826539"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#142158">The Signal Path Status structures</a></font>
+     <dd> <a name="826541"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#142137">Programatic API between the Signal Path Mgr and the Local/Remote UIs</a></font>
+     <dd> <a name="826543"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#139297">Example use model for the signalPathDisabled Semaphore</a></font>
+  </dl>
+  <dd> <a name="826545"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#129504"> SigPath Mgr Interface to the Acquisition / Plot Hardware (HW)</a></font>
+  <dl>
+     <dd> <a name="826547"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#130265">SigPath Mgr / HW API Definitions</a></font>
+  </dl>
+  <dd> <a name="826549"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#133464">SigPath Mgr Data Structures</a></font>
+  <dl>
+     <dd> <a name="826551"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#133468">The Signal Path Status Register</a></font>
+     <dd> <a name="826553"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#133469">The Signal Path Change Register</a></font>
+     <dd> <a name="826555"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#133466">The salChanSet</a></font>
+  </dl>
+  <dd> <a name="826557"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#134902"> SigPath Manager Organization</a></font>
+  <dl>
+     <dd> <a name="826559"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#128613">The SigPath Mgr Shell</a></font>
+     <dd> <a name="826561"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#135311">The Outer Loop Layer</a></font>
+     <dd> <a name="826563"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#137508"> Analysis Cycles</a></font>
+     <dd> <a name="826565"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#137735">The Inner Loop Layer</a></font>
+     <dd> <a name="826567"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="acqMgr.html#131730">The HW Driver and Signal Analysis Library Function Layer</a></font>
+  </dl>
+</dl>
+<h2>
+  <a name="826569"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996747">definitions of measurements</a></font>
+</h2>
+<dl>
+  <dd> <a name="826571"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996754">overview</a></font>
+  <dl>
+     <dd> <a name="826573"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000875">proto measurements</a></font>
+  </dl>
+  <dd> <a name="826575"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#999644">Appendix A- supported measurements for analog channels</a></font>
+  <dl>
+     <dd> <a name="826577"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996773">frequency</a></font>
+     <dd> <a name="826579"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996777">period</a></font>
+     <dd> <a name="826581"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996781">average period (not JEF)</a></font>
+     <dd> <a name="826583"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000293">pos pulse width</a></font>
+     <dd> <a name="826585"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996788">neg pulse width</a></font>
+     <dd> <a name="826587"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996795">duty cycle (percent only)</a></font>
+     <dd> <a name="826589"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000330">meas:vtim?</a></font>
+     <dd> <a name="826591"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1001124">meas:vtm2</a></font>
+     <dd> <a name="826593"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1001130">meas:tedg</a></font>
+     <dd> <a name="826595"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1001146">counter (not JEF)</a></font>
+     <dd> <a name="826597"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000273">vmax</a></font>
+     <dd> <a name="826599"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000402">vtop</a></font>
+     <dd> <a name="826601"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000405">vbas</a></font>
+     <dd> <a name="826603"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000417">vmin</a></font>
+     <dd> <a name="826605"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000408">vamp (vtop - vbas)</a></font>
+     <dd> <a name="826607"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000440">vpp (vmax - vmin)</a></font>
+     <dd> <a name="826609"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000539">vavg</a></font>
+     <dd> <a name="826611"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000384">vrms (DC)</a></font>
+     <dd> <a name="826613"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000641">vrms (AC)</a></font>
+     <dd> <a name="826615"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000370">rise time</a></font>
+     <dd> <a name="826617"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000448">fall time</a></font>
+     <dd> <a name="826619"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996878">overshoot</a></font>
+     <dd> <a name="826621"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#999721">vpreshoot</a></font>
+     <dd> <a name="826623"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1001202">meas:tval</a></font>
+     <dd> <a name="826625"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000698">effective bits of a sine (not JEF)</a></font>
+     <dd> <a name="826627"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996916">tmax (substitute for FFT findPeaks)</a></font>
+     <dd> <a name="826629"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1001239">Qpp</a></font>
+     <dd> <a name="826631"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1001243">Qavg</a></font>
+     <dd> <a name="826633"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1001250">QavgFloat64</a></font>
+     <dd> <a name="826635"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1001254">Qamp</a></font>
+  </dl>
+  <dd> <a name="826637"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#999733">Appendix B - supported measurements on digital channels</a></font>
+  <dl>
+     <dd> <a name="826639"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996971">frequency</a></font>
+     <dd> <a name="826641"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996975">period</a></font>
+     <dd> <a name="826643"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996979">pos pulse width</a></font>
+     <dd> <a name="826645"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996986">neg pulse width</a></font>
+     <dd> <a name="826647"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#996993">duty cycle (percent, or degrees)</a></font>
+     <dd> <a name="826649"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1000815">meas:vtim?</a></font>
+     <dd> <a name="826651"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1001269">meas:vtm2?</a></font>
+     <dd> <a name="826653"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1001271">meas:tedg?</a></font>
+     <dd> <a name="826655"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1001277">counter (not JEF)</a></font>
+  </dl>
+  <dd> <a name="826657"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="meas.html#1001028">Appendix C - innovations</a></font>
+</dl>
+<h2>
+  <a name="826659"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996747">definitions of math functions</a></font>
+</h2>
+<dl>
+  <dd> <a name="826661"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996754">what they be</a></font>
+  <dd> <a name="826663"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#1000119">technical aspects of the filter system</a></font>
+  <dl>
+     <dd> <a name="826665"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#999576">record length and content</a></font>
+     <dd> <a name="826667"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996787">how they are set up</a></font>
+     <dd> <a name="826669"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996792">how they are run</a></font>
+     <dd> <a name="826671"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996797">filters you will never see in software</a></font>
+  </dl>
+  <dd> <a name="826673"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996817">channel math</a></font>
+  <dd> <a name="826675"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996834">analog transforms on a waveform buffer</a></font>
+  <dl>
+     <dd> <a name="826677"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996836">filter autoscaling</a></font>
+     <dd> <a name="826679"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996854">ground coupling</a></font>
+     <dd> <a name="826681"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996867">differentiation</a></font>
+     <dd> <a name="826683"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996880">integration</a></font>
+     <dd> <a name="826685"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996886">Fourier transform</a></font>
+  </dl>
+  <dd> <a name="826687"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996934">long analog data</a></font>
+  <dl>
+     <dd> <a name="826689"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996936">wave:data? all</a></font>
+     <dd> <a name="826691"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996945">LFT (not JEF)</a></font>
+  </dl>
+  <dd> <a name="826693"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996981">digital filters</a></font>
+  <dl>
+     <dd> <a name="826695"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#996983">encoding</a></font>
+     <dd> <a name="826697"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#997006">correlation (not JEF)</a></font>
+  </dl>
+  <dd> <a name="826699"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="func.html#1002799">innovations</a></font>
+</dl>
+<h2>
+  <a name="826701"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#996747">cursor definitions</a></font>
+</h2>
+<dl>
+  <dd> <a name="826703"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#996754">appearance</a></font>
+  <dl>
+     <dd> <a name="826705"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#999388">what they are</a></font>
+     <dd> <a name="826707"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#999387">units</a></font>
+  </dl>
+  <dd> <a name="826709"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#996776">modes</a></font>
+  <dl>
+     <dd> <a name="826711"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#996778">manual</a></font>
+     <dd> <a name="826713"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#996783">showMeas</a></font>
+     <dd> <a name="826715"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#996788">tracking (not JEF)</a></font>
+     <dd> <a name="826717"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#996792">serial</a></font>
+     <dd> <a name="826719"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#996801">source considerations</a></font>
+     <dd> <a name="826721"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#999470">improving the FFT cursors</a></font>
+  </dl>
+  <dd> <a name="826723"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#996859">software support to screenMgr</a></font>
+  <dl>
+     <dd> <a name="826725"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#999588">manual scaling</a></font>
+     <dd> <a name="826727"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="curs.html#999592">updating the serial cursor readout</a></font>
+  </dl>
+</dl>
+<h2>
+  <a name="826729"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#996844">Signal Analysis Library (SAL)</a></font>
+</h2>
+<dl>
+  <dd> <a name="826731"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#1002349">overview</a></font>
+  <dd> <a name="826733"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#1008203">how SAL does screen measurements</a></font>
+  <dd> <a name="826735"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#1008755">how SAL does immediate measurements</a></font>
+  <dd> <a name="826737"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#1008205">how SAL does filters</a></font>
+  <dd> <a name="826739"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#1008202">data representations</a></font>
+  <dd> <a name="826741"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#1008141">measurements</a></font>
+  <dd> <a name="826743"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#1006607">filters</a></font>
+  <dd> <a name="826745"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#1006817">immediate measurements</a></font>
+  <dd> <a name="826747"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#1007917">wave data query</a></font>
+  <dd> <a name="826749"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#1006610">cursor interpretations</a></font>
+  <dd> <a name="826751"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#1008178">flags</a></font>
+  <dd> <a name="826753"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="analysis.html#1006611">SAL API -- descriptions of public functions</a></font>
+</dl>
+<h2>
+  <a name="826755"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#10346">instrument self tests</a></font>
+</h2>
+<dl>
+  <dd> <a name="826757"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#417927">elements of self-tests</a></font>
+  <dd> <a name="826759"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#420647">list of self-test customers</a></font>
+  <dd> <a name="826761"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#420707">behavior of the self-tests</a></font>
+  <dd> <a name="826763"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#420724">requirements for the UI</a></font>
+  <dd> <a name="826765"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#420757">list of the user self-tests and what they do</a></font>
+  <dl>
+     <dd> <a name="826767"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#420761">memory tests:</a></font>
+     <dd> <a name="826769"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#417964">SuperIO</a></font>
+     <dd> <a name="826771"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#420890">self-test the asics</a></font>
+     <dd> <a name="826773"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#420854">Acquisition</a></font>
+     <dd> <a name="826775"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#420855">Front panel</a></font>
+  </dl>
+  <dd> <a name="826777"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#420949">which of these tests are in the power-on sequence</a></font>
+  <dd> <a name="826779"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="selfTest.html#420940">where in jediPlus to find this stuff</a></font>
+</dl>
+<h2>
+  <a name="826781"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#47">Bootrom and Flash Programming</a></font>
+</h2>
+<dl>
+  <dd> <a name="826783"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#384"> Introduction</a></font>
+  <dd> <a name="826785"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#5097">Typical memory layout</a></font>
+  <dd> <a name="826787"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#1925">Configuring the Bootrom</a></font>
+  <dl>
+     <dd> <a name="826789"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#1948">Bootrom Stack - Optional</a></font>
+     <dd> <a name="826791"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#11439">Low-level Hardware Initialization - Required</a></font>
+     <dd> <a name="826793"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#1825">I/O Configuration - Required</a></font>
+     <dd> <a name="826795"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#4942">Self Test Configuration - Required</a></font>
+     <dd> <a name="826797"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2386">Main Stack Pointer - Optional</a></font>
+     <dd> <a name="826799"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2406">Main Entry Point - Optional</a></font>
+     <dd> <a name="826801"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2428">writeTestNumber - Optional</a></font>
+     <dd> <a name="826803"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#5590">hpibPort - Required if using HP-IB</a></font>
+     <dd> <a name="826805"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#5591">bootHpibAddress - Required if using HP-IB</a></font>
+  </dl>
+  <dd> <a name="826807"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2430">Generating Checksums</a></font>
+  <dd> <a name="826809"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2563">Flash Programming</a></font>
+  <dd> <a name="826811"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2701">Bootrom Traps</a></font>
+  <dl>
+     <dd> <a name="826813"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2706">Trap Summary</a></font>
+     <dd> <a name="826815"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2733">Trap 14</a></font>
+  </dl>
+  <dd> <a name="826817"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#5694">C wrappers/libbootutil.a</a></font>
+  <dd> <a name="826819"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2744">Making libboot.a</a></font>
+  <dd> <a name="826821"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2760">Example Code</a></font>
+  <dl>
+     <dd> <a name="826823"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2581">68340 Example</a></font>
+     <dd> <a name="826825"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2597">68332/68331 Example</a></font>
+     <dd> <a name="826827"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2638">68020/68030 Example</a></font>
+     <dd> <a name="826829"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#5658">68360 Example</a></font>
+     <dd> <a name="826831"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2930">pSOS Example</a></font>
+  </dl>
+  <dd> <a name="826833"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2686">Monitor Command Reference</a></font>
+  <dl>
+     <dd> <a name="826835"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#3054">Configuring New Monitor Commands</a></font>
+  </dl>
+  <dd> <a name="826837"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#3078">Download Command Reference</a></font>
+  <dd> <a name="826839"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#2598">Bootrom Internals</a></font>
+  <dd> <a name="826841"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#5274">Object File Formats</a></font>
+  <dd> <a name="826843"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="bootrom.html#5578">Utility Programs</a></font>
+</dl>
+<h2>
+  <a name="826845"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#47">OS Interface Wrappers</a></font>
+</h2>
+<dl>
+  <dd> <a name="826847"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#758"> Introduction</a></font>
+  <dl>
+     <dd> <a name="826849"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2014">Intended Audience</a></font>
+     <dd> <a name="826851"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2021">Where to go for More information</a></font>
+  </dl>
+  <dd> <a name="826853"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#13152">Overview</a></font>
+  <dl>
+     <dd> <a name="826855"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2038">Required OS Services</a></font>
+  </dl>
+  <dd> <a name="826857"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2074">Interface Details</a></font>
+  <dl>
+     <dd> <a name="826859"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2076">Memory Management</a></font>
+     <dd> <a name="826861"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#10986">Process management</a></font>
+     <dd> <a name="826863"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2077">Process synchronization</a></font>
+     <dd> <a name="826865"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2121">Resource Locking</a></font>
+     <dd> <a name="826867"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#14094">Message Passing - Queues</a></font>
+     <dd> <a name="826869"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#12707">Interrupt Management</a></font>
+     <dd> <a name="826871"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#3360">Time Unit Conversion</a></font>
+  </dl>
+  <dd> <a name="826873"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#9590">Naming conventions and conversions</a></font>
+  <dl>
+     <dd> <a name="826875"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#10339">This section cross references the moab and jediPlus naming conventions.</a></font>
+     <dd> <a name="826877"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#11679">Functions cross references.</a></font>
+  </dl>
+  <dd> <a name="826879"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#3354">Operating Systems Currently Supported</a></font>
+  <dl>
+     <dd> <a name="826881"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2092">pSOS Implementation Specifics</a></font>
+     <dd> <a name="826883"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2093">VxWorks Implementation Specifics</a></font>
+  </dl>
+  <dd> <a name="826885"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2363">Porting to Additional Operating Systems</a></font>
+  <dl>
+     <dd> <a name="826887"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2364">Memory Management</a></font>
+     <dd> <a name="826889"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2368">Process Synchronization</a></font>
+     <dd> <a name="826891"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2369">Resource Locking</a></font>
+     <dd> <a name="826893"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#2370">Process Delays</a></font>
+     <dd> <a name="826895"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#3374">Time Unit Conversion</a></font>
+  </dl>
+  <dd> <a name="826897"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#3368">Function Reference</a></font>
+  <dl>
+     <dd> <a name="826899"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#12333">Memory management</a></font>
+     <dd> <a name="826901"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#12329">Process control</a></font>
+     <dd> <a name="826903"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#12334">Signals</a></font>
+     <dd> <a name="826905"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#12335">Semaphores</a></font>
+     <dd> <a name="826907"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#12336">Message Queues</a></font>
+     <dd> <a name="826909"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#12691">Interrupts</a></font>
+     <dd> <a name="826911"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#12337">OS Time Conversion</a></font>
+  </dl>
+  <dd> <a name="826913"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="os_wrapr.html#10085">Required OS Services</a></font>
+</dl>
+<h2>
+  <a name="826915"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003638">Timing Reference for PSOS - 68020</a></font>
+</h2>
+<dl>
+  <dd> <a name="826917"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003648">Perspective</a></font>
+  <dd> <a name="826919"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003653">The Key Parameters</a></font>
+  <dd> <a name="826921"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003689">Apples and Oranges</a></font>
+  <dd> <a name="826923"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003701">Measurement Methodology</a></font>
+  <dl>
+     <dd> <a name="826925"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003703">Measurement Hardware</a></font>
+     <dd> <a name="826927"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003705">Measurement Software</a></font>
+     <dd> <a name="826929"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003709">Measurement Path</a></font>
+     <dd> <a name="826931"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003718">Other Considerations</a></font>
+  </dl>
+  <dd> <a name="826933"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003721">Data Interpretation</a></font>
+  <dl>
+     <dd> <a name="826935"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003723">Measurement Cases</a></font>
+     <dd> <a name="826937"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003725">Measurement Data</a></font>
+  </dl>
+  <dd> <a name="826939"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003766">Variant Conditions</a></font>
+  <dl>
+     <dd> <a name="826941"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1005384">(R) - Ready List Insertion</a></font>
+     <dd> <a name="826943"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003771">(T) - Timeout Option</a></font>
+     <dd> <a name="826945"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003778">(P) - Process Switching</a></font>
+     <dd> <a name="826947"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003784">(M) - Memory Allocation</a></font>
+     <dd> <a name="826949"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003790">(F) - Free Memory</a></font>
+     <dd> <a name="826951"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="psosTimingRef.html#1003795">(A) - Active Chain Removal</a></font>
+  </dl>
+</dl>
+<h2>
+  <a name="826953"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="commonAbs.html#124832">Common Abstract Data Types</a></font>
+</h2>
+<dl>
+  <dd> <a name="826955"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="commonAbs.html#130472">Containers</a></font>
+  <dl>
+     <dd> <a name="826957"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="commonAbs.html#130800">Set</a></font>
+     <dd> <a name="826959"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="commonAbs.html#130474">List</a></font>
+     <dd> <a name="826961"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="commonAbs.html#130490">Queue</a></font>
+  </dl>
+  <dd> <a name="826963"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="commonAbs.html#130802">Number handling</a></font>
+  <dl>
+     <dd> <a name="826965"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="commonAbs.html#130506">Units</a></font>
+     <dd> <a name="826967"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="commonAbs.html#130528">Format</a></font>
+     <dd> <a name="826969"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="commonAbs.html#130804">Math64, Math96</a></font>
+     <dd> <a name="826971"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="commonAbs.html#130821"></a></font>
+  </dl>
+</dl>
+<h2>
+  <a name="826973"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#128983">Build Environment and Tools</a></font>
+</h2>
+<dl>
+  <dd> <a name="826975"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#128984">Introduction</a></font>
+  <dd> <a name="826977"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#997963">Down &amp; dirty - How to do simple things</a></font>
+  <dl>
+     <dd> <a name="826979"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#997973">How to use make</a></font>
+     <dd> <a name="826981"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#998115">How to use the history manager</a></font>
+     <dd> <a name="826983"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#998081">Common history manager commands</a></font>
+     <dd> <a name="826985"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#997950">How to set up a leaf directory.</a></font>
+  </dl>
+  <dd> <a name="826987"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#997947">Directory structure (Physical structure)</a></font>
+  <dl>
+     <dd> <a name="826989"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#129002">jediPlus directory</a></font>
+     <dd> <a name="826991"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#129025">Subdirectories</a></font>
+     <dd> <a name="826993"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#129617">Product or root directories (muskrat, puma, boot, etc.)</a></font>
+     <dd> <a name="826995"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#129749">Component or leaf subdirectory (util, psos, etc.)</a></font>
+  </dl>
+  <dd> <a name="826997"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#128989">Makefiles</a></font>
+  <dl>
+     <dd> <a name="826999"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#131194">Product and component makefile requirements</a></font>
+     <dd> <a name="827001"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#131212">Down &amp; dirty - How to set up a leaf directory.</a></font>
+     <dd> <a name="827003"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#997340">Standard makefiles in jediPlus/tools</a></font>
+  </dl>
+  <dd> <a name="827005"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#997343">Makefile Details</a></font>
+  <dl>
+     <dd> <a name="827007"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#131196">Common makefile macros</a></font>
+     <dd> <a name="827009"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#130956">Features</a></font>
+  </dl>
+  <dd> <a name="827011"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="buildEnv.html#130516">Makefile Details</a></font>
+</dl>
+<h2>
+  <a name="827013"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#124832">546xx Family Coding Standards</a></font>
+</h2>
+<dl>
+  <dd> <a name="827015"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126760">Introduction</a></font>
+  <dl>
+     <dd> <a name="827017"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126517">Compliance</a></font>
+  </dl>
+  <dd> <a name="827019"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126751">Files</a></font>
+  <dl>
+     <dd> <a name="827021"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126752">Source File Contents</a></font>
+     <dd> <a name="827023"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126528">Header File Contents</a></font>
+     <dd> <a name="827025"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126538">General Guidelines</a></font>
+  </dl>
+  <dd> <a name="827027"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126550">Coding Guidelines</a></font>
+  <dl>
+     <dd> <a name="827029"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126551">Source File Format</a></font>
+     <dd> <a name="827031"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126557">Header File Format</a></font>
+  </dl>
+  <dd> <a name="827033"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126642"> Naming Conventions</a></font>
+  <dd> <a name="827035"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126653"> Indentation and curly brace placement style.</a></font>
+  <dd> <a name="827037"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126680"> Recommended Expression Style.</a></font>
+  <dd> <a name="827039"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126697"> Template for source and header file header comment block.</a></font>
+  <dd> <a name="827041"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126700"> Template for functions.</a></font>
+  <dd> <a name="827043"> </a><font face="Verdana, Arial, Helvetica, sans-serif"><a href="codingStandards.html#126704">Template for HMS checkins</a></font>
+</dl>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="jediPlusLOP.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="frntpnl.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

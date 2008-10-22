@@ -1,0 +1,275 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:26:49 2002">
+<title>CHAPTER 23 cursor definitions</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="func.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="analysis.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="996747"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 23 	 cursor definitions</font>
+</h1><hr>
+
+
+<h2>
+  <a name="996754"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-1  appearance</font>
+</h2>
+
+
+<h3>
+  <a name="999388"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-1.1  what they are</font>
+</h3>
+
+
+<p>
+  <a name="996756"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In the old days, people used to count graticule lines or even mark the CRT with a grease pencil to aid in interpreting the waveform.  While some users still do, most people have discovered cursors.  Cursors are dashed lines in the display, which can be moved by the entry knob.  The position of the 4 available cursors, relative to a source, is listed on the screen.  This position is in the scale and units of its associated channel, usually a time or voltage.</font>
+</p>
+
+
+<h3>
+  <a name="999387"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-1.2  units</font>
+</h3>
+
+
+<p>
+  <a name="996766"> </a><font face="Verdana, Arial, Helvetica, sans-serif">vertical cursors can have the units of Seconds, Degrees.</font>
+</p>
+
+
+<p>
+  <a name="999381"> </a><font face="Verdana, Arial, Helvetica, sans-serif">horozontal cursors can have the units of Volts, IRE, percent.</font>
+</p>
+
+
+<p>
+  <a name="996768"> </a><font face="Verdana, Arial, Helvetica, sans-serif">in XY mode, vertical cursors can have Volt units.</font>
+</p>
+
+
+<p>
+  <a name="996769"> </a><font face="Verdana, Arial, Helvetica, sans-serif">with the FFT, horozontal cursors are in dBV, and vertical cursors are in Hz.</font>
+</p>
+
+
+<p>
+  <a name="996770"> </a><font face="Verdana, Arial, Helvetica, sans-serif">vertical cursors on digital data can have binary or hex readout as well as time units.</font>
+</p>
+
+
+<h2>
+  <a name="996776"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-2  modes</font>
+</h2>
+
+
+<h3>
+  <a name="996778"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-2.1  manual</font>
+</h3>
+
+
+<p>
+  <a name="999393"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In manual mode the UI can turn on a cursor, choose its source, and move it around the screen with the entry knob.  It is shown in the main timebase window, and if it would be visible also in the delayed window it is shown there.</font>
+</p>
+
+
+<p>
+  <a name="999566"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The user needn't be in the cursor menu to adjust manual cursors.  If the menu doesn't use the entry knob itself, and there is not a measurement in the measurement list, and there is an active cursor, then the cursors are displayed and the entry knob adjusts the active one.  In that case, the active cursor is indicated in the menu.</font>
+</p>
+
+
+<h3>
+  <a name="996783"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-2.2  showMeas</font>
+</h3>
+
+
+<p>
+  <a name="999408"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If the user has chosen "show meas" in the measurement system, a set of cursors is positioned by the last measurement chosen.  When the measurement is updated, these cursors are updated also, so they appear live.  The measurement line gives measurement output, so the cursors are visible as lines, not as values.  Measurement cursors are not amenable to the entry knob.  If the user goes to the cursor menu, cursor values are displayed instead of the measurements, and the mode is back to manual.</font>
+</p>
+
+
+<h3>
+  <a name="996788"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-2.3  tracking (not JEF)</font>
+</h3>
+
+
+<p>
+  <a name="999417"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These are live cursors, but without a corresponding measurement result.  Implementing them would require some innovation in the UI.  We will do something like a tracking cursor for the "find peaks" function on an FFT.</font>
+</p>
+
+
+<h3>
+  <a name="996792"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-2.4  serial</font>
+</h3>
+
+
+<p>
+  <a name="999424"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For I2C and SPI protocols, digital data can be read out in hex.  May not include analog data.  We will support whatever serial modes we are doing in the trigger, and then some.  There will be a separate setup menu for the cursor, since its features may diverge from the trigger.  Someday there could be some hardware support for this decoding, possibly in ZEUM. </font>
+</p>
+
+
+<h3>
+  <a name="996801"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-2.5  source considerations</font>
+</h3>
+
+
+<p>
+  <a name="996803"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Cursors can go on the screen as dashed lines, independent of data. </font>
+</p>
+
+
+<p>
+  <a name="996805"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Vertical cursors can give time readouts without any channels being on, since horizontal positioning is the same for all channels.</font>
+</p>
+
+
+<p>
+  <a name="996808"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Manual horozontal cursors need the source to be declared and viewed, so they can access its scaling.</font>
+</p>
+
+
+<p>
+  <a name="996811"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Any cursors displayed by the showMeas option of measurements must have the source viewed and the measurement successful.  It is up to the measurement to cloak them if it failed.</font>
+</p>
+
+
+<p>
+  <a name="996815"> </a><font face="Verdana, Arial, Helvetica, sans-serif">So sources can be 1 2 3 4 D0 - DF 1+2 1-2 1*2 FFT d/dt integral, and I may need a bitmap for d/dt and integral.  I see no reason to call it F2.  For filter output, we may need to label these sources with something other than d/dt or 1-2.</font>
+</p>
+
+
+<p>
+  <a name="999463"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This is a superset of the sources for functions.</font>
+</p>
+
+
+<h3>
+  <a name="999470"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-2.6  improving the FFT cursors</font>
+</h3>
+
+
+<p>
+  <a name="996822"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When the cursor source is a live FFT, the cursor menu gets some extra controls: find peaks, and move F1 to center.  I think this is confusing, because find peaks is really a measurement with tracking cursors, and move F1 to center is really a horozontal pan.  Maybe it can be improved in Muskrat.  These controls should probably all be in the FFT menu, or in the measurement menu??</font>
+</p>
+
+
+<p>
+  <a name="996827"> </a><font face="Verdana, Arial, Helvetica, sans-serif">You hit "find peaks" and the horizontal cursors go to the two highest peaks, then the vertical cursors read the level at those frequencies.  In JediPlus, this will be a tracking function, updated at a measurement rate.   We should never find DC as a peak.</font>
+</p>
+
+
+<p>
+  <a name="996837"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The units of FFT are dBV, or dB below 1.0 V.  Should we use dBm instead, especially in a 50-ohm system?  Or dB below the signal amplitude? </font>
+</p>
+
+
+<p>
+  <a name="996840"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In Moab, the "move f1 to center" button is in the cursor menu, but the "move 0Hz to left" is in the FFT menu.  huh?? </font>
+</p>
+
+
+<p>
+  <a name="996843"> </a><font face="Verdana, Arial, Helvetica, sans-serif">One's ability to horizontally pan and zoom the FFT window is limited. </font>
+</p>
+
+
+<p>
+  <a name="996845"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There is a small set of allowable Freq Spans, which you can choose with the knob or the softkey in the FFT menu.  Yet when you hit the softkey at the highest value, it will not wrap around to the smallest value.</font>
+</p>
+
+
+<p>
+  <a name="996849"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The frequencies listed are artifacts of the FFT, even though the whole FFT output is not displayed so the user is in a horizontal vernier anyway, and these frequencies are probably not what the user thinks of. </font>
+</p>
+
+
+<p>
+  <a name="999518"> </a><font face="Verdana, Arial, Helvetica, sans-serif">I mean, like, I put in a nice 10 MHz sine, dial in a nice 500 nS/division, and wonder what the peak is, at 97.66 MHz span?  Find peaks (in the cursor menu) says it is 9.961 MHz, outrageous precision for this transform.  Or do users expect such difficulties with Fourier Transforms? </font>
+</p>
+
+
+<p>
+  <a name="996856"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Clearly, the UI for FFT control should be improved.  I would take it out of the cursor menu, except for manual cursor control.  I think find peaks is a live measurement, and horizontal scaling should be in the FFT menu. </font>
+</p>
+
+
+<h2>
+  <a name="996859"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-3  software support to screenMgr </font>
+</h2>
+
+
+<h3>
+  <a name="999588"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-3.1  manual scaling </font>
+</h3>
+
+
+<p>
+  <a name="999591"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The UI can move manual cursors around the screen, but the screenMgr must interpret their values.  Similarly, the measurements can say what values to set the cursors to, but the screenMgr must figure out where to put them on the screen.  Tracking cursors are a special case of a measurement.  In all these cases, we need some scaling and interpretation functions to help the labeling and placement of these dotted lines.  This information may be readily available in the signal structure from the acqMgr, but if not the signal analysis library should include these ancillary functions:</font>
+</p>
+
+<pre>
+<a name="999576"> </a>mStat getVScaling (sourceType c, *org, *inc, *units);
+<a name="999582"> </a>mStat getHScaling (sourceType c, *org, *inc, *units);
+</pre>
+
+<p>
+  <a name="999585"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Presumably, if screenMgr knows where it is putting things on screeen, then having this information about the data will allow it to label where its cursors are, in data space.</font>
+</p>
+
+
+<h3>
+  <a name="999592"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">23-3.2  updating the serial cursor readout</font>
+</h3>
+
+
+<p>
+  <a name="999594"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Interpreting the time cursors serially is run as a measurement, strobed by the scheduler, and output via a call to the screenMgr in something like updatSerialCursors(). </font>
+</p>
+
+
+<p>
+  <a name="999593"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="func.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="analysis.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

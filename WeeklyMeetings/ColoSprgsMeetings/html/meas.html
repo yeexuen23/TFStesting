@@ -1,0 +1,1091 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:26:45 2002">
+<title>CHAPTER 21 definitions of measurements</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="acqMgr.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="func.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="996747"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 21 	 definitions of measurements</font>
+</h1><hr>
+
+
+<h2>
+  <a name="996754"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-1  overview</font>
+</h2>
+
+
+<p>
+  <a name="1000860"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This chapter gives a detailed description of what the measurements are intended to mean in SAL.  Measurement "system" considerations are better covered in analysis.doc ("Signal Analysis Library SAL"), and filters and cursor interpretations are discussed in filt.doc and curs.doc, ("definitions of math functions" and "cursor definitions").</font>
+</p>
+
+
+<h3>
+  <a name="1000875"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-1.1  proto measurements</font>
+</h3>
+
+
+<p>
+  <a name="1000876"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Given the data infrastructure of Signals, AnaNotes, and normalized data described in analysis.doc, there are some primitive functions that allow most measurements to be simply calculated.  Most SAL measurements use normalized data, and for those that don't we use eavesdropped data -- we don't do any analysis on deep data.</font>
+</p>
+
+
+<h4>
+  <a name="1000886"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">normalizer</font>
+</h4>
+
+
+<p>
+  <a name="1001320"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Analog jediPlus data is eavesdropped in any of several formats, but after normalization it is in the single format of analytic data - an array of signed shorts for main or delayed data, representing Q levels.  As the data is normalized, we also calculate the min and max, and count the holes.  Thus some of the need for histogramming is alleviated.</font>
+</p>
+
+
+<p>
+  <a name="1001515"> </a><font face="Verdana, Arial, Helvetica, sans-serif">I should point out that some summarization of deep data is already done with "Bob mode" data, a format used when the display is a lot slower than the acquisition.  For each pixel there is more acq data than can be displayed, and this format contains not only dithered samples but min and max from the deep data.  So even though I'm normalizing to 2000 points, I get the min and max as if I had looked at all of the deep data.  One could also view hi-res data as a summary (an average) of the deep data behind it, but measurements on this summary are not as detailed as they would have been on the deep data.</font>
+</p>
+
+
+<h4>
+  <a name="1000889"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">histogram</font>
+</h4>
+
+
+<p>
+  <a name="1000892"> </a><font face="Verdana, Arial, Helvetica, sans-serif">SAL uses a temporary histogram to determine vtop and vbas, and a status.  Any other result that could be derived from a voltage histogram is already found by the normalizer.</font>
+</p>
+
+
+<p>
+  <a name="1000890"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Whereas in Jackal-based products (older Jedi) the data was only 8 bits and histograms were arrays of 256 numbers, SAL data is 12 bits and it could use 12-bit histograms.  Some nominally 12-bit data will have some of the low-order bits always zero, if for example the sweep is so fast that there are few samples per pixel.  So in general the 12-bit histogram is sparse, ie most of its bins are empty.  I looked at an option to use 12-bit histograms where the data supports it, because of the possibility of better voltage resolution in the histogram analysis.</font>
+</p>
+
+
+<p>
+  <a name="1001111"> </a><font face="Verdana, Arial, Helvetica, sans-serif">I experimented with a variety of signals, and found 3 to be good stimuli for testing histograms.  The probability distribution of a square wave has a salient value at each edge that should be the clear winner in searches for top and base.  The triangle wave is nearly uniformly distributed, and we should return something near the extremes of this data.  And the sine is somewhere in between these two,  but with a peak nearly as salient as that of the square.</font>
+</p>
+
+
+<p>
+  <a name="1001516"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Although the IEEE definitions mention the possibility of using weighted averages of histogram numbers, I found that this method failed when the distribution is nearly uniform, and produced vtop well down on the triangle.  And even if this had found a good value, it could easily be a value never attained by the data.</font>
+</p>
+
+
+<p>
+  <a name="1001524"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This analysis clarified for me that finding vtop in a histogram needs to meet two sometimes contradictory goals.  In a ringing overshoot one should find the eventual stable voltage, which will be at the histogram peak if the tail is long enough.  In a uniform signal like a triangle wave one should find the significant edge of the distribution, since the peak could be anywhere.  And in that overshoot, if there isn't enough of the signal on screen the peak won't be at the stable voltage but will instead be at one of the edges of the ringing.  In the context of noise, I think it is irresponsible to return vmax just because we can't think of anything better.  Given this complex expectation, it is inevitable that the measured vtop will at times be unstable, and we should work to minimize this instability.</font>
+</p>
+
+
+<p>
+  <a name="1001552"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The analysis I proposed was an extension of what was used in Moab,  described here as a way to find vtop:  </font>
+</p>
+
+<ul>
+  <li><a name="1000898"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If vmin and vmax are so close that the data is just a baseline, then we return with vbas and vtop undefined, with the VNOISE bit set in the hist status.</font>
+  <li><a name="1000897"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Look at the top 40% of the data in the histogram, and find the largest bin.  This peak is the relevant statistical mode.  The mean is the sum of this data divided by how many non-zero bins are involved. </font>
+  <li><a name="1000902"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If the peak is greater than 6 times the histogram mean, use half the peak as a limit, otherwise use half the mean as a limit.  Looking inward from the edge of the histogram data, return the first bin greater than this limit.  </font>
+</ul>
+
+<p>
+  <a name="1000903"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For signals such as square-wave with a clear maximum, this method returns that maximum.  For sparse or uniformly-distributed signals, this has the effect of eliminating low-populated histogram values representing only noise, yet finding the real probability edges.  And for signals in between, like a ringing overshoot, it finds the stable value if there is one and a peak near the edge if there isn't.  It can vascillate on the ringing overshoot if there isn't enough tail, but this is true also of earlier Jedi.  It doesn't create more precision than what was there in the data, since top and base should be probability edges, not probability centroids.  And it adapts well to sparse histograms.</font>
+</p>
+
+
+<p>
+  <a name="1001555"> </a><font face="Verdana, Arial, Helvetica, sans-serif">But this innovation was scary to some, and the results didn't show a clear advantage, so we regressed to what is used in Moab and Infiniium.  If the peak is greater than 6 times the histogram mean, we use that peak, otherwise we use the extreme.  This causes a noisy square to report a vtop right at vmax, even though the user could probably draw a better vtop right thru the data.  But that's what people are used to, and that's apparently what they want.</font>
+</p>
+
+
+<h4>
+  <a name="1001525"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">histogram on clipped data</font>
+</h4>
+
+
+<p>
+  <a name="1000908"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When the histogram is done, we have the vmax, vtop, vbas, and vmin values, as well as status bits set for VMAX VTOP VBAS VMIN and VNOISE.  We set VMAX for example if the data is clipped high.  In Jackal-based products, we didn't analyze clipped data any further.  But I found I can get useful results by looking for peaks in the histogram even if the edge is clipped.</font>
+</p>
+
+
+<p>
+  <a name="1001526"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The effect of this on the screen is that if you have a signal near the top of the screen, the measurement will be stable even if occasionally a noise peak is clipped.  If the VTOP is also the highest possible data value, then I will give a VTOP status, returning vmax for vtop.  In this case the data is almost certainly clipped, with VMAX set as well.</font>
+</p>
+
+
+<p>
+  <a name="1001527"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This also has the effect that measurements made on edges, such as frequency, do not go away when there is a noise spike.</font>
+</p>
+
+
+<h4>
+  <a name="1000921"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">edge finding</font>
+</h4>
+
+
+<p>
+  <a name="1000924"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We usually think of an edge as a zero crossing, but it is more than that.</font>
+</p>
+
+
+<p>
+  <a name="1000925"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For one thing, hysteresis is defined by the crossing of thresholds.  Say the thresholds are -1V and +1V, and we are looking for a rising edge.  In order for it to be qualified as an edge, the zero crossing must be preceded by the signal's having been less than the negative threshold, and followed by the signal's being greater than the positive threshold.  So we often have zero crossings that are not edges, since they might not be qualified.</font>
+</p>
+
+
+<p>
+  <a name="1000926"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For another, it is only coincidental that qualified edges give a time of the signal's crossing zero.  The crossing voltage we use is probably halfway between the two thresholds.  These are usually determined as 10% and 90% of the voltage swing between vbas and vtop, but they can be some other percentage, or they can be arbitrarily given by the user.  So the crossing voltage is not in general zero, but usually the signal median, and it can be arbitrary.</font>
+</p>
+
+
+<p>
+  <a name="1001531"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A rising edge is qualified on the left by data below the low threshold, and on the right by data that goes above the high threshold before it goes below the low thereshold again.  So the low crossing is at the first point right after passing from below to above the low threshold, given that it doesn't go below again until after the entire edge.  Likewise the high crossing is at the first point after passing from below to above the high threshold, given that there had been data below the low crossing.  I think this is the same in all the scope familes.  </font>
+</p>
+
+
+<p>
+  <a name="1001532"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The mid crossing is the first point after passing from below to above the middle threshold, given that there had been data below the low threshold and there will be data above the high one.  I believe this is the only difference between Jedi edges and Infiniium edges, since we use the first of several middle crossings and Infiniium uses the median of all thel middle crossings.</font>
+</p>
+
+
+<p>
+  <a name="1000933"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Many of the analog measurements, and all of the logic timing measurements, are derived from times of a few edges in the signal.  For Muskrat, we use a software edge-finder that gives 0-3 edges, recorded in the AnaNotes that accompany the waveform.  Puma may offer a hardware edge detector, but the data will be in the same form and in the same place.  If we are doing another edge measurement and we find that the edges have already been calculated and the signal hasn't changed, we can use the values in the AnaNotes and we don't have to find them again.</font>
+</p>
+
+
+<p>
+  <a name="1000934"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The signal may have 0 edges, or 3, or hundreds.  The edges of most interest to SAL are those closest to the trigger reference point (Left Center or Right).  In older products we used to report the first 3 edges on the screen, a method relatively easy to do and easy to explain to the customer.  But as we pan and zoom in time, we are constantly using different edges, a situation potentially frustrating or confusing to the user.  In SAL, we use the edges nearest the trigger reference point to alleviate this frustration, since that is an eigenvalue for the zoom transformation.</font>
+</p>
+
+
+<p>
+  <a name="1000927"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For under-sampled signals, there is some interest in generating an edge time that is not a sample time, but is instead an interpolation between two values on either side of the voltage threshold.  We do this for faster signals, using the getNormEdges() and interpEdge() routines.  I don't do this for slow data with getLfdEdges(), since interpolation doesn't improve resolution when there are plenty of samples.</font>
+</p>
+
+
+<p>
+  <a name="1001533"> </a><font face="Verdana, Arial, Helvetica, sans-serif">For signals with plenty of samples, we can use the extremes of Bob-mode data to find edges that wouldn't be measurable any other way.  I developed some logic to handle envelope data that is similar to the normal data above, but it uses either min or max rather than the single data value.  This is something we haven't done before on eavesdropped data, but the benefit is that we should be able to find narrower pulses, pulses whose eavesdropped samples may not exceed the thresholds but their extremes do.  This is in getLfdEdges(), and I don't interpolate it.</font>
+</p>
+
+
+<p>
+  <a name="1000975"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Most of the timing measurements assume the signal is periodic, without threshold crossings more often than the signal period.  Real signals sometimes fail this assumption, so it is important to include features like some flexibility in choosing the thresholds, a feature delayed now to Muskrat RevB.  And in spite of our best efforts we will still see people using the cursors or counting graticules to measure time.</font>
+</p>
+
+
+<h4>
+  <a name="1001066"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">average region</font>
+</h4>
+
+
+<p>
+  <a name="1001067"> </a><font face="Verdana, Arial, Helvetica, sans-serif">When we take an average of periodic data, the result will be biased unless we restrict the data to an integral number of periods.  In older Jedi, if there were edges in the data, we used the data from a single period to window any average measurement -- Vavg or Vrms.  I found that if there were a lot of periods on screen this resulted in the measurement being made on a very small amount of data, at a time when the user wants an overall average.  In fact, it was difficult to find the Vrms of a white noise signal, because if the amplitude was high enough there were random edges detected throughout, and each such period would have only a few data points.</font>
+</p>
+
+
+<p>
+  <a name="1001407"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Accordingly, I made a windowing function called getAvgRegion() that is used with Vavg and AC and DC RMS measurements.  It uses as many periods as it can find in the data, counting in from each end, and if there are no edges, it uses the whole record.  It's on all the time.  No choice is needed from the user, no selection on the SysConfig menu, because it just does the right thing.  Time cursors show what part of the waveform was used for the average.</font>
+</p>
+
+
+<p>
+  <a name="1001556"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Finding the average region is done on every averaging measurement.  Right now there are only two such measurements available from the front panel, but if they are both active this work is done redundantly.  We could make the average region a managed resource like edges or histogram results, and only do it once for a batch of measurements.  Not in the first release.</font>
+</p>
+
+
+<h4>
+  <a name="1000262"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">results</font>
+</h4>
+
+
+<p>
+  <a name="1000263"> </a><font face="Verdana, Arial, Helvetica, sans-serif">These routines will return a status, a numeric result, a tolerance, units, and some floats for setting the markers if they are shown.  There are some booleans to tell whether the marker floats are valid.  If the status is OK, then the measurement result is good, and an optimistic estimate of its tolerance is also returned.</font>
+</p>
+
+
+<p>
+  <a name="1001406"> </a><font face="Verdana, Arial, Helvetica, sans-serif">This tolerance is intended to limit the bogus precision that sometimes characterizes computer output.  Since the only customer for this tolerance is the formatting routine for the measurement screen, the number I actually return from SAL is the number of digits to display.  That should probably have been done in the calling routine, so if we ever use SAL for a scientific rather than display purpose we should change that corner of the design.</font>
+</p>
+
+
+<p>
+  <a name="1000935"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If the signal is clipped in one way or another, we don't usually know the results a measurement would have got if the signal hadn't been clipped.  But we can often set an upper or lower bound on such a measurement.  SAL will return this bound, along with a status different from OK saying that this is an inequality.  In response to criticism of earlier products, I've put in as many inequalities as I could find among the possibilities.  I've tried to make the display simple and continuous as you vary controls but it's still unsettling sometimes, and there have been complaints about the innovation.</font>
+</p>
+
+
+<h2>
+  <a name="999644"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2  Appendix A- supported measurements for analog channels</font>
+</h2>
+
+
+<h3>
+  <a name="996773"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.1  frequency</font>
+</h3>
+
+
+<p>
+  <a name="999904"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram, 3 edges, clipping OK</font>
+</p>
+
+
+<p>
+  <a name="999907"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return 1/(edge3-edge1);</font>
+</p>
+
+
+<h3>
+  <a name="996777"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.2  period</font>
+</h3>
+
+
+<p>
+  <a name="999910"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram, 3 edges, clipping OK</font>
+</p>
+
+
+<p>
+  <a name="999913"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return edge3-edge1;</font>
+</p>
+
+
+<h3>
+  <a name="996781"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.3  average period (not JEF)</font>
+</h3>
+
+
+<p>
+  <a name="1000305"> </a><font face="Verdana, Arial, Helvetica, sans-serif">no formal prerequisites, clipping OK, uses normalized data</font>
+</p>
+
+
+<p>
+  <a name="1000856"> </a><font face="Verdana, Arial, Helvetica, sans-serif">note the time of first edge starting at the left end of the data</font>
+</p>
+
+
+<p>
+  <a name="1000300"> </a><font face="Verdana, Arial, Helvetica, sans-serif">count edges as you go to the right end </font>
+</p>
+
+
+<p>
+  <a name="1000301"> </a><font face="Verdana, Arial, Helvetica, sans-serif">at the end, note the time of the last zero crossing in the same slope</font>
+</p>
+
+
+<p>
+  <a name="1000304"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return (lastTime - firstTime)/(number of periods counted)</font>
+</p>
+
+
+<h3>
+  <a name="1000293"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.4  pos pulse width</font>
+</h3>
+
+
+<p>
+  <a name="999918"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram, 2 or 3 edges, clipping OK</font>
+</p>
+
+
+<p>
+  <a name="999921"> </a><font face="Verdana, Arial, Helvetica, sans-serif">if (startsRising)</font>
+</p>
+
+
+<p>
+  <a name="996784"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   return edge2-edge1;</font>
+</p>
+
+
+<p>
+  <a name="999926"> </a><font face="Verdana, Arial, Helvetica, sans-serif">else</font>
+</p>
+
+
+<p>
+  <a name="996786"> </a><font face="Verdana, Arial, Helvetica, sans-serif">   return edge3-edge2;</font>
+</p>
+
+
+<h3>
+  <a name="996788"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.5  neg pulse width</font>
+</h3>
+
+
+<p>
+  <a name="999931"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram, 2 or 3 edges, clipping OK</font>
+</p>
+
+
+<p>
+  <a name="999934"> </a><font face="Verdana, Arial, Helvetica, sans-serif">if (startsRising)</font>
+</p>
+
+
+<p>
+  <a name="999937"> </a><font face="Verdana, Arial, Helvetica, sans-serif">    return edge3-edge2;</font>
+</p>
+
+
+<p>
+  <a name="999940"> </a><font face="Verdana, Arial, Helvetica, sans-serif">else</font>
+</p>
+
+
+<p>
+  <a name="999945"> </a><font face="Verdana, Arial, Helvetica, sans-serif">    return edge2-edge1;</font>
+</p>
+
+
+<h3>
+  <a name="996795"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.6  duty cycle (percent only)</font>
+</h3>
+
+
+<p>
+  <a name="999948"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram, 3 edges, clipping OK</font>
+</p>
+
+
+<p>
+  <a name="999951"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return 100 * (pos pulse width)/(period)</font>
+</p>
+
+
+<h3>
+  <a name="1000330"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.7  meas:vtim?</font>
+</h3>
+
+
+<p>
+  <a name="1000343"> </a><font face="Verdana, Arial, Helvetica, sans-serif">no prerequisites, internal only, takes a time parameter</font>
+</p>
+
+
+<p>
+  <a name="1001409"> </a><font face="Verdana, Arial, Helvetica, sans-serif">uses normalized data for analog</font>
+</p>
+
+
+<p>
+  <a name="1000348"> </a><font face="Verdana, Arial, Helvetica, sans-serif">convert the time to nearest bucket i</font>
+</p>
+
+
+<p>
+  <a name="1000349"> </a><font face="Verdana, Arial, Helvetica, sans-serif">for analog data, return an interpolation between v[i] and v[i+1]</font>
+</p>
+
+
+<h3>
+  <a name="1001124"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.8  meas:vtm2</font>
+</h3>
+
+
+<p>
+  <a name="1001125"> </a><font face="Verdana, Arial, Helvetica, sans-serif">this is a special version of vtim that Steve wrote for the CSV spreadsheet query.</font>
+</p>
+
+
+<p>
+  <a name="1001127"> </a><font face="Verdana, Arial, Helvetica, sans-serif">for analog data they are identical</font>
+</p>
+
+
+<h3>
+  <a name="1001130"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.9  meas:tedg</font>
+</h3>
+
+
+<p>
+  <a name="1001131"> </a><font face="Verdana, Arial, Helvetica, sans-serif">no prerequisites, internal only, takes an edge parameter</font>
+</p>
+
+
+<p>
+  <a name="1001410"> </a><font face="Verdana, Arial, Helvetica, sans-serif">uses normalized data</font>
+</p>
+
+
+<p>
+  <a name="1001132"> </a><font face="Verdana, Arial, Helvetica, sans-serif">start at the left end of the data, count the correct number of edges</font>
+</p>
+
+
+<p>
+  <a name="1001279"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return the interpolated time</font>
+</p>
+
+
+<h3>
+  <a name="1001146"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.10  counter (not JEF)</font>
+</h3>
+
+
+<p>
+  <a name="1001145"> </a><font face="Verdana, Arial, Helvetica, sans-serif">no prerequisites, no acquisitions</font>
+</p>
+
+
+<p>
+  <a name="1001139"> </a><font face="Verdana, Arial, Helvetica, sans-serif">use the trigger counter to get a frequency measurement on the desired channel</font>
+</p>
+
+
+<p>
+  <a name="1001140"> </a><font face="Verdana, Arial, Helvetica, sans-serif">this is much more accurate than detecting edges in the waveform, but it's not graphic</font>
+</p>
+
+
+<h3>
+  <a name="1000273"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.11  vmax</font>
+</h3>
+
+
+<p>
+  <a name="1000399"> </a><font face="Verdana, Arial, Helvetica, sans-serif">reads right out of the normalization, transformed by yorg and yinc</font>
+</p>
+
+
+<h3>
+  <a name="1000402"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.12  vtop</font>
+</h3>
+
+
+<p>
+  <a name="1000403"> </a><font face="Verdana, Arial, Helvetica, sans-serif">reads right out of the histogram, transformed by yorg and yinc</font>
+</p>
+
+
+<h3>
+  <a name="1000405"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.13  vbas</font>
+</h3>
+
+
+<p>
+  <a name="1000406"> </a><font face="Verdana, Arial, Helvetica, sans-serif">reads right out of the histogram, transformed by yorg and yinc</font>
+</p>
+
+
+<h3>
+  <a name="1000417"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.14  vmin</font>
+</h3>
+
+
+<p>
+  <a name="1000412"> </a><font face="Verdana, Arial, Helvetica, sans-serif">reads right out of the normalization, transformed by yorg and yinc</font>
+</p>
+
+
+<h3>
+  <a name="1000408"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.15  vamp (vtop - vbas)</font>
+</h3>
+
+
+<p>
+  <a name="1000409"> </a><font face="Verdana, Arial, Helvetica, sans-serif">reads right out of the histogram, transformed by yinc</font>
+</p>
+
+
+<h3>
+  <a name="1000440"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.16  vpp (vmax - vmin)</font>
+</h3>
+
+
+<p>
+  <a name="1000439"> </a><font face="Verdana, Arial, Helvetica, sans-serif">reads right out of the normalization, transformed by yinc</font>
+</p>
+
+
+<h3>
+  <a name="1000539"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.17  vavg</font>
+</h3>
+
+
+<p>
+  <a name="1000547"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram and the edge array, but 0 edges is OK, clipping OK</font>
+</p>
+
+
+<p>
+  <a name="1001153"> </a><font face="Verdana, Arial, Helvetica, sans-serif">get the average region</font>
+</p>
+
+
+<p>
+  <a name="1000551"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return (sum of x)/n;  /* signal mean */ </font>
+</p>
+
+
+<h3>
+  <a name="1000384"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.18  vrms (DC)</font>
+</h3>
+
+
+<p>
+  <a name="996833"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram and the edge array, but 0 edges is OK, should not be clipped</font>
+</p>
+
+
+<p>
+  <a name="1001166"> </a><font face="Verdana, Arial, Helvetica, sans-serif">get the average region</font>
+</p>
+
+
+<p>
+  <a name="996841"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return sqrt((sum of x^2)/n);  /* sdev about zero */</font>
+</p>
+
+
+<h3>
+  <a name="1000641"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.19  vrms (AC)</font>
+</h3>
+
+
+<p>
+  <a name="1000642"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram and the edge array, but 0 edges is OK, should not be clipped</font>
+</p>
+
+
+<p>
+  <a name="1001330"> </a><font face="Verdana, Arial, Helvetica, sans-serif">let m = signal mean</font>
+</p>
+
+
+<p>
+  <a name="1001167"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return sqrt((sum of (x-m)^2)/n);  /* sdev about mean */</font>
+</p>
+
+
+<p>
+  <a name="1000645"> </a><font face="Verdana, Arial, Helvetica, sans-serif">If you don't want to compute m first, this is equivalent to </font>
+</p>
+
+
+<p>
+  <a name="1000646"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return sqrt((sum of x^2)/n - (sum of x)*(sum of x)/(n*n));</font>
+</p>
+
+
+<h3>
+  <a name="1000370"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.20  rise time</font>
+</h3>
+
+
+<p>
+  <a name="1000372"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram, 1 or 2 edges, should not be clipped</font>
+</p>
+
+
+<p>
+  <a name="1001331"> </a><font face="Verdana, Arial, Helvetica, sans-serif">pick the rising edge closest to the trigger reference point</font>
+</p>
+
+
+<p>
+  <a name="1000374"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return time(upper thresh) - time(lower thresh)</font>
+</p>
+
+
+<h3>
+  <a name="1000448"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.21  fall time</font>
+</h3>
+
+
+<p>
+  <a name="1000458"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram, 1 or 2 edges, should not be clipped</font>
+</p>
+
+
+<p>
+  <a name="1001333"> </a><font face="Verdana, Arial, Helvetica, sans-serif">pick the falling edge closest to the trigger reference point</font>
+</p>
+
+
+<p>
+  <a name="1001332"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return time(lower thresh) - time(upper thresh)</font>
+</p>
+
+
+<h3>
+  <a name="996878"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.22  overshoot</font>
+</h3>
+
+
+<p>
+  <a name="996879"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram, 1 or 2 edges, can use normalized data</font>
+</p>
+
+
+<p>
+  <a name="996880"> </a><font face="Verdana, Arial, Helvetica, sans-serif">use the edge closest to the trigger reference point</font>
+</p>
+
+
+<p>
+  <a name="1001199"> </a><font face="Verdana, Arial, Helvetica, sans-serif">if there is only one edge, use VMAX or VMIN for the whole record</font>
+</p>
+
+
+<p>
+  <a name="1001196"> </a><font face="Verdana, Arial, Helvetica, sans-serif">    otherwise, calculate a local histogram to find the local VMAX or VMIN</font>
+</p>
+
+
+<p>
+  <a name="996884"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return (localVMAX - VTOP) / (VTOP - VBAS)  for rising edge, or</font>
+</p>
+
+
+<p>
+  <a name="999715"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return (VBAS - localVMIN) / (VTOP - VBAS)  for falling edge</font>
+</p>
+
+
+<h3>
+  <a name="999721"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.23  vpreshoot</font>
+</h3>
+
+
+<p>
+  <a name="996888"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram, 1 or 2 edges, can use normalized data</font>
+</p>
+
+
+<p>
+  <a name="1001195"> </a><font face="Verdana, Arial, Helvetica, sans-serif">use the edge closest to the trigger reference point</font>
+</p>
+
+
+<p>
+  <a name="996889"> </a><font face="Verdana, Arial, Helvetica, sans-serif">if there is only one edge, use VMAX or VMIN for the whole record</font>
+</p>
+
+
+<p>
+  <a name="996892"> </a><font face="Verdana, Arial, Helvetica, sans-serif">    otherwise, calculate a local histogram to find the local VMIN or VMAX</font>
+</p>
+
+
+<p>
+  <a name="1000731"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return (VBAS - localVMIN) / (VTOP - VBAS)  for rising edge, or</font>
+</p>
+
+
+<p>
+  <a name="1000724"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return (localVMAX - VTOP) / (VTOP - VBAS)  for falling edge</font>
+</p>
+
+
+<h3>
+  <a name="1001202"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.24  meas:tval</font>
+</h3>
+
+
+<p>
+  <a name="1001203"> </a><font face="Verdana, Arial, Helvetica, sans-serif">no prerequisites, internal only, has a voltage parm and an edge number parm</font>
+</p>
+
+
+<p>
+  <a name="1001415"> </a><font face="Verdana, Arial, Helvetica, sans-serif">analog only, uses normalized data</font>
+</p>
+
+
+<p>
+  <a name="1001204"> </a><font face="Verdana, Arial, Helvetica, sans-serif">count out the required number of edges starting at the left edge of data</font>
+</p>
+
+
+<p>
+  <a name="1001205"> </a><font face="Verdana, Arial, Helvetica, sans-serif">interpolate on that edge for the time</font>
+</p>
+
+
+<h3>
+  <a name="1000698"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.25  effective bits of a sine (not JEF)</font>
+</h3>
+
+
+<p>
+  <a name="1000699"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs histogram and 3 edges, internal only, should not be clipped</font>
+</p>
+
+
+<p>
+  <a name="1000716"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs 3 edges, just to make sure at least one period is there</font>
+</p>
+
+
+<p>
+  <a name="1000765"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs no dithering, preferably with no holes, but this is application dependent</font>
+</p>
+
+
+<p>
+  <a name="1000767"> </a><font face="Verdana, Arial, Helvetica, sans-serif">use the whole record to calculate the effBits and its derivative with respect to frequency</font>
+</p>
+
+
+<p>
+  <a name="1000770"> </a><font face="Verdana, Arial, Helvetica, sans-serif">iterate a couple times to get the optimal frequency</font>
+</p>
+
+
+<p>
+  <a name="1000771"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return effBits, based on actual amplitude</font>
+</p>
+
+
+<h3>
+  <a name="996916"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.26  tmax (substitute for FFT findPeaks)</font>
+</h3>
+
+
+<p>
+  <a name="996927"> </a><font face="Verdana, Arial, Helvetica, sans-serif">no prerequisites, analog only, uses normalized data</font>
+</p>
+
+
+<p>
+  <a name="1001238"> </a><font face="Verdana, Arial, Helvetica, sans-serif">find the max in the record, then find its first occurrence starting at the left</font>
+</p>
+
+
+<p>
+  <a name="1000220"> </a><font face="Verdana, Arial, Helvetica, sans-serif">calculate a time based on this index</font>
+</p>
+
+
+<h3>
+  <a name="1001239"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.27  Qpp</font>
+</h3>
+
+
+<p>
+  <a name="1001240"> </a><font face="Verdana, Arial, Helvetica, sans-serif">no prerequisites, internal only, uses eavesdropped data</font>
+</p>
+
+
+<p>
+  <a name="1001241"> </a><font face="Verdana, Arial, Helvetica, sans-serif">find the minimum and maximum Q values in the record</font>
+</p>
+
+
+<p>
+  <a name="1001242"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return their difference </font>
+</p>
+
+
+<h3>
+  <a name="1001243"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.28  Qavg</font>
+</h3>
+
+
+<p>
+  <a name="1001244"> </a><font face="Verdana, Arial, Helvetica, sans-serif">no prerequisites, internal only, useful to the cals, uses eavesdropped data</font>
+</p>
+
+
+<p>
+  <a name="1001245"> </a><font face="Verdana, Arial, Helvetica, sans-serif">add up all the Q values in the record, and divide by the number of valid points</font>
+</p>
+
+
+<p>
+  <a name="1001249"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return this quotient as a fixed-point Q value</font>
+</p>
+
+
+<h3>
+  <a name="1001250"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.29  QavgFloat64</font>
+</h3>
+
+
+<p>
+  <a name="1001253"> </a><font face="Verdana, Arial, Helvetica, sans-serif">internal only, data should contain no holes, should not be clipped</font>
+</p>
+
+
+<p>
+  <a name="1001251"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Stu wrote this version of Qavg to return a float instead of a Q value</font>
+</p>
+
+
+<p>
+  <a name="1001252"> </a><font face="Verdana, Arial, Helvetica, sans-serif">it also glosses over clipping and holes</font>
+</p>
+
+
+<h3>
+  <a name="1001254"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-2.30  Qamp</font>
+</h3>
+
+
+<p>
+  <a name="1001255"> </a><font face="Verdana, Arial, Helvetica, sans-serif">no prerequisites, internal only, useful to the cals</font>
+</p>
+
+
+<p>
+  <a name="1001256"> </a><font face="Verdana, Arial, Helvetica, sans-serif">similar to ACrms, this returns the standard deviation about the mean</font>
+</p>
+
+
+<h2>
+  <a name="999733"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-3  Appendix B - supported measurements on digital channels</font>
+</h2>
+
+
+<p>
+  <a name="996966"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All the timing measurements on digital data can be measured using the edges array.</font>
+</p>
+
+
+<h3>
+  <a name="996971"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-3.1  frequency</font>
+</h3>
+
+
+<p>
+  <a name="1000037"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs 3 edges</font>
+</p>
+
+
+<p>
+  <a name="1000040"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return 1/(edge3-edge1);</font>
+</p>
+
+
+<h3>
+  <a name="996975"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-3.2  period</font>
+</h3>
+
+
+<p>
+  <a name="996976"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs 3 edges</font>
+</p>
+
+
+<p>
+  <a name="996977"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return edge3-edge1</font>
+</p>
+
+
+<h3>
+  <a name="996979"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-3.3  pos pulse width</font>
+</h3>
+
+
+<p>
+  <a name="996980"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs 2 or 3 edges</font>
+</p>
+
+
+<p>
+  <a name="996981"> </a><font face="Verdana, Arial, Helvetica, sans-serif">if (startsRising)</font>
+</p>
+
+
+<p>
+  <a name="996982"> </a><font face="Verdana, Arial, Helvetica, sans-serif">    return edge2-edge1;</font>
+</p>
+
+
+<p>
+  <a name="996983"> </a><font face="Verdana, Arial, Helvetica, sans-serif"> else</font>
+</p>
+
+
+<p>
+  <a name="996984"> </a><font face="Verdana, Arial, Helvetica, sans-serif">     return edge3-edge2;</font>
+</p>
+
+
+<h3>
+  <a name="996986"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-3.4  neg pulse width</font>
+</h3>
+
+
+<p>
+  <a name="996987"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs 2 or 3 edges</font>
+</p>
+
+
+<p>
+  <a name="996988"> </a><font face="Verdana, Arial, Helvetica, sans-serif">if (startsRising)</font>
+</p>
+
+
+<p>
+  <a name="996989"> </a><font face="Verdana, Arial, Helvetica, sans-serif">    return edge3-edge2;</font>
+</p>
+
+
+<p>
+  <a name="996990"> </a><font face="Verdana, Arial, Helvetica, sans-serif">else</font>
+</p>
+
+
+<p>
+  <a name="996991"> </a><font face="Verdana, Arial, Helvetica, sans-serif">    return edge2-edge1;</font>
+</p>
+
+
+<h3>
+  <a name="996993"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-3.5  duty cycle (percent, or degrees)</font>
+</h3>
+
+
+<p>
+  <a name="996994"> </a><font face="Verdana, Arial, Helvetica, sans-serif">needs 3 edges</font>
+</p>
+
+
+<p>
+  <a name="996995"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return 100 * (pos pulse width) / (period)</font>
+</p>
+
+
+<h3>
+  <a name="1000815"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-3.6  meas:vtim?</font>
+</h3>
+
+
+<p>
+  <a name="1000816"> </a><font face="Verdana, Arial, Helvetica, sans-serif">no prerequisites, internal only, takes a time parameter</font>
+</p>
+
+
+<p>
+  <a name="1001423"> </a><font face="Verdana, Arial, Helvetica, sans-serif">uses eavesdropped data for logic</font>
+</p>
+
+
+<p>
+  <a name="1000819"> </a><font face="Verdana, Arial, Helvetica, sans-serif">convert time to nearest bucket i</font>
+</p>
+
+
+<p>
+  <a name="1000820"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return the two bits in v[i], no interpolation possible</font>
+</p>
+
+
+<h3>
+  <a name="1001269"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-3.7  meas:vtm2?</font>
+</h3>
+
+
+<p>
+  <a name="1001270"> </a><font face="Verdana, Arial, Helvetica, sans-serif">this is a special version of vtim that Steve wrote for the CSV spreadsheet query</font>
+</p>
+
+
+<p>
+  <a name="1001420"> </a><font face="Verdana, Arial, Helvetica, sans-serif">for logic data it returns a whole pod (8 data bits and 8 transition bits) instead of one channel</font>
+</p>
+
+
+<h3>
+  <a name="1001271"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-3.8  meas:tedg?</font>
+</h3>
+
+
+<p>
+  <a name="1001272"> </a><font face="Verdana, Arial, Helvetica, sans-serif">no prerequisites, internal only, takes an edge parameter</font>
+</p>
+
+
+<p>
+  <a name="1001416"> </a><font face="Verdana, Arial, Helvetica, sans-serif">uses eavesdropped data for logic</font>
+</p>
+
+
+<p>
+  <a name="1001280"> </a><font face="Verdana, Arial, Helvetica, sans-serif">start at the left end of the data, count the correct number of edges</font>
+</p>
+
+
+<p>
+  <a name="1001281"> </a><font face="Verdana, Arial, Helvetica, sans-serif">return the time at that index, no interpolation possible</font>
+</p>
+
+
+<h3>
+  <a name="1001277"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-3.9  counter (not JEF)</font>
+</h3>
+
+
+<p>
+  <a name="1001278"> </a><font face="Verdana, Arial, Helvetica, sans-serif">no prerequisites</font>
+</p>
+
+
+<p>
+  <a name="1001282"> </a><font face="Verdana, Arial, Helvetica, sans-serif">use the trigger counter to get a frequency measurement on the desired channel</font>
+</p>
+
+
+<h2>
+  <a name="1001028"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">21-4  Appendix C - innovations</font>
+</h2>
+
+
+<p>
+  <a name="1001290"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Here is a list of things which are new to jediPlus measurements, which may be confusing or delightful to the user.</font>
+</p>
+
+<ul>
+  <li><a name="1001357"> </a><font face="Verdana, Arial, Helvetica, sans-serif">measurements have better voltage and time resolution than with older Jedi.</font>
+  <li><a name="1001360"> </a><font face="Verdana, Arial, Helvetica, sans-serif">voltage measurements use full precision regardless of windowing.  Coyote delivers 8 to 12 bit data regardless of screen configuration, and we never need to use 7 or 6 bit data.</font>
+  <li><a name="1001334"> </a><font face="Verdana, Arial, Helvetica, sans-serif">measurement results don't show specious precision or awkward units.  The displayed precision of voltage measurements is increased when you use hi-res data.  Note this is precision, not accuracy, determined by the mechanics of the measurement rather than the width of the reporting field.  I wanted to avoid milli-decibels, milli-percent and megavolts/sec, but so far I'm still stuck with these ridiculous units.</font>
+  <li><a name="1001344"> </a><font face="Verdana, Arial, Helvetica, sans-serif">edges are found near the trigger reference point rather than starting from the left edge.  Presumably the user has more interest in the edge he's triggered on, so this rise time is of greater interest than the rise time at some remote edge.  Also, if you stop this box and pan and zoom, you tend to keep your edge.  And for a signal with variable duty cycle, this is the only way to get the period.  I think Infiniium allows you to choose which edge, but in the absence of a mouse interface this method works well, and this is probably the edge you would choose if you could.</font>
+  <li><a name="1001336"> </a><font face="Verdana, Arial, Helvetica, sans-serif">measurements are made in more situations, using inequalities or second-best data if necessary.  We used to have a very conservative approach in allowing measurements only if all the prerequisites are well met.  But we had some complaints that led me to think we could still use the considerable information available to give the customer a clue.  A simple example is a Vpp measurement when the data is clipped.  Rather than saying "signal not found" (clearly wrong), I give an inequality.  At 100 mV per division, you can get Vpp &gt; 800 mV.  A better example is a time measurement on a periodic waveform that is slightly clipped.  We used to say "signal not found", but now I would set Vtop to Vmax, or Vbas to Vmin, or both, and go ahead with the edge finding.  Since the edges of a clipped waveform are steep, this gives a good estimate.  If the rise-time measurement is undersampled, you'll get an inequality.  You can imagine, as we used to in early Jedi, that if the waveform is clipped you don't know anything about what else is up there, and the edges you're measuring could be completely bogus.  But the severe clipping is apparent on screen, so it's clear you're doing this, and I think this method is still easy to use.  In particular, if your signal has a noise peak every now and then your measurements will be stable.</font>
+  <li><a name="1001337"> </a><font face="Verdana, Arial, Helvetica, sans-serif">average measurements (VAV, VRMS, ACRMS) use more of the screen than before.  If there are edges in the signal, we used to take one period.  But for some signals, such as white noise or lots of noise, this would result in an inadequate statistical sample.  VRMS of white noise, for example, would move around.  Now, if there are edges, I look for the first edge on the left and the last similar edge on the right, and use all the data in between.  If there are no edges, I use the whole screen, just as we used to do.  This behavior is not optional, but the measurement cursors make it clear what is happening.</font>
+  <li><a name="1001351"> </a><font face="Verdana, Arial, Helvetica, sans-serif">measurements are potentially less wysiwyg.  Most measurement records use 2000 points, and the display is 1000 pixels, so we could report a measurement on an invisible detail.  Because by design the display is not identical with the waveform record, we are vulnerable to more side effects from control dynamics.  During vertical pan&amp;zoom we can have clipped data on screen, and the measurement record is not clipped, so again we could be referring to voltages that can't be seen.  If you do a bus query for a measurement that would give an inequality if it were from the front panel, the bus result is simple measurement failure.  I'm hoping these corner cases are not confusing, at least not more than those of other scopes.</font>
+</ul>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="acqMgr.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="func.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>

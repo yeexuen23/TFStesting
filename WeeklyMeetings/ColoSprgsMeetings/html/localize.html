@@ -1,0 +1,171 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<meta name="GENERATOR" content="Quadralay WebWorks Publisher 5.0.2">
+<meta name="TEMPLATEBASE" content="Portable HTML">
+<meta name="LASTUPDATED" content="Thu May 09 18:21:35 2002">
+<title>CHAPTER 11 Localization Strategy</title>
+</head>
+
+<body link="#3366CC" vlink="#9999CC" text="#000000" alink="#0000CC" bgcolor="#FFFFFF"
+background="images/backgrnd.gif">
+
+<p><img src="images/agilent.gif" width="206" height="71" align="left"
+alt="Agilent Technologies"> </p>
+
+<table width="331" border="0" align="right" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="helpText.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="controls.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+
+<p><br clear="all">
+</p>
+
+<hr align="left">
+
+<blockquote>
+<h1>
+  <a name="999227"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">CHAPTER 11 	 Localization Strategy</font>
+</h1><hr>
+
+
+<h2>
+  <a name="999228"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">11-1  Issues to be resolved</font>
+</h2>
+
+<ul>
+  <li><a name="999511"> </a><font face="Verdana, Arial, Helvetica, sans-serif">In what form will we recieve content?</font>
+  <li><a name="999513"> </a><font face="Verdana, Arial, Helvetica, sans-serif">How do we embed system dependent text in the content?</font>
+  <li><a name="999514"> </a><font face="Verdana, Arial, Helvetica, sans-serif">How do we encode 16 bit text?</font>
+  <li><a name="999515"> </a><font face="Verdana, Arial, Helvetica, sans-serif">How do we store fonts?</font>
+  <li><a name="999516"> </a><font face="Verdana, Arial, Helvetica, sans-serif">How do we translate the content to utilize the stored font?</font>
+  <li><a name="999517"> </a><font face="Verdana, Arial, Helvetica, sans-serif">How do we embed graphics in help text?</font>
+  <li><a name="999523"> </a><font face="Verdana, Arial, Helvetica, sans-serif">The system must elegantly handle multi-line messages.</font>
+  <li><a name="999537"> </a><font face="Verdana, Arial, Helvetica, sans-serif">What does the help developer and translater do about special characters?</font>
+</ul>
+
+<h3>
+  <a name="999512"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">11-1.1  In what form will we recieve content?</font>
+</h3>
+
+
+<p>
+  <a name="999521"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Its really easy for us to deal with plain 8-bit text data.  However, it appears that we must handle 16-bit text data.  Also, it seems that it would be advantageous to not place any new requirements on the content development house.  In other words, if they're doing development in the environment that they're familiar with things should go more smoothly.  It may be necessary to compile their text and view it on a target system.  To accomplish this requirement, all of the language re-flashing system will need to be in place and we'll need to ship the translation house a standalone unit.</font>
+</p>
+
+
+<h3>
+  <a name="999522"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">11-1.2  How do we embed system dependent text in then content?</font>
+</h3>
+
+
+<p>
+  <a name="999524"> </a><font face="Verdana, Arial, Helvetica, sans-serif">All localized text will be separately linked and accessed via lookup tables.  Therefore, the system software will require some means of embedding system dependent strings in this text.  Examples of this include readout values, model numbers and channel numbers.  We must agree on a methodology for embedding keywords in the content that will allow a system side parser to insert these strings.</font>
+</p>
+
+
+<h3>
+  <a name="999525"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">11-1.3  How do we encode 16 bits text?</font>
+</h3>
+
+
+<p>
+  <a name="999526"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Dealing with 16-bit text data will be new and most likely problematic for us.  I'm sure there are issues to be resolved here.</font>
+</p>
+
+
+<h3>
+  <a name="999527"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">11-1.4  How do we store 16 bit fonts?</font>
+</h3>
+
+
+<p>
+  <a name="999532"> </a><font face="Verdana, Arial, Helvetica, sans-serif">A 16-bit Asian language font can take as much as 400 kbytes to store only the font.  I would like to adopt a strategy in which we create a filter to choose only those glyphs from the font that are actually utilized in the content.  This will require a filter that can scan the content and the font, choose the utilized glyphs from the font, pack these into a new font, then change the content encoding to point to the correct glyphs in the new font.  We don't know how much compression this will yield, but it has the potential to generate a much smaller footprint.</font>
+</p>
+
+
+<h3>
+  <a name="999533"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">11-1.5  How do we embed graphics in the help content?</font>
+</h3>
+
+
+<p>
+  <a name="999534"> </a><font face="Verdana, Arial, Helvetica, sans-serif">"A picture is worth a thousand words".  Ideally, we'll be able to embed bitmaps into our help content because often a picture is the best description of a functionality.  How do we do this?</font>
+</p>
+
+
+<h3>
+  <a name="999535"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">11-1.6  The system must elegantly handle multi-line messages.</font>
+</h3>
+
+
+<p>
+  <a name="999536"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Existing HP546xx oscilloscopes have one line that is used as the message space on the screen.  This will not suffice for many non-English languages.  The system must be designed to utilize more screen space when necessary to support multi-line messages.</font>
+</p>
+
+
+<h3>
+  <a name="999538"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">11-1.7  What does the help developer and translater do about special characters?</font>
+</h3>
+
+
+<p>
+  <a name="999539"> </a><font face="Verdana, Arial, Helvetica, sans-serif">We often use special characters in our instruments.  For example, we might use an omega to signify impedance, or a ground symbol to signify ground.  How do we utilize these types of symbols outside of our internal design team?</font>
+</p>
+
+
+<h3>
+  <a name="999542"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">11-1.8  Localization issues</font>
+</h3>
+
+
+<h4>
+  <a name="999543"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Localized messages</font>
+</h4>
+
+
+<p>
+  <a name="999544"> </a><font face="Verdana, Arial, Helvetica, sans-serif">There have been investigations that suggest that the controls of the instrument should not be localized.  The terminology generally used is recognized by many non-English speaking customers.  However, on-screen help/info/error messages should be localized.  These messages are an attempt to convey important, often verbose information.  This type of information is not recognizable to non-English speaking customers.  Also, Dale Colbert has pointed out that in other languages, often messages cannot be translated on a single line.  With that in mind, I would like our system to gracefully move messages into the waveform area when they're too long to fit on one line.  This strategy should also provide for popping the messages into the waveform area if the message line is not tall enough to support the font required for the currently selected language.</font>
+</p>
+
+
+<h4>
+  <a name="999545"> </a><font color="#003366" face="Verdana, Arial, Helvetica, sans-serif">Font issues</font>
+</h4>
+
+
+<p>
+  <a name="999546"> </a><font face="Verdana, Arial, Helvetica, sans-serif">Mike Karin wrote a script to count all of the unique character encodings used in the Japanese version of the Infinium help system.  On 10/16/97 we got the answer, 1002 unique characters.  Also, after having run this script on only one of the 30 to 50 files in the system, he counted about 500 characters.  So, at this point we can probably estimate that it will require somewhere between 500 and 1000 unique encodings to store a kanji font.  Since the complete 16x16 kanji font found on the HP-UX system compiles to about 600kbytes, this should get the footprint of the font to 150kbytes or lower.  Also, its important to note that we would be better off storing the font in a non-doubled form to reduce the footprint, then double it on the fly.</font>
+</p>
+
+
+<p>
+  <a name="999540"> </a><font face="Verdana, Arial, Helvetica, sans-serif"></font>
+</p>
+</blockquote>
+
+<hr>
+
+<table width="331" border="0" align="left" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><a href="jediPlusLOP.html"><img src="images/navtoc.gif" width="84" height="23"
+    border="0" alt="TOC"> </a></td>
+    <td><a href="helpText.html"><img src="images/navprev.gif" width="80" height="23"
+    border="0" alt="PREV"> </a></td>
+    <td><a href="controls.html"><img src="images/navnext.gif" width="83" height="23"
+    border="0" alt="NEXT"> </a></td>
+    <td><a href="jediPlusIOM.html"><img src="images/navidx.gif" width="84" height="23"
+    border="0" alt="INDEX"> </a></td>
+  </tr>
+</table>
+</body>
+</html>
